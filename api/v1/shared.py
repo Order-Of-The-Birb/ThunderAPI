@@ -13,9 +13,18 @@ async def get_auth(credentials: HTTPAuthorizationCredentials = Depends(security)
 	user = await users_cache.get(token)
 	if not user:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
-	user.requests_count += 1
-	user.last_used = datetime.now(UTC)
-	await user._write_values()
+	flush = False
+	async with users_cache._auth_used_lock:
+		cache = users_cache._auth_used_cache.setdefault(user.hashed, {"cnt": 0})
+		cache["cnt"] += 1
+		cache["used"] = datetime.now(UTC)
+		if cache["cnt"] >= 10:
+			user.requests_count += cache["cnt"]
+			user.last_used = cache["used"]
+			cache["cnt"] = 0
+			flush = True
+	if flush:
+		await user._write_values()
 	return user
 
 IntString = Annotated[

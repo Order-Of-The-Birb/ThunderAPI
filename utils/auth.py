@@ -2,7 +2,7 @@ from __future__ import annotations
 from dotenv import set_key
 from re import sub as re_sub, search as re_search
 from logging import getLogger
-from asyncio import sleep
+from asyncio import sleep, Lock
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
@@ -109,6 +109,8 @@ class dbSchema:
 
 class UserTokenCache:
 	scheduler: AsyncIOScheduler
+	_auth_used_cache = {}
+	_auth_used_lock = Lock()
 
 	@dataclass(slots=True)
 	class Entry: # Short lived data class with some helper methods
@@ -117,10 +119,10 @@ class UserTokenCache:
 			sid: str
 			exp: datetime
 			@classmethod
-			def from_row(cls, row:Row):
+			def from_row(cls, row:Row, parent:UserTokenCache.Entry):
 				try:
 					return cls(
-						row[dbSchema.sso_sessions.SID],
+						parent._parent._dec(row[dbSchema.sso_sessions.SID]),
 						datetime.fromtimestamp(row[dbSchema.sso_sessions.SID_EXP], UTC)
 					)
 				except (IndexError, TypeError):
@@ -168,7 +170,7 @@ class UserTokenCache:
 		async def from_row(cls, parent:"UserTokenCache", row:Row):
 			t = dbSchema.tokens
 			jwt = parent._dec(str(row[t.JWT]))
-			sid = cls.sid_entry.from_row(row)
+			sid = cls.sid_entry.from_row(row, self)
 			self = cls(
 				hashed = str(row[t.HASH]),
 				jwt=jwt,
@@ -256,9 +258,12 @@ class UserTokenCache:
 					if value is None:
 						continue
 					for k, v in value.items():
-						if self.__saved[dbSchema.sso_sessions.t()][k] == v:
+						if self.__saved[dbSchema.sso_sessions.t()].get(k) == v:
 							continue
-						sso_changed[k] = v
+						if isinstance(v, datetime):
+							sso_changed[k] = dtToTimestamp(v)
+						else:
+							sso_changed[k] = v
 					continue
 				elif self.__saved[key] == value: 
 					continue
@@ -310,7 +315,7 @@ class UserTokenCache:
 			if self.sid	is not None:
 				obj[s.t()] = self.sid.to_json()
 			else:
-				obj[s.t()] = None
+				obj[s.t()] = {}
 
 			return obj
 	
@@ -465,7 +470,7 @@ class UserTokenCache:
 			row = await (await cur.execute(f"SELECT * FROM {dbSchema.sso_sessions.t()} WHERE {dbSchema.sso_sessions.EMAIL} = ? AND {dbSchema.sso_sessions.SID_EXP} > strftime('%s', 'now')", (entry.email,))).fetchone()
 			if row is not None:
 				return _sidValue(
-					row[dbSchema.sso_sessions.SID],
+					self._dec(row[dbSchema.sso_sessions.SID]),
 					datetime.fromtimestamp(row[dbSchema.sso_sessions.SID_EXP])
 				)
 		async with self._networkManager.operation() as session:
@@ -578,8 +583,24 @@ class UserTokenCache:
 		_logger.debug(f"Failed to remove entry {entry.email}")
 		return False
 	# region Helpers
+	async def _force_write_used_cache(self):
+		async with self._auth_used_lock:
+			snapshot, self._auth_used_cache = self._auth_used_cache, {}
+
+		for hashed, data in snapshot.items():
+			if not data["cnt"]:
+				continue
+
+			entry = await self.Entry.from_hash(self, hashed)
+			if entry is None:
+				continue
+
+			entry.requests_count += data["cnt"]
+			entry.last_used = data["used"]
+			await entry._write_values()
 	async def _refresh(self):
 		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v["expires"] > round(datetime.now(UTC).timestamp(), 0)}
+		await self._force_write_used_cache()
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')")).fetchall()
 

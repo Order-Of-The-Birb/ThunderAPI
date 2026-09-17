@@ -8,6 +8,7 @@ from api.v1.shared import TokenBearer
 from api.v1.backends.replay import search_replay, ReplayType, ReplayMode, ReplayTechType
 from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel
 
+
 router = APIRouter(
 	prefix="/replay",
 	tags=["replays"],
@@ -92,7 +93,7 @@ async def get_replay(
 		str, 
 		Path(
 			title="The replay's ID to get",
-			pattern=r"^#?[0-9a-fA-F]{1,16}$",
+			pattern=r"^[0-9a-fA-F]{1,16}$",
 			description="Must be given in HEX format"
 		),
 	],

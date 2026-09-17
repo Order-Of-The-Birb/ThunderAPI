@@ -225,11 +225,11 @@ class NewsManager:
 				data = await response.json()
 				for item in data["items"]:
 					news.append(NewsEntry.from_json(item))
-			return news
 		except ClientResponseError:
 			if not _news_endpoint_down:
 				self._logger.error("Gaijin's news endpoint is currently down. Returning emptry until it is back")
 				_news_endpoint_down = True
+		return news
 	async def fetchChangelogs(self) -> list[NewsEntry]:
 		"""Gets the latest changelog"""
 		global _changelog_maintenance
@@ -243,7 +243,7 @@ class NewsManager:
 				parsed = BeautifulSoup(await resp.text(), 'html.parser')
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
-					raise RuntimeError("An error occured when parsing changelogs")
+					raise RuntimeError("Less, than 2 changelogs found (somehow)")
 				async def processChangelog(chlog:Tag) -> NewsEntry:
 					ChLogURL:str = chlog.select_one("a.widget__link")["href"]
 					content = chlog.select_one("div.widget__content")
@@ -276,7 +276,11 @@ class NewsManager:
 			if not _changelog_maintenance:
 				self._logger.error("Changelogs page is under maintenance, returning empty until maintenance is over")
 				_changelog_maintenance = True
-				return []
+			return []
+		except RuntimeError:
+			if not _changelog_maintenance:
+				self._logger.exception("An error occurred while parsing changelogs")
+			return []
 	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> None|NewsEntry:
 		"""Returns `None` if no new major update changelog has been posted"""
 		# i[0] is the pinned major update changelog

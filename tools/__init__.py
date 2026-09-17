@@ -20,9 +20,9 @@ _logger = getLogger(__name__)
 
 #region Fetch server list once at import
 try:
-	_resp = req_get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk")
+	_resp = req_get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=30)
 except SSLError:
-	_resp = req_get("https://public-configs.warthunder.com/production/network.blk")
+	_resp = req_get("https://public-configs.warthunder.com/production/network.blk", timeout=30)
 if not _resp.ok:
 	raise RuntimeError(f"Failed to fetch server list: {_resp.status_code}")
 _cfg = Decompress(_resp.content)["production"]

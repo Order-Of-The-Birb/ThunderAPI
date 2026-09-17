@@ -1,3 +1,4 @@
+from logging import getLogger
 from os import getenv
 from typing_extensions import Annotated
 from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRequest, status
@@ -11,6 +12,7 @@ from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, Rol
 from api.v1.models.base import SuccessEmptyDict
 from api.v1.backends.clans import getClan, searchClan
 
+_logger = getLogger(__name__)
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
 gaijinUserId = Annotated[int, Path(title="The user's ID", gt=0)]
@@ -227,7 +229,11 @@ async def get_clan_logs(
 	logs:list[dict[str, int|str]] = []
 	for item in response["log"]:
 		item:dict[str, int|str]
-		action = Actions[item["ev"]]
+		try:
+			action = Actions[item["ev"]]
+		except KeyError:
+			_logger.warning(f"Unhandled log type '{item["ev"]}' found")
+			continue
 		logEntry = {
 			"timestamp": item["time"],
 			"action": {

@@ -1,5 +1,6 @@
 python-dotenv
 orjson
+packaging
 
 # API Backend
 slowapi

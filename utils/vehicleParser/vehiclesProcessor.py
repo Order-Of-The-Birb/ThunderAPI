@@ -6,16 +6,27 @@ from orjson import loads
 from dataclasses import dataclass, asdict
 from re import compile
 from packaging.version import Version
-from .constants import *
-from subprocess import run as sub_run
+from subprocess import run as sub_run, PIPE
 from datetime import datetime, UTC
 from time import perf_counter
 from pandas import read_csv, DataFrame
+from .constants import *
 from utils import networkManager
 
 _logger = getLogger(__name__)
 
-
+#region Startup checks
+def git_check():
+	git_ver = sub_run(
+		["git", "version"],
+		stdout=PIPE,
+		stderr=PIPE
+	)
+	if git_ver.returncode != 0:
+		raise EnvironmentError("No git installed on this system. Install it before running the server")
+	_logger.debug(git_ver.stdout.decode())
+git_check()
+#endregion
 #region Module setup
 gamefiles = Path(__file__).parent / "gamefiles"
 CACHED_VALIDITY_UNTIL:int

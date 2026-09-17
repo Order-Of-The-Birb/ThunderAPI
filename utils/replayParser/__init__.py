@@ -1,7 +1,10 @@
+from logging import getLogger
 from utils.replayParser.parser import ReplayParser
 from utils import networkManager
 from fastapi import HTTPException, status
 from asyncio import sleep
+
+_logger = getLogger(__name__)
 
 difficultyDict = {
 	0: "Arcade",
@@ -74,7 +77,7 @@ class Replay(dict):
 				"map": resultsData.header.level,
 				"mapSettings": resultsData.header.levelSettings,
 				"type": resultsData.header.battleType,
-				"difficulty": difficultyDict[resultsData.header.diff.difficulty],
+				"difficulty": difficultyDict.get(resultsData.header.diff.difficulty, "Unknown"),
 				"sessionType": resultsData.header.sessionType,
 				"timeLimit": resultsData.header.timeLimit * 60,
 				"scoreLimit": resultsData.header.scoreLimit,
@@ -85,6 +88,8 @@ class Replay(dict):
 				"team2": {}
 			}
 		})
+		if self["match"]["difficulty"] == "Unknown":
+			_logger.warning(f"Unhandled difficulty type found in replay {replay_id}: {resultsData.header.diff.difficulty}")
 		_ = resultsData.body
 		for user in _["player"]:
 

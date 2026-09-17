@@ -31,7 +31,7 @@ asyncio.set_event_loop(loop)
 
 from utils import users_cache, networkManager, newsManager
 from utils.geo import update_db
-from api.v1 import router as v1Router
+from api import router
 from api.shared import limiter
 
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
@@ -121,10 +121,7 @@ app.add_exception_handler(
 	)[1]
 )
 #endregion
-
-#region Add routers
-app.include_router(v1Router)
-#endregion
+app.include_router(router)
 
 #region Modify OpenAPI schema
 @dataclass(slots=True)
@@ -197,11 +194,6 @@ def custom_swagger_ui():
 
 	swagger_docs = html
 	return HTMLResponse(html)
-#endregion
-#region Privacy Policy
-@app.get("/privacy")
-def privacy_policy():
-	return RedirectResponse("https://github.com/Order-Of-The-Birb/ThunderAPI/README.md#privacy-policy", status.HTTP_301_MOVED_PERMANENTLY)
 #endregion
 
 def main():
