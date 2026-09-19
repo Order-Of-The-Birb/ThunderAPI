@@ -78,7 +78,7 @@ class DataModel(BaseModel):
 			class LineupModel(BaseModel):
 				class VehicleModel(BaseModel):
 					rank: int
-					battlerating: int
+					battlerating: float
 				vehicles: dict[str, VehicleModel] = Field(
 					description="Vehicles in the lineup of the player. Key is the internal name of the vehicle, such as `germ_leopard_2pl`",
 					examples=[
@@ -99,7 +99,7 @@ class DataModel(BaseModel):
 						}
 					}]
 				)
-				max_br: float = Field(description="Maximum battle rating of the user's lineup", examples=[6.7, 8.0, 9.7])
+				maxBr: float = Field(description="Maximum battle rating of the user's lineup", examples=[6.7, 8.0, 9.7])
 			clanTag: str | None = Field(default=None, description="Clan tag of the user, if applicable. Includes border", examples=["┾PECK┿", ""])
 			userId: int
 			autosquad: bool = Field(description="Whether the user was assigned into a squad automatically")

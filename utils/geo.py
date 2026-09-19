@@ -10,7 +10,9 @@ from github import Github
 from datetime import datetime, UTC
 from zoneinfo import ZoneInfo
 from threading import Lock
+from logging import getLogger
 
+_logger = getLogger(__name__)
 _db = Path(__file__).parent / "GeoLite2-City.mmdb"
 _db_tmp = _db.parent / "GeoLite2-City.mmdb.tmp"
 _db_id = _db.parent / "GeoLite2-City.hash"
@@ -36,14 +38,27 @@ def lookup_utc_offset(zone: str) -> int | None:
 
 async def update_db():
     global _reader, _lock
-    github_repo = Github().get_repo("P3TERX/GeoLite.mmdb")
+
+    iter_cnt = 0
+    while True:
+        try:
+            github_repo = Github().get_repo("P3TERX/GeoLite.mmdb")
+            break
+        except Exception:
+            _logger.error(f"Failed to get repository on try {iter_cnt}")
+            if iter_cnt > 5:
+                raise RuntimeError("Could not obtain geolocation repository data")
+            iter_cnt += 1
+            await sleep(30)
+    del iter_cnt
+
     if not _db.exists():
         latest = github_repo.get_latest_release()
         for asset in latest.assets:
             if asset.name != "GeoLite2-City.mmdb":
                 continue
+            await to_thread(lambda: asset.download_asset(_db_tmp))
             with _lock:
-                await to_thread(lambda: asset.download_asset(_db_tmp))
                 file_replace(_db_tmp, _db)
                 _db_id.write_text(str(latest.id))
                 if _reader is not None:
@@ -53,14 +68,15 @@ async def update_db():
         else:
             raise RuntimeError(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})")
         await sleep(12*60*60)
+
     while True:
         latest = github_repo.get_latest_release()
         if latest.id != int(_db_id.read_text()):
             for asset in latest.assets:
                 if asset.name != "GeoLite2-City.mmdb":
                     continue
+                await to_thread(lambda: asset.download_asset(_db_tmp))
                 with _lock:
-                    await to_thread(lambda: asset.download_asset(_db_tmp))
                     file_replace(_db_tmp, _db)
                     _db_id.write_text(str(latest.id))
                     if _reader is not None:

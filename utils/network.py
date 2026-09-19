@@ -1,8 +1,9 @@
 from aiohttp import ClientResponse, ClientSession
+from aiohttp.cookiejar import DummyCookieJar
 from fastapi.concurrency import asynccontextmanager 
 from fastapi import HTTPException, WebSocket, WebSocketDisconnect
 from asyncio import Lock, Event
-from typing import Any
+from typing import Any, Literal, overload
 from json import loads
 
 class NetworkError(HTTPException): pass
@@ -75,7 +76,7 @@ class NetworkManager:
 			if self.__session is not None and not self.__session.closed:
 				return
 			self.__closing = False
-			self.__session = ClientSession(headers={"User-Agent": "ThunderAPI/1.0"})
+			self.__session = ClientSession(headers={"User-Agent": "ThunderAPI/1.0"}, cookie_jar=DummyCookieJar())
 	async def close(self):
 		async with self.__lock:
 			self.__closing = True
@@ -87,17 +88,29 @@ class NetworkManager:
 				await self.__session.close()
 			self.__session = None
 
+	#region handle_response
+	@overload
 	@staticmethod
-	async def handle_response(resp:ClientResponse) -> dict[str, Any]:
-		text = await resp.text()
+	async def handle_response(resp: ClientResponse, autoconvert: Literal[True] = True) -> dict[str, Any]: ...
+	@overload
+	@staticmethod
+	async def handle_response(resp: ClientResponse, autoconvert: Literal[False]) -> bytes: ...
+	@overload
+	@staticmethod
+	async def handle_response(resp: ClientResponse, autoconvert: bool = True) -> dict[str, Any]|bytes: ...
+	@staticmethod
+	async def handle_response(resp:ClientResponse, autoconvert:bool = True) -> dict[str, Any]|bytes:
+		content = await resp.read()
 
 		if resp.status >= 400:
-			raise NetworkError(400, f"Request failed: {resp.status} {text}")
-		if text.startswith("!ERROR"):
-			raise NetworkError(400, f"Request failed: {text}")
+			raise NetworkError(400, f"Request failed: {resp.status}")
+		if content.startswith(b"!ERROR"):
+			raise NetworkError(400, f"Request failed: {content}")
 
-		return loads(text)
-		
+		if autoconvert:
+			return loads(content)
+		return content
+	#endregion
 
 	async def _enter_op(self):
 		async with self.__lock:

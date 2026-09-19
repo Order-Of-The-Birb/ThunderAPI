@@ -23,7 +23,7 @@ router = APIRouter(
 		status.HTTP_403_FORBIDDEN: {"description": "The token has no associated `identity_sid` value associated, required for replay lookup. Get one from `/v1/get-sid`"},
 	}
 )
-@limiter.shared_limit("replays", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def search_replays(
 	request: faRequest,
 	user: TokenBearer,
@@ -83,9 +83,10 @@ async def search_replays(
 	summary="Gets data from a specified replay",
 	responses={
 		status.HTTP_200_OK: {"model": DataModel},
-		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"}
+		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
+		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
 	})
-@limiter.shared_limit("replays", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay(
 	request: faRequest,
 	user: TokenBearer,

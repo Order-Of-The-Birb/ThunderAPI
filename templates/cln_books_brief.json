@@ -5,6 +5,7 @@
     "body": {
         "token": "<replace>",
         "action": "cln_books_brief",
-        "appid": "1067"
+        "appid": "1067",
+        "market_name": "<replace>"
     }
 }

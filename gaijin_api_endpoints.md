@@ -63,7 +63,9 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- `uidHint` (Applying user)  
 	- `gameVersion`  
 - Request form  
-	- BLK  
+	- LZ4HC compressed BLK  
+	- `_id` (Squadron ID)  
+	- `role` (Level to get on join)  
 - Response form  
 	- "!OK"  
 ### ano_clan_dismiss_member  
@@ -73,19 +75,19 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- `uidHint` (Kicking officer)  
 	- `gameVersion`  
 - Request form  
-	- `LZ4HC` compressed HEX  
+	- LZ4HC compressed BLK  
 	- `comments` (The message given with the dismissal)  
 - Response form  
 	- "!OK"  
 ### cln_clan_membership_request  
 - `POST` request  
-- Headers  
-	- `userid` (Applying user)  
-	- `gameVersion`  
 - Request form  
-	- HEX  
+	- LZ4HC compressed BLK  
+	- `_id` (Squadron ID to apply for)  
+	- `comments` (game leaves it empty, adding a value doesn't show anything ingame)  
 - Response form  
-	- "!OK"  
+	- All user data  
+	- `ClanTag`, `ClanName` are filled with the squadron's data, which can be used for checking whether applying was successful  
 ### ano_clan_change_member_role  
 - `POST` request  
 - Header  
@@ -96,6 +98,13 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 - Response form  
 	- "!OK"  
 ### ano_clan_reject_membership_request  
+- `POST` request  
+- Header  
+	- `userid` (Applicant to reject)  
+- Request body  
+	- LZ4HC compressed BLK  
+	- `_id` (Squadron ID)  
+	- `comments`  
 ### cln_clan_leave  
 - `POST` request  
 - `LZ4HC` compressed  
@@ -173,6 +182,7 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	}  
 	```  
 ### cln_flush_clan_exp_to_unit  
+### cln_save_weapon_presets  
 ## Contact proxy endpoints  
 - Same as before (example: https://contact-proxy-02.gaijin.net/json)  
 ### cln_get_allowed_to_be_added_to_contacts  
@@ -1007,6 +1017,35 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 		- `status`  
 			- `discard` (GE vehicle)  
 			- `publisher` (Pack vehicle)  
+### https://api.gaijinent.com/user_stoken.php  
+- `POST` request  
+- Request body  
+	- `jwt`  
+	- `token`  
+- Response body  
+	- `status` (`OK`)  
+	- `stoken`  
+	- `user_id`  
+### https://api.gaijinent.com/login_stoken.php  
+- `POST` request  
+- Request body  
+	- `stoken` (Token obtained from previous version)  
+- Response body  
+	- `auth`  
+	- `country`  
+	- `gjnick`  
+	- `lang`  
+	- `level`  
+	- `login` (login email)  
+	- `nick`  
+	- `nickorig`  
+	- `status` (`OK`)  
+	- `tags` (comma separated tags of the account)  
+	- `token`  
+	- `token_exp`  
+	- `user_id`  
+	- `jwt`  
+
 ### https://login.gaijin.net/en/sso/getShortToken  
 ## Endpoints not used ingame  
 ### http://newslist.gaijin.net:8080/news/{game}/en/js  

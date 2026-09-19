@@ -63,7 +63,7 @@ class Replay(dict):
 							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error")
 
 						data = await r.read()
-						return ReplayParser(data)
+						return await ReplayParser.from_replay(data)
 
 		#endregion
 		#region Parse gaijin JSON to proper JSON

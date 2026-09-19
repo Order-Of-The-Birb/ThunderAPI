@@ -1,0 +1,38 @@
+{
+    "charServer": [
+        "https://char-lw-nl-005-2.warthunder.com/char",
+        "https://char-lw-nl-005-3.warthunder.com/char",
+        "https://char-lw-nl-005-4.warthunder.com/char",
+        "https://char-lw-nl-005-5.warthunder.com/char"
+    ],
+    "inventory": {
+        "servers": {
+            "url": [
+                "https://inventory-proxy-01.gaijin.net/char",
+                "https://inventory-proxy-02.gaijin.net/char"
+            ]
+        }
+    },
+    "userstat": {
+        "servers": {
+            "url": [
+                "https://userstat-proxy-01.gaijin.net/char",
+                "https://userstat-proxy-02.gaijin.net/char"
+            ]
+        }
+    },
+    "contacts": {
+        "servers": {
+            "url": [
+                "https://contact-proxy-01.gaijin.net/json",
+                "https://contact-proxy-02.gaijin.net/json"
+            ]
+        }
+    },
+    "ugc_settings": {
+        "ugcServerUrl": [
+            "https://ugcinfo-proxy-01.gaijin.net/char",
+            "https://ugcinfo-proxy-02.gaijin.net/char"
+        ]
+    }
+}

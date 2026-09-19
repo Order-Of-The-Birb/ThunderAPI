@@ -20,7 +20,7 @@ router = APIRouter(
 		status.HTTP_200_OK: {}
 	}
 )
-@limiter.shared_limit("units", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def getVehicle(
 	request: Request, 
 	user: TokenBearer, 

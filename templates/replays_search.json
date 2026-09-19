@@ -1,9 +1,10 @@
 {
 	"host": "https://warthunder.com/en/api/replay",
-	"method": "GET",
+	"method": "POST",
 	"action": null,
 	"headers": {
-		"token": "<replace>"
+		"token": "<replace>",
+        "Content-Type": "application/x-www-form-urlencoded"
 	},
 	"body": {
 		"gameMode": ["arcade", "realistic", "simulation"],

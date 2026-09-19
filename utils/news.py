@@ -43,8 +43,8 @@ class NewsEntry:
 	@dataclass(slots=True)
 	class Image:
 		src: str
-		width: str
-		height: str
+		width: int
+		height: int
 		@classmethod
 		def from_json(cls, data:dict[str, Any]):
 			return cls(
@@ -121,7 +121,7 @@ class NewsManager:
 		MAJOR_CHLOG = 2, "lastMajorChLog"
 	lastNews:int
 	lastChangelog:int
-	_logger: Logger
+	__logger: Logger
 	_networkManager: NetworkManager
 	task:Task
 	_ids_json: Path
@@ -129,7 +129,7 @@ class NewsManager:
 	websocket_mgr: WebsocketManager
 
 	def __init__(self, networkManager:NetworkManager):
-		self._logger = getLogger(__name__)
+		self.__logger = getLogger(__name__)
 		self._lock = Lock()
 
 		self._networkManager = networkManager
@@ -147,46 +147,46 @@ class NewsManager:
 		self.lastChangelog = int(content.get(self._IDTYPE.CHANGELOG.value[1], 0))
 		self.lastMajorChLog = int(content.get(self._IDTYPE.MAJOR_CHLOG.value[1], 0))
 
-		self._logger.debug("NewsAPI initialized")
+		self.__logger.debug("NewsAPI initialized")
 
 	async def mainloop(self):
 		while True:
 			try:
 				if (latest := await self._get_new_news()):
-					self._logger.debug("News have been posted since last check")
+					self.__logger.debug("News have been posted since last check")
 					for news in latest:
 						await self.websocket_mgr.broadcast(news.to_json())
 			except CancelledError:
 				raise
 			except Exception:
-				self._logger.exception("An exception occurred during news fetching")
+				self.__logger.exception("An exception occurred during news fetching")
 
 			try:
 				changelogs = await self.fetchChangelogs()
 
 				try:
 					if (latest := await self._get_new_changelogs(changelogs)):
-						self._logger.debug("Changelogs have been posted since last check")
+						self.__logger.debug("Changelogs have been posted since last check")
 						for news in latest:
 							await self.websocket_mgr.broadcast(news.to_json())
 				except CancelledError:
 					raise
 				except Exception:
-					self._logger.exception("An exception occurred during changelog processing")
+					self.__logger.exception("An exception occurred during changelog processing")
 
 				try:
 					if (latest := await self._get_major_changelog(changelogs)):
-						self._logger.debug("New major update changelog posted")
+						self.__logger.debug("New major update changelog posted")
 						await self.websocket_mgr.broadcast(latest.to_json())
 				except CancelledError:
 					raise
 				except Exception:
-					self._logger.exception("An exception occurred during major changelog processing")
+					self.__logger.exception("An exception occurred during major changelog processing")
 
 			except CancelledError:
 				raise
 			except Exception:
-				self._logger.exception("An exception occurred during changelog fetching")
+				self.__logger.exception("An exception occurred during changelog fetching")
 			
 			await sleep(self.__calcDelay())
 
@@ -220,14 +220,14 @@ class NewsManager:
 		try:
 			async with self._networkManager.get(self._API_URL) as response:
 				if _news_endpoint_down:
-					self._logger.info("Gaijin's news endpoint is back online")
+					self.__logger.info("Gaijin's news endpoint is back online")
 					_news_endpoint_down = False
 				data = await response.json()
 				for item in data["items"]:
 					news.append(NewsEntry.from_json(item))
 		except ClientResponseError:
 			if not _news_endpoint_down:
-				self._logger.error("Gaijin's news endpoint is currently down. Returning emptry until it is back")
+				self.__logger.error("Gaijin's news endpoint is currently down. Returning emptry until it is back")
 				_news_endpoint_down = True
 		return news
 	async def fetchChangelogs(self) -> list[NewsEntry]:
@@ -237,7 +237,7 @@ class NewsManager:
 		try:
 			async with self._networkManager.get(self._CHANGELOG_URL) as resp:
 				if _changelog_maintenance:
-					self._logger.info("Changelog page is no longer under maintenance")
+					self.__logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
 
 				parsed = BeautifulSoup(await resp.text(), 'html.parser')
@@ -265,7 +265,7 @@ class NewsManager:
 							"width": 0,
 							"height": 0
 						}],
-						"type":"Changelog",
+						"type":"changelog",
 						"created":date,
 						"pinned": pinned
 					})
@@ -274,12 +274,12 @@ class NewsManager:
 			return final_changelogs
 		except ClientResponseError:
 			if not _changelog_maintenance:
-				self._logger.error("Changelogs page is under maintenance, returning empty until maintenance is over")
+				self.__logger.error("Changelogs page is under maintenance, returning empty until maintenance is over")
 				_changelog_maintenance = True
 			return []
 		except RuntimeError:
 			if not _changelog_maintenance:
-				self._logger.exception("An error occurred while parsing changelogs")
+				self.__logger.exception("An error occurred while parsing changelogs")
 			return []
 	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> None|NewsEntry:
 		"""Returns `None` if no new major update changelog has been posted"""
@@ -294,7 +294,7 @@ class NewsManager:
 
 	async def _get_new_changelogs(self, changelogs:list[NewsEntry]):
 		# i[1:] is the latest actual changelogs
-		if not changelogs:
+		if not changelogs or len(changelogs) <= 1:
 			return []
 		changelogs = changelogs[1:]
 
@@ -320,7 +320,7 @@ class NewsManager:
 
 	async def _writeID(self, ID:int|NewsEntry, _type:_IDTYPE):
 		ID = ID if isinstance(ID, int) else ID.id
-		self._logger.debug(f"Writing value {ID} for {_type.name}")
+		self.__logger.debug(f"Writing value {ID} for {_type.name}")
 
 		async with self._lock:
 			content = loads(self._ids_json.read_text())

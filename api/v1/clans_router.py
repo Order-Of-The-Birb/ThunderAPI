@@ -27,7 +27,7 @@ router = APIRouter(
 	"/{clanId}/apply", 
 	summary="Sends an application to the squadron, if allowed"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def send_application(
 	request: faRequest,
 	user: TokenBearer,
@@ -39,11 +39,12 @@ async def send_application(
 		_id=clanId
 	)
 	return response.get("clanTag") is not None
+
 @router.get(
 	"/{clanId}/applicants", 
 	summary="Gets the currently applying members"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_applicants(
 	request: faRequest,
 	user: TokenBearer,
@@ -100,11 +101,12 @@ async def get_applicants(
 		}
 	}
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def accept_applicant(
 	request: faRequest,
 	user: TokenBearer,
-	userId: gaijinUserId
+	userId: gaijinUserId,
+	role:RolesDisplay = RolesDisplay.PRIVATE
 ):
 	squadronId = await user.getSquadronId()
 	if squadronId is None:
@@ -113,7 +115,8 @@ async def accept_applicant(
 		user, 
 		"clan_accept_membership_request",
 		userId = userId,
-		_id = squadronId
+		_id = squadronId,
+		role=Roles[role.name.upper()].value
 	)
 
 @router.post(
@@ -124,7 +127,7 @@ async def accept_applicant(
 		status.HTTP_403_FORBIDDEN: {"description":"You do not have permission to reject applicants"}
 	}
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def reject_applicant(
 	request: faRequest,
 	user: TokenBearer,
@@ -151,7 +154,7 @@ async def reject_applicant(
 		status.HTTP_403_FORBIDDEN: {"description": "You do not have the required permissions"}
 	}
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def change_role(
 	request: faRequest,
 	user: TokenBearer,
@@ -171,7 +174,7 @@ async def change_role(
 	summary="Kicks the given user",
 	description="Requires either `Officer`, `Deputy` or `Commander` rank to remove someone else"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def kick_member(
 	request: faRequest,
 	user: TokenBearer,
@@ -181,7 +184,7 @@ async def kick_member(
 	return await Request.send_template(
 		user, 
 		"clan_dismiss_member",
-		userId = userId,
+		userid = userId,
 		comments = reason
 	)
 
@@ -189,7 +192,7 @@ async def kick_member(
 	"/leave",
 	summary="Leaves the current squadron"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def leave_squadron(
 	request: faRequest,
 	user: TokenBearer
@@ -204,7 +207,7 @@ async def leave_squadron(
 	"/{clanId}/logs", 
 	summary="Gets the squadron logs"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_logs(
 	request: faRequest,
 	user: TokenBearer,
@@ -275,7 +278,7 @@ async def get_clan_logs(
 	})
 
 @router.get("/search/", summary="Search for squadron")
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,
 	user: TokenBearer,
@@ -290,7 +293,7 @@ async def get_clan_search(
 	"/leaderboard",
 	summary="Gets the leaderboard of squadrons. Position here is zero indexed, so the first squadron is at position 0",
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard(
 	request: faRequest,
 	user: TokenBearer,
@@ -303,7 +306,7 @@ async def get_clan_leaderboard(
 		count=limit,
 		start=limit*page
 	)
-	response.body.pop("clanId")
+	response.headers.pop("clanId")
 	response = await response.send()
 
 	if response.get("clan") is None:
@@ -314,6 +317,7 @@ async def get_clan_leaderboard(
 	"/leaderboard/{clanId}",
 	summary="Gets the leaderboard position of a given squadron. Position here is not zero indexed"
 )
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard_position(
 	request: faRequest,
 	user: TokenBearer,
@@ -336,7 +340,7 @@ async def get_clan_leaderboard_position(
 	"/{clanId}/",
 	summary="Gets data about the given squadron"
 )
-@limiter.shared_limit("clans", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan(
 	request: faRequest,
 	user: TokenBearer,

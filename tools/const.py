@@ -148,6 +148,10 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 		"code": status.HTTP_409_CONFLICT,
 		"detail": "User is already in a squadron"
 	}
+	CLAN_TOO_HIGH_MEMBER_ROLE_REQUESTED = {
+		"code": status.HTTP_403_FORBIDDEN,
+		"detail": "Too high role requested"
+	}
 	@staticmethod
 	def parse(response: bytes) -> None:
 		"""Parse a Gaijin error code string into a properly formatted `HTTPException`. Returns early if error is not found or not given"""

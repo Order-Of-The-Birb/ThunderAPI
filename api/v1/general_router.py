@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 @router.get("/latestGameVersion", summary="Get latest game version")
-@limiter.shared_limit("general", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
 async def get_latest_game_ver(
 	request: Request, user: TokenBearer,
 	branch: Annotated[Literal["dev", "dev-stable"], Query(title="The game version to get")] = None,
@@ -28,7 +28,7 @@ async def get_latest_game_ver(
 	summary="Gets the latest news from gaijin", 
 	description="Puts the pinned news first (Current update changelog + latest big news). There is additionally a `/v1/news_ws` websocket, that doesn't require any authentication, and provides the news through there. This websocket is the single exception to the 'token auth everywhere' rule. Websocket returns the same format for an entry like this endpoint"
 )
-@limiter.shared_limit("general", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
 async def get_news(request: Request, user: TokenBearer) -> list[NewsEntry]:
 	return await newsManager.fetch()
 

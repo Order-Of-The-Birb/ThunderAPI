@@ -28,7 +28,7 @@ router = APIRouter(
 		status.HTTP_404_NOT_FOUND: {"description": "Item could not be found in the inventory"}
 	}
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def sell_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description="The item's hash value")],
@@ -82,7 +82,7 @@ async def sell_item(
 		status.HTTP_404_NOT_FOUND: {"description": "The given item doesn't exist"}
 	}
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def buy_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description="The item's hash value")],
@@ -121,7 +121,7 @@ async def buy_item(
 	"/inventory",
 	summary="Gets the account's inventory contents"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def getInventory(
 	request: faRequest, user: TokenBearer
 ):
@@ -132,7 +132,7 @@ async def getInventory(
 	"/balance",
 	summary="Gets the account's balance"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_balance(
 	request: faRequest, user: TokenBearer
 ) -> float:
@@ -148,7 +148,7 @@ async def get_balance(
 	"/search",
 	summary="Searches the marketplace for a given item"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def searchItem(
 	request: faRequest, user: TokenBearer,
 	name: Annotated[str, Query(title="The item to search for. Leave empty to search for ALL units")] = "",
@@ -186,7 +186,7 @@ async def searchItem(
 	"/{itemHash}/orders/history",
 	summary="Retrieves marketplace history data about the given item"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_history(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
@@ -223,7 +223,7 @@ async def get_item_history(
 	"/{itemHash}/orders",
 	summary="Retrieves marketplace data about the given item"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_orders(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
@@ -249,7 +249,7 @@ async def get_item_orders(
 	"/{itemHash}/view",
 	summary="Views the item ingame"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def view_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(title="The item's hash to view")],
@@ -287,7 +287,7 @@ async def view_item(
 	"/{itemHash}",
 	summary="Gets metadata about the given item"
 )
-@limiter.shared_limit("trade", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],

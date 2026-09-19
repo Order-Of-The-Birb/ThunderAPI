@@ -26,9 +26,12 @@ from uvicorn import run as uvicorn_run
 from os import getenv, path
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict
+from json import loads
 
 from utils import users_cache, networkManager, newsManager
 from utils.geo import update_db
+from tools import _populate_serverlist
+from tools.blk_utils import Decompress
 from api import router
 from api.shared import limiter
 
@@ -71,6 +74,28 @@ tags_metadata = [
 async def lifespan(app: FastAPI):
 	await users_cache.start()
 	await networkManager.start()
+
+	#region Gaijin servers config init
+	content = {}
+	try:
+		async with networkManager.get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=5) as _resp:
+			temp = await networkManager.handle_response(_resp, False)
+			content = Decompress(temp)["production"]
+	except Exception as e:
+		logger.warning("Failed to fetch server from first server, trying secondary server")
+		try:
+			async with networkManager.get("https://public-configs.warthunder.com/production/network.blk", timeout=5) as _resp:
+				await networkManager.handle_response(_resp, False)
+				content = Decompress(_resp.content)["production"]
+		except Exception:
+			pass
+	if not content:
+		logger.warning(f"Failed to fetch server list, using default server list")
+		content = loads((Path(__file__).parent / "tools" / "default_network_cfg.json").read_text())
+	_populate_serverlist(content)
+	del content
+	#endregion
+
 	newsManager.task = asyncio.create_task(newsManager.mainloop())
 	geolocation_task = asyncio.create_task(update_db())
 

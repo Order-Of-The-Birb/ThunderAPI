@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
 from ..shared import IpString, IntString
 
@@ -9,7 +9,7 @@ class Actions(Enum):
 	reject_candidate = (3, "Rejected membership request")
 	info = (4, "Squadron info changed")
 	create = (5, "Squadron created")
-class Roles(Enum):
+class Roles(IntEnum):
 	COMMANDER = 1
 	OFFICER = 2
 	PRIVATE = 3

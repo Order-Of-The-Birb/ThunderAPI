@@ -1,5 +1,6 @@
 from json import load as _load
 from pathlib import Path
+from copy import deepcopy
 
 __root = Path(__file__).parent
 
@@ -13,14 +14,14 @@ _cache: dict[str, dict] = {}
 
 def load(action: str) -> dict:
 	if action in _cache:
-		return _cache[action]
+		return deepcopy(_cache[action])
 	path = __root / f"{action}.json"
 	if not path.is_file():
 		raise FileNotFoundError(f"Unknown template '{action}'. Available: {TEMPLATES}")
 	with open(path) as f:
 		data = _load(f)
 	_cache[action] = data
-	return data
+	return deepcopy(data)
 
 def reload() -> None:
 	_cache.clear()

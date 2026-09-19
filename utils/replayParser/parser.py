@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from fastapi import status
+from fastapi.exceptions import HTTPException
+from json import JSONDecodeError
 from typing import Any
 from tools import Decompress
 from enum import IntEnum, Enum, auto
@@ -84,9 +87,16 @@ class _ReplayHeader:
 class ReplayParser:
 	header: _ReplayHeader
 	body: dict[str, Any]
-	def __init__(self, replay:bytes):
+	@classmethod
+	async def from_replay(cls, replay:bytes):
+		self = cls()
+
 		self.header = _ReplayHeader(replay)
 		try:
-			self.body = Decompress(replay[self.header.rezOffset:]).as_dict()
+			self.body = (await Decompress.async_init(replay[self.header.rezOffset:])).as_dict()
 		except RuntimeError:
 			self.body = {}
+		except JSONDecodeError:
+			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason")
+		return self
+

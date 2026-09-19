@@ -18,7 +18,7 @@ router = APIRouter(
 )
 
 @router.get("/terse", summary="Get several users by ID")
-@limiter.shared_limit("users", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_users_terse_info(
 	request: faRequest,
 	user: TokenBearer,
@@ -33,7 +33,7 @@ async def get_users_terse_info(
 	return JSONResponse(await get_terse(user, *id))
 
 @router.get("/{userid}", summary="Get user by ID")
-@limiter.shared_limit("users", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct(
 	request: faRequest,
 	user: TokenBearer,
@@ -52,7 +52,7 @@ async def get_user_direct(
 	summary="Get users by name",
 	responses={}
 )
-@limiter.shared_limit("users", getenv("REGULAR_RATE_LIMIT", "30/minute"))
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_users_search(
 	request: faRequest,
 	user: TokenBearer,

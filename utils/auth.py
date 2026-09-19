@@ -152,7 +152,7 @@ class UserTokenCache:
 				row = await cur.execute(f"""
 				SELECT * 
 				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
-				WHERE {dbSchema.tokens.HASH} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now', '+5 minutes')""", (hash,))
+				WHERE {dbSchema.tokens.HASH} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')""", (hash,))
 				row = await row.fetchone()
 				if row is None:
 					return None
@@ -163,7 +163,7 @@ class UserTokenCache:
 				row = await cur.execute(f"""
 				SELECT * 
 				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
-				WHERE {dbSchema.tokens.EMAIL} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now', '+5 minutes')""", (email,))
+				WHERE {dbSchema.tokens.EMAIL} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')""", (email,))
 				row = await row.fetchone()
 				if row is None:
 					return None
@@ -385,7 +385,7 @@ class UserTokenCache:
 				tries = 0
 				success = False
 				while not success and tries < 10:
-					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
+					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['user_id']}", timeout=60) as r:
 						if "GaijinPass" in two_factor_types:
 							try:
 								data = await self._networkManager.handle_response(r)
@@ -549,12 +549,12 @@ class UserTokenCache:
 
 				elif response.status not in (302, 303):
 					_logger.error(f"Login failed with status {response.status}")
-					return
+					raise HTTPException(500)
 				else:
 					location = response.headers.get("Location", "")
 				if not location:
 					_logger.error("No redirect URL in login response")
-					return
+					raise HTTPException(500)
 
 			async with session.get(
 				location,
@@ -570,13 +570,12 @@ class UserTokenCache:
 			raise RuntimeError("identity_sid is not a string")
 		if sid is not None:
 			expiry = datetime.now(UTC)+timedelta(days=14)
+			async with self._transaction() as cur:
+				q = await cur.execute(f"SELECT 1 FROM {dbSchema.sso_sessions.t()} WHERE {dbSchema.sso_sessions.EMAIL} = ?", entry.email)
+				if (await q.fetchone()) is None:
+					await cur.execute(f"INSERT INTO {dbSchema.sso_sessions.t()} ({dbSchema.sso_sessions.EMAIL}, {dbSchema.sso_sessions.SID}, {dbSchema.sso_sessions.SID_EXP}) VALUES (?, ?, ?)", entry.email, self._enc(sid), dtToTimestamp(expiry))
 			entry.sid = entry.sid_entry(sid, expiry)
 			await entry._write_values()
-
-			return _sidValue(
-				sid, 
-				expiry
-			) 
 
 	async def remove_entry(self, entry: Entry) -> bool:
 		async with self._transaction() as cur:
@@ -603,6 +602,7 @@ class UserTokenCache:
 			entry.requests_count += data["cnt"]
 			entry.last_used = data["used"]
 			await entry._write_values()
+
 	async def _refresh(self):
 		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v["expires"] > round(datetime.now(UTC).timestamp(), 0)}
 		await self._force_write_used_cache()

@@ -1,10 +1,6 @@
-from asyncio import to_thread
 from typing import Any, TYPE_CHECKING
 from fastapi import HTTPException, status
-from logging import getLogger
 from aiohttp import ClientResponse, ClientSession
-from requests import get as req_get
-from requests.exceptions import SSLError
 from datetime import timedelta
 from random import choice, randint
 from templates import TEMPLATES, load as load_template
@@ -16,36 +12,37 @@ from .blk_utils import Compress, Decompress
 if TYPE_CHECKING:
 	from utils import UserTokenCache
 
-_logger = getLogger(__name__)
-
 #region Fetch server list once at import
-try:
-	_resp = req_get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=30)
-except SSLError:
-	_resp = req_get("https://public-configs.warthunder.com/production/network.blk", timeout=30)
-if not _resp.ok:
-	raise RuntimeError(f"Failed to fetch server list: {_resp.status_code}")
-_cfg = Decompress(_resp.content)["production"]
-char_servers: list[str] = _cfg["charServer"]
-inv_proxies: list[str] = _cfg["inventory"]["servers"]["url"]
-userstat_proxies: list[str] = _cfg["userstat"]["servers"]["url"]
-contacts_proxies: list[str] = _cfg["contacts"]["servers"]["url"]
-ugc_servers: list[str] = _cfg["ugc_settings"]["ugcServerUrl"]
-del _resp, _cfg
-if any(len(i) == 0 for i in [char_servers, inv_proxies, userstat_proxies, contacts_proxies, ugc_servers]):
-	raise RuntimeError("Server URL lists did not get populated properly")
-SERVER_URLS: dict[ServerPool, list[str]] = {
-	ServerPool.CHAR: char_servers,
-	ServerPool.INVENTORY: inv_proxies,
-	ServerPool.USERSTAT: userstat_proxies,
-	ServerPool.CONTACTS: contacts_proxies,
-	ServerPool.UGC: ugc_servers,
-	ServerPool.MARKET_JSON: ["https://market-proxy.gaijin.net/json"],
-	ServerPool.MARKET_WEB: ["https://market-proxy.gaijin.net/web"],
-	ServerPool.MARKET_CHAR: ["https://market-proxy.gaijin.net/char"],
-	ServerPool.MARKET: ["https://market-proxy.gaijin.net/market"],
-	ServerPool.MARKET_ASSET: ["https://market-proxy.gaijin.net/assetAPI"],
-}
+char_servers: list[str] = []
+inv_proxies: list[str] = []
+userstat_proxies: list[str] = []
+contacts_proxies: list[str] = []
+ugc_servers: list[str] = []
+SERVER_URLS: dict[ServerPool, list[str]] = {}
+
+def _populate_serverlist(data: dict[str, Any]):
+	global char_servers, inv_proxies, userstat_proxies, contacts_proxies, ugc_servers, SERVER_URLS
+	char_servers = data["charServer"]
+	inv_proxies = data["inventory"]["servers"]["url"]
+	userstat_proxies = data["userstat"]["servers"]["url"]
+	contacts_proxies = data["contacts"]["servers"]["url"]
+	ugc_servers = data["ugc_settings"]["ugcServerUrl"]
+	if any(len(i) == 0 for i in [char_servers, inv_proxies, userstat_proxies, contacts_proxies, ugc_servers]):
+		raise RuntimeError("Server URL lists did not get populated properly")
+
+	SERVER_URLS = {
+		ServerPool.CHAR: char_servers,
+		ServerPool.INVENTORY: inv_proxies,
+		ServerPool.USERSTAT: userstat_proxies,
+		ServerPool.CONTACTS: contacts_proxies,
+		ServerPool.UGC: ugc_servers,
+		ServerPool.MARKET_JSON: ["https://market-proxy.gaijin.net/json"],
+		ServerPool.MARKET_WEB: ["https://market-proxy.gaijin.net/web"],
+		ServerPool.MARKET_CHAR: ["https://market-proxy.gaijin.net/char"],
+		ServerPool.MARKET: ["https://market-proxy.gaijin.net/market"],
+		ServerPool.MARKET_ASSET: ["https://market-proxy.gaijin.net/assetAPI"],
+	}
+
 def get_server(action: Action|UserAction) -> str:
 	return choice(SERVER_URLS[action.value[1]])
 #endregion
