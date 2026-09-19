@@ -53,25 +53,8 @@ async def update_db():
     del iter_cnt
 
     if not _db.exists():
-        latest = github_repo.get_latest_release()
-        for asset in latest.assets:
-            if asset.name != "GeoLite2-City.mmdb":
-                continue
-            await to_thread(lambda: asset.download_asset(_db_tmp))
-            with _lock:
-                file_replace(_db_tmp, _db)
-                _db_id.write_text(str(latest.id))
-                if _reader is not None:
-                    _reader.close()
-                    _reader = None
-            break
-        else:
-            raise RuntimeError(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})")
-        await sleep(12*60*60)
-
-    while True:
-        latest = github_repo.get_latest_release()
-        if latest.id != int(_db_id.read_text()):
+        try:
+            latest = github_repo.get_latest_release()
             for asset in latest.assets:
                 if asset.name != "GeoLite2-City.mmdb":
                     continue
@@ -85,4 +68,30 @@ async def update_db():
                 break
             else:
                 raise RuntimeError(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})")
-        await sleep(12*60*60)
+            await sleep(12*60*60)
+        except Exception:
+            _logger.exception("Failed to get repository's latest release")
+            await sleep(60*60)
+
+    while True:
+        try:
+            latest = github_repo.get_latest_release()
+            if latest.id != int(_db_id.read_text()):
+                for asset in latest.assets:
+                    if asset.name != "GeoLite2-City.mmdb":
+                        continue
+                    await to_thread(lambda: asset.download_asset(_db_tmp))
+                    with _lock:
+                        file_replace(_db_tmp, _db)
+                        _db_id.write_text(str(latest.id))
+                        if _reader is not None:
+                            _reader.close()
+                            _reader = None
+                    break
+                else:
+                    raise RuntimeError(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})")
+            await sleep(12*60*60)
+        except Exception:
+            _logger.exception("Failed to get repository's latest release")
+            await sleep(60*60)
+            continue

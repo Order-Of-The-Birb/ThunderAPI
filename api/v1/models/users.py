@@ -201,3 +201,135 @@ class TerseReturnModel(BaseModel):
 	shcType: str
 	title: str
 	showcase: Showcase_FavMode_Model | Showcase_BH_Model | Showcase_FavUnit_Model | Showcase_NukeDrop_Model | Showcase_NukeKill_Model | Showcase_unitCollector_Model | Showcase_AceOfSpades_Model | Showcase_Medalist_Model | Showcase_Achievement_Model
+
+class SelfUserDataModel(BaseModel):
+    class UnlockModel(BaseModel):
+        item: str
+        cachedIndex: int
+        earned: bool
+        progress: int
+        progressMax: int
+
+    class UnlocksModel(BaseModel):
+        unlock: SelfUserDataModel.UnlockModel
+
+    class EntitlementModel(BaseModel):
+        count: int
+        goldSpent: int | None = Field(default=None)
+        wpConverted: int | None = Field(default=None)
+
+    class ComplaintsDataModel(BaseModel):
+        dayMark: int
+
+    class FreeSparesStateModel(BaseModel):
+        lastDayId: int
+
+    class UserLogEntryModel(BaseModel):
+        type: int
+        time: int
+        disabled: bool | None = Field(default=None)
+        body: dict
+
+    class ShowcaseModel(BaseModel):
+        type: str
+        ucFavorites: list[str]
+        favoriteUnitDifficulty: str
+        favoriteUnit: str | None = Field(default=None)
+        favoriteGameMode: str | None = Field(default=None)
+        hardenedMode: str | None = Field(default=None)
+        medals: list[str]
+        achievements: list[str]
+        acesFilter: dict[str, str | list[str]] = Field(default_factory=dict)
+
+    class BinaryDataMetainfoModel(BaseModel):
+        class BinaryDataInfoModel(BaseModel):
+            hash: str
+            hint: str
+
+        currentTag: str
+        compressionSupported: str
+        aces: BinaryDataInfoModel
+        char: BinaryDataInfoModel
+        game: BinaryDataInfoModel
+        gui: BinaryDataInfoModel
+        lang: BinaryDataInfoModel
+        mis: BinaryDataInfoModel
+        webUi: BinaryDataInfoModel
+        wwdata: BinaryDataInfoModel
+        regional: BinaryDataInfoModel
+        regionalLang: BinaryDataInfoModel | None = Field(default=None, alias="regional-lang")
+
+    # Preferences
+    eulaVersionAccepted: int
+    ndaVersionAccepted: int
+    autoRefillWeapons: bool
+    autoRepairAircrafts: bool
+    autoBuyModifications: bool
+    onlineSaveVersion: int
+    allowToBeAddedToContacts: bool
+    allowToBeAddedToLB: bool
+
+    # Machine / session
+    curMachineHash: str
+    curMachineFingerprintHash: str
+
+    # Penalty
+    penaltyStart: int
+    penaltyTill: int
+    penaltyCategory: str
+    penaltyComment: str
+
+    # Timing
+    serverTime: int
+    registerTime: int
+    expiredTimeCorrection: int
+    currDayId: int
+    removeTimeLimit: int
+
+    # Economy / presentation
+    presented: int
+    valUnlocks: int
+    goldBalance: int
+    unitMaxRank: int
+    premiumSavedTime: int
+
+    # Clan
+    clanTag: str
+    clanName: str
+    storedRequestClanId: int
+    clanDuelNextReward: int
+    clanSeasonStart: int
+    clanSeasonInYear: int
+    clanSeasonOrdinal: int
+
+    # Platform
+    currentPlatform: int
+    registerPlatform: int
+    rawPlatformID: int
+    registerRawPlatformID: int
+    charServerVersionOnLogin: int
+
+    # Profile
+    cacheProfileUniqueSessionId: int
+    profileVersion: int
+    remoteSuccessSaveAsyncTaskId: str
+    classinessMarkPriorities: int
+    pilotIcon: str
+    chardToken: int
+    voiceToken: str
+    actualEntitlementPriceMD5: str
+    actualPriceMD5: str
+    actualAdverMD5: str
+    entitlementPriceRefferalName: str
+    isFirstBattleForDay: bool
+    charDrivenNick: str
+
+    # Nested payloads
+    unlocks: UnlocksModel
+    entitlementsInfo: dict[str, EntitlementModel]
+    complaintsData: ComplaintsDataModel
+    FreeSparesState: FreeSparesStateModel
+    userlogs: dict[str, UserLogEntryModel]
+    showcase: ShowcaseModel
+    entitlementGiftDependencies: dict
+    binaryDataMetainfo: BinaryDataMetainfoModel

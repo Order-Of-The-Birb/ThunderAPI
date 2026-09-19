@@ -9,9 +9,9 @@ from apscheduler.job import Job
 from aiosqlite import connect, Row, OperationalError
 from os import getenv, urandom
 from datetime import UTC, datetime, timedelta
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
 from fastapi import HTTPException, status
-from hashlib import sha256
+from hashlib import sha256, md5
 from secrets import token_urlsafe
 from pathlib import Path
 from enum import StrEnum
@@ -19,7 +19,6 @@ from contextlib import asynccontextmanager
 from jwt import decode as jwt_decode
 from dataclasses import dataclass, asdict, field
 from base64 import b64encode
-from hashlib import md5
 from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
@@ -70,7 +69,7 @@ class jwtData:
 			data["uid"],
 			extras={k:v for k, v in data.items() if k not in ["auth","cntry","exp","fac","iat","lng","loc","nick","slt","tgs","uid"]}
 		)
-# region User Tokens Cache and refresh
+#region User Tokens Cache and refresh
 
 @dataclass(frozen=True, slots=True)
 class _sidValue:
@@ -106,6 +105,15 @@ class dbSchema:
 		EMAIL = "email"
 		SID = "sid"
 		SID_EXP = "exp"
+
+@dataclass(slots=True)
+class _pending2FA:
+	password_hash: str
+	requestId: str
+	userId: int
+	types: set[Literal["WTR", "GaijinPass", "Email"]]
+	code: str = None
+	expires: datetime = int((datetime.now(UTC) + timedelta(minutes=15)).timestamp())
 
 class UserTokenCache:
 	scheduler: AsyncIOScheduler
@@ -212,6 +220,8 @@ class UserTokenCache:
 					return
 				raise AuthenticationError(status.HTTP_400_BAD_REQUEST, f"An error occurred during authentication: {content}")
 
+			if "jwt" not in content:
+				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, f"Unexpected refresh response: {content}")
 			if self.jwt != content["jwt"]:
 				self.jwt = content["jwt"]
 				self.jwt_expires = jwtData.from_jwt(self.jwt).exp
@@ -326,7 +336,7 @@ class UserTokenCache:
 	
 	__autorefresh_job:Job = None
 	__db_path:Path = None
-	_pending_2fa:dict[str, dict[str, int|str|list[str]]] # email -> {requestId, userId, types, code (after answering)}
+	_pending_2fa:dict[str, _pending2FA] # email -> {hashed_passowrd, requestId, userId, types, code (after answering)}
 	_networkManager:NetworkManager
 
 	def __init__(self, networkManager:NetworkManager):
@@ -375,12 +385,12 @@ class UserTokenCache:
 				if data.get("hasGjPass"): two_factor_types.add("GaijinPass")
 				if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
 				if data.get("hasWTR"): two_factor_types.add("WTR")
-				self._pending_2fa[email] = {
-					"requestId": data['requestId'],
-					"userId": data["user_id"],
-					"types": two_factor_types,
-					"expires": int((datetime.now(UTC) + timedelta(minutes=15)).timestamp())
-				}
+				self._pending_2fa[email] = _pending2FA(
+					password_hash=md5(password.encode()).hexdigest(),
+					requestId= data['requestId'],
+					userId= data["user_id"],
+					types= two_factor_types
+				)
 
 				tries = 0
 				success = False
@@ -403,13 +413,13 @@ class UserTokenCache:
 								tries += 1
 								continue
 						else: # UNTESTED PATH
-							if self._pending_2fa[email].get("code") is None:
+							if self._pending_2fa[email].code is None:
 								tries += 1
 								await sleep(60)
 								continue
 							data = {
-								"Message": self._pending_2fa[email]["code"],
-								"Request": self._pending_2fa[email]["requestId"]
+								"Message": self._pending_2fa[email].code,
+								"Request": self._pending_2fa[email].requestId
 							}
 							success = True
 
@@ -529,7 +539,7 @@ class UserTokenCache:
 					login_email = re_search(r'name="login".*?value="([^"]+)"', body)
 					if request_id:
 						async with session.ws_connect(f"wss://login.gaijin.net/ws/auth/status/?requestId={request_id.group(1)}") as ws:
-							msg = await ws.receive_json()  # blocks until user approves
+							msg = await ws.receive_json(timeout=60)  # blocks until user approves
 							if msg.get("Message") and msg.get("Message") != "cancel":
 								# Re-POST with the 2FA code
 								resp = await session.post(
@@ -571,9 +581,9 @@ class UserTokenCache:
 		if sid is not None:
 			expiry = datetime.now(UTC)+timedelta(days=14)
 			async with self._transaction() as cur:
-				q = await cur.execute(f"SELECT 1 FROM {dbSchema.sso_sessions.t()} WHERE {dbSchema.sso_sessions.EMAIL} = ?", entry.email)
+				q = await cur.execute(f"SELECT 1 FROM {dbSchema.sso_sessions.t()} WHERE {dbSchema.sso_sessions.EMAIL} = ?", (entry.email,))
 				if (await q.fetchone()) is None:
-					await cur.execute(f"INSERT INTO {dbSchema.sso_sessions.t()} ({dbSchema.sso_sessions.EMAIL}, {dbSchema.sso_sessions.SID}, {dbSchema.sso_sessions.SID_EXP}) VALUES (?, ?, ?)", entry.email, self._enc(sid), dtToTimestamp(expiry))
+					await cur.execute(f"INSERT INTO {dbSchema.sso_sessions.t()} ({dbSchema.sso_sessions.EMAIL}, {dbSchema.sso_sessions.SID}, {dbSchema.sso_sessions.SID_EXP}) VALUES (?, ?, ?)", (entry.email, self._enc(sid), dtToTimestamp(expiry)))
 			entry.sid = entry.sid_entry(sid, expiry)
 			await entry._write_values()
 
@@ -604,7 +614,7 @@ class UserTokenCache:
 			await entry._write_values()
 
 	async def _refresh(self):
-		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v["expires"] > round(datetime.now(UTC).timestamp(), 0)}
+		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v.expires > round(datetime.now(UTC).timestamp(), 0)}
 		await self._force_write_used_cache()
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')")).fetchall()

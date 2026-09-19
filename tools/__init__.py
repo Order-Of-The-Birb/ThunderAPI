@@ -95,7 +95,7 @@ class Request:
 		self.session = session
 
 	@classmethod
-	async def from_template(cls, user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, **data:str|dict[str, Any]) -> "Request":
+	async def from_template(cls, user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
 		if user.timeLeft() <= timedelta(minutes=30):
 			await user.refresh()
 		if template not in TEMPLATES:
@@ -132,11 +132,19 @@ class Request:
 				self.headers[key] = value
 			else:
 				raise RuntimeError(f"Unknown key `{key}` provided. Please edit template `{template}`")
+		for key in dict(self.body):
+			if key not in remove_keys:
+				continue
+			self.body.pop(key)
+		for key in dict(self.headers):
+			if key not in remove_keys:
+				continue
+			self.headers.pop(key)
 		return self
 
 	@staticmethod
-	async def send_template(user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, **data:str|dict[str, Any]) -> dict:
-		cls = await Request.from_template(user, template, session=session, **data)
+	async def send_template(user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
+		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
 		return await cls.send()
 
 	async def add_auth_headers(self):
@@ -210,8 +218,7 @@ class Request:
 			case None:
 				pass
 			case _:
-				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")
-					
+				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")	
 
 		if self.session is None:
 			async with networkManager.request(self.method.upper(), self.url, **kwargs) as resp:

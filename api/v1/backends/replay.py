@@ -19,7 +19,7 @@ class ReplayTechType(StrEnum):
 class ReplayMode(Enum):
 	ARCADE = "arcade"
 	REALISTIC = "realistic"
-	SIMULATOR = "simulator"
+	SIMULATOR = "simulation"
 
 async def search_replay(
 	user: UserTokenCache.Entry,
@@ -27,7 +27,7 @@ async def search_replay(
 	nickname: str | None = None,
 	gameType: ReplayType = ReplayType.RANDOM_BATTLE,
 	techType: ReplayTechType = ReplayTechType.ALL,
-	mode: ReplayMode | None = None,
+	mode: set[ReplayMode] | None = None,
 	limit: int = 25,
 	page: int = 0
 ):
@@ -51,9 +51,9 @@ async def search_replay(
 	response.body["gameType"] = gameType.value
 	response.body["techType"] = techType.value
 	if mode is not None:
-		response.body["gameMode"] = [mode.value,]
+		response.body["gameMode"] = [m.value for m in mode]
 
-	response.headers["cookie"] = f"identity_sid={user.sid.sid}"
+	response.headers["cookie"] = f"identity_sid={user.sid.sid};identity_id={user.uidHint}"
 
 	resp = await response.send()
 

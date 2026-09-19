@@ -8,4 +8,3 @@ async def get_terse(user:UserTokenCache.Entry, *userIds:int|str) -> dict[str, Te
 		"get_users_terse_info",
 		usersList = ";".join(str(i) for i in userIds)
 	)
-

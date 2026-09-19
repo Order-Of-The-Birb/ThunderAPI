@@ -309,6 +309,9 @@ class NewsManager:
 	async def _get_new_news(self):
 		news = await self.fetchNews()
 
+		if len(news) == 0:
+			return []
+
 		for i, item in enumerate(news):
 			if item.id == self.lastNews: 
 				await self._writeID(news[0], self._IDTYPE.NEWS)

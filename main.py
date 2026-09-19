@@ -81,12 +81,12 @@ async def lifespan(app: FastAPI):
 		async with networkManager.get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=5) as _resp:
 			temp = await networkManager.handle_response(_resp, False)
 			content = Decompress(temp)["production"]
-	except Exception as e:
+	except Exception:
 		logger.warning("Failed to fetch server from first server, trying secondary server")
 		try:
 			async with networkManager.get("https://public-configs.warthunder.com/production/network.blk", timeout=5) as _resp:
-				await networkManager.handle_response(_resp, False)
-				content = Decompress(_resp.content)["production"]
+				temp = await networkManager.handle_response(_resp, False)
+				content = Decompress(temp)["production"]
 		except Exception:
 			pass
 	if not content:
@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI):
 			pass
 		try:
 			await geolocation_task
-		except asyncio.CancelledError:
+		except (asyncio.CancelledError, RuntimeError):
 			pass
 		await users_cache.close()
 		await networkManager.close()

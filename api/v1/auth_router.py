@@ -3,6 +3,7 @@ from typing_extensions import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
+from hashlib import md5
 
 from utils import users_cache
 from utils.helper import dtToTimestamp
@@ -68,12 +69,16 @@ async def login_token(
 async def answer_2fa(
 	request: Request,
 	email: Annotated[EmailStr, Form(title="The email address for the account")],
+	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title="The 2FA code")]
 ):
 	if email not in users_cache._pending_2fa:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	users_cache._pending_2fa[email]["code"] = code
-	... # TODO: Implement
+	if users_cache._pending_2fa[email].password_hash == md5(password.encode()).hexdigest():
+		users_cache._pending_2fa[email].code = code
+	else:
+		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
+	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
 
 @router.post(
 	"/get-sid",
@@ -90,8 +95,8 @@ async def get_sid(
 	user: TokenBearer,
 	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"}, description="Must be given, as we do not store passwords")]
 ):
-	sid = await users_cache.get_sid(user, password)
-	if sid == None:
+	await users_cache.get_sid(user, password)
+	if user.sid == None:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain sid value")
 	return JSONResponse({"status": "success"}, status.HTTP_200_OK)
 

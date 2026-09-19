@@ -25,20 +25,48 @@ router = APIRouter(
 
 @router.post(
 	"/{clanId}/apply", 
-	summary="Sends an application to the squadron, if allowed"
+	summary="Sends an application to the squadron, if allowed",
+	responses={
+		status.HTTP_409_CONFLICT: {"description": "User is already in a squadron"}
+	}
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def send_application(
 	request: faRequest,
 	user: TokenBearer,
-	clanId: squadronId
+	clanId: squadronId,
+	comment: Annotated[str, Query(description="The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")]
 ) -> bool:
 	response = await Request.send_template(
 		user, 
 		"clan_membership_request",
-		_id=clanId
+		remove_keys=("cancelRequest"),
+		_id=clanId,
+		comments=comment
 	)
 	return response.get("clanTag") is not None
+
+@router.post(
+	"/{clanId}/cancelApply", 
+	summary="Cancels the current squadron application",
+	responses={
+		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}
+	}
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
+async def unsend_application(
+	request: faRequest,
+	user: TokenBearer,
+	comment: str = ""
+) -> bool:
+	response = await Request.send_template(
+		user, 
+		"clan_membership_request",
+		remove_keys=("_id"),
+		comments=comment,
+		cancelRequest=True
+	)
+	return response.get("clanTag") is None
 
 @router.get(
 	"/{clanId}/applicants", 
@@ -48,7 +76,7 @@ async def send_application(
 async def get_applicants(
 	request: faRequest,
 	user: TokenBearer,
-	clanId: squadronId,
+	clanId: squadronId
 ) -> list[ApplicantModel]:
 	clanData = await getClan(user, clanId)
 	data = []
@@ -270,6 +298,8 @@ async def get_clan_logs(
 				logEntry["info"] = {}
 				for i in ["type", "name", "tag", "slogan", "desc", "region", "announcement"]:
 					logEntry["info"][i] = item[i]
+			case Actions.reject_candidate:
+				logEntry["comment"] = item["comments"]
 		logs.append(logEntry)
 
 	return JSONResponse({

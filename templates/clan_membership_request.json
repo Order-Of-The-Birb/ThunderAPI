@@ -7,6 +7,7 @@
     },
     "body": {
         "_id": "<replace>",
-        "comments": ""
+        "comments": "",
+        "cancelRequest": "<replace>"
     }
 }

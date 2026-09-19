@@ -85,6 +85,7 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- LZ4HC compressed BLK  
 	- `_id` (Squadron ID to apply for)  
 	- `comments` (game leaves it empty, adding a value doesn't show anything ingame)  
+	- `cancelRequest` (When cancelling an application, boolean value. When given, `_id` is to be omitted)  
 - Response form  
 	- All user data  
 	- `ClanTag`, `ClanName` are filled with the squadron's data, which can be used for checking whether applying was successful  

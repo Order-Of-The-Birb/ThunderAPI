@@ -52,12 +52,12 @@ async def search_replays(
 		)
 	] = ReplayTechType.ALL,
 	mode: Annotated[
-		ReplayMode,
+		set[ReplayMode] | None,
 		Query(
 			title="The game modes to filter by",
 			description="If not provided, will search for all game modes",
 		)
-	] | None = None,
+	] = None,
 	limit: Annotated[
 		int, 
 		Query(
