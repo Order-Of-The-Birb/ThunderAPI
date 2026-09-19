@@ -19,15 +19,13 @@ from logging.handlers import TimedRotatingFileHandler
 from fastapi import FastAPI, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse, HTMLResponse
+from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from uvicorn import run as uvicorn_run
 from os import getenv, path
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict
-
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
 
 from utils import users_cache, networkManager, newsManager
 from utils.geo import update_db
@@ -116,7 +114,7 @@ app.state.limiter = limiter
 app.add_exception_handler(
 	RateLimitExceeded, 
 	lambda request, exc: (
-		logging.warning(f"Rate limit exceeded for {request.client.host}"), 
+		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"), 
 		JSONResponse({"detail": "Rate limit exceeded"}, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
 	)[1]
 )

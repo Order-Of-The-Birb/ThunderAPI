@@ -121,8 +121,11 @@ class UserTokenCache:
 			@classmethod
 			def from_row(cls, row:Row, parent:UserTokenCache.Entry):
 				try:
+					sid = row[dbSchema.sso_sessions.SID]
+					if sid is None:
+						return
 					return cls(
-						parent._parent._dec(row[dbSchema.sso_sessions.SID]),
+						parent._parent._dec(sid),
 						datetime.fromtimestamp(row[dbSchema.sso_sessions.SID_EXP], UTC)
 					)
 				except (IndexError, TypeError):
@@ -170,7 +173,6 @@ class UserTokenCache:
 		async def from_row(cls, parent:"UserTokenCache", row:Row):
 			t = dbSchema.tokens
 			jwt = parent._dec(str(row[t.JWT]))
-			sid = cls.sid_entry.from_row(row, self)
 			self = cls(
 				hashed = str(row[t.HASH]),
 				jwt=jwt,
@@ -181,9 +183,10 @@ class UserTokenCache:
 				uidHint = int(row[t.UID]),
 				email = str(row[t.EMAIL]),
 
-				_parent = parent,
-				sid = sid
+				_parent = parent
 			)
+
+			self.sid = cls.sid_entry.from_row(row, self)
 			self.__saved = self.to_json()
 			return self
 
@@ -260,7 +263,9 @@ class UserTokenCache:
 					for k, v in value.items():
 						if self.__saved[dbSchema.sso_sessions.t()].get(k) == v:
 							continue
-						if isinstance(v, datetime):
+						if k == dbSchema.sso_sessions.SID:
+							sso_changed[k] = self._parent._enc(v)
+						elif isinstance(v, datetime):
 							sso_changed[k] = dtToTimestamp(v)
 						else:
 							sso_changed[k] = v
