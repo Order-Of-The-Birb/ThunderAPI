@@ -388,14 +388,14 @@ class UserTokenCache:
 				self._pending_2fa[email] = _pending2FA(
 					password_hash=md5(password.encode()).hexdigest(),
 					requestId= data['requestId'],
-					userId= data["user_id"],
+					userId= data["userId"],
 					types= two_factor_types
 				)
 
 				tries = 0
 				success = False
 				while not success and tries < 10:
-					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['user_id']}", timeout=60) as r:
+					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
 						if "GaijinPass" in two_factor_types:
 							try:
 								data = await self._networkManager.handle_response(r)
@@ -415,7 +415,6 @@ class UserTokenCache:
 						else: # UNTESTED PATH
 							if self._pending_2fa[email].code is None:
 								tries += 1
-								await sleep(60)
 								continue
 							data = {
 								"Message": self._pending_2fa[email].code,
@@ -425,6 +424,9 @@ class UserTokenCache:
 
 				if not success:
 					raise AuthenticationError(status.HTTP_408_REQUEST_TIMEOUT, "Could not get 2FA login in time")
+
+				if data.get("Message") == "cancel":
+					raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
 
 				async with session.post(
 					"https://auth.gaijinent.com/login.php",
@@ -624,8 +626,10 @@ class UserTokenCache:
 			for row in rows:
 				entry = await self.Entry.from_row(self, row)
 				try:
-					if entry.usedWithin(30):
+					if entry.usedWithin(24*60): # Used within the last day
 						await entry.refresh()
+					else:
+						await self.remove_entry(entry)
 				except AuthenticationError:
 					await self.remove_entry(entry)
 
