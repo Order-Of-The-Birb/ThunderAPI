@@ -10,7 +10,7 @@ from utils.helper import dtToTimestampMs
 from api.shared import limiter
 from api.v1.shared import TokenBearer
 from api.v1.backends.marketplace import item_in_inventory, get_inventory
-from api.v1.models.marketplace import SellModel
+from api.v1.models.marketplace import SellModel, ItemModel
 from api.v1.models.base import GenericEmptyResponse
 
 router = APIRouter(
@@ -146,7 +146,10 @@ async def get_balance(
 
 @router.get(
 	"/search",
-	summary="Searches the marketplace for a given item"
+	summary="Searches the marketplace for a given item",
+	responses={
+		status.HTTP_200_OK: {"model": list[ItemModel]}
+	}
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def searchItem(
@@ -179,6 +182,22 @@ async def searchItem(
 		item.pop("appid")
 		item.pop("color")
 		item.pop("asset_class")
+
+		new_tags = {}
+		for tag in item["tags"]:
+			tag:str
+			if tag.count(":") != 1:
+				... # TODO: Figure out something here
+				return
+			key, value = tag.split(":")
+			if value == "yes":
+				new_tags[key] = True
+			elif value == "no":
+				new_tags[key] = False
+			else:
+				new_tags[key] = value
+		item["tags"] = new_tags
+		del new_tags
 
 	return data
 

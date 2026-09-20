@@ -659,8 +659,8 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 		- `commodity` (boolean value)  
 		- `icon` (vehicle icon URL)  
 		- `price` (lowest sell price *100 000 000)  
-		- `buyprice` (highest buy price *100 000 000)  
-		- `buydepth` (amount of buy orders)  
+		- `buy_price` (highest buy price *100 000 000)  
+		- `buy_depth` (amount of buy orders)  
 		- `tags` (array of tags)  
 			- `type:(.+)`  
 			- `quality:(.+)`  

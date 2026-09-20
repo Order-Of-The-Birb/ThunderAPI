@@ -42,7 +42,7 @@ async def update_db():
     iter_cnt = 0
     while True:
         try:
-            github_repo = Github().get_repo("P3TERX/GeoLite.mmdb")
+            github_repo = await to_thread(lambda: Github().get_repo("P3TERX/GeoLite.mmdb"))
             break
         except Exception:
             _logger.error(f"Failed to get repository on try {iter_cnt}")
@@ -54,7 +54,7 @@ async def update_db():
 
     if not _db.exists():
         try:
-            latest = github_repo.get_latest_release()
+            latest = await to_thread(github_repo.get_latest_release)
             for asset in latest.assets:
                 if asset.name != "GeoLite2-City.mmdb":
                     continue
@@ -75,7 +75,7 @@ async def update_db():
 
     while True:
         try:
-            latest = github_repo.get_latest_release()
+            latest = await to_thread(github_repo.get_latest_release)
             if latest.id != int(_db_id.read_text()):
                 for asset in latest.assets:
                     if asset.name != "GeoLite2-City.mmdb":
@@ -89,7 +89,9 @@ async def update_db():
                             _reader = None
                     break
                 else:
-                    raise RuntimeError(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})")
+                    _logger.error(f"No file under the name 'GeoLite2-City.mmdb' found under the latest release ({latest.url})\nRetrying in 1 hour")
+                    await sleep(1*60*60)
+                    continue
             await sleep(12*60*60)
         except Exception:
             _logger.exception("Failed to get repository's latest release")
