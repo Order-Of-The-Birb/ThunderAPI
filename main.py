@@ -20,6 +20,7 @@ from fastapi import FastAPI, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.responses import JSONResponse, HTMLResponse
+from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from uvicorn import run as uvicorn_run
@@ -145,6 +146,7 @@ app.add_exception_handler(
 )
 #endregion
 app.include_router(router)
+app.add_middleware(SlowAPIMiddleware)
 
 #region Modify OpenAPI schema
 @dataclass(slots=True)
