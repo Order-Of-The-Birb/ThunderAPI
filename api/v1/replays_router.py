@@ -15,6 +15,7 @@ router = APIRouter(
 	responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
 )
 
+"""
 @router.get(
 	"/search",
 	summary="Searches for replays based on given parameters",
@@ -23,6 +24,7 @@ router = APIRouter(
 		status.HTTP_403_FORBIDDEN: {"description": "The token has no associated `identity_sid` value associated, required for replay lookup. Get one from `/v1/get-sid`"},
 	}
 )
+""" # FIXME: Temporarily removed due to issues with identity_sid generation
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def search_replays(
 	request: faRequest,

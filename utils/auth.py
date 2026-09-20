@@ -566,6 +566,8 @@ class UserTokenCache:
 					_logger.error("No redirect URL in login response")
 					raise HTTPException(500)
 
+			if location.startswith("/"):
+				location = f"https://login.gaijin.net{location}"
 			async with session.get(
 				location,
 				cookies={"identity_sid": sid},

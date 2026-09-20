@@ -24,7 +24,7 @@ router = APIRouter(
 )
 
 @router.post(
-	"/{clanId}/apply", 
+	"/apply/{clanId}", 
 	summary="Sends an application to the squadron, if allowed",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already in a squadron"}
@@ -47,7 +47,7 @@ async def send_application(
 	return response.get("clanTag") is not None
 
 @router.post(
-	"/{clanId}/cancelApply", 
+	"/cancelApply/{clanId}", 
 	summary="Cancels the current squadron application",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}
@@ -69,7 +69,7 @@ async def unsend_application(
 	return response.get("clanTag") is None
 
 @router.get(
-	"/{clanId}/applicants", 
+	"/applicants/{clanId}", 
 	summary="Gets the currently applying members"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
@@ -232,7 +232,7 @@ async def leave_squadron(
 	return response.get("clanTag") is None
 
 @router.get(
-	"/{clanId}/logs", 
+	"/logs/{clanId}", 
 	summary="Gets the squadron logs"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
@@ -321,7 +321,7 @@ async def get_clan_search(
 
 @router.get(
 	"/leaderboard",
-	summary="Gets the leaderboard of squadrons. Position here is zero indexed, so the first squadron is at position 0",
+	summary="Gets the leaderboard of squadrons.",
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard(
@@ -341,11 +341,17 @@ async def get_clan_leaderboard(
 
 	if response.get("clan") is None:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain leaderboard data from Gaijin")
-	return response["clan"]
+
+	modified = []
+	for clan in response["clan"]:
+		clan["pos"] += 1 # Convert from zero-based to one-based indexing
+		modified.append(clan)
+	
+	return modified
 
 @router.get(
 	"/leaderboard/{clanId}",
-	summary="Gets the leaderboard position of a given squadron. Position here is not zero indexed"
+	summary="Gets the leaderboard position of a given squadron."
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard_position(
@@ -367,7 +373,7 @@ async def get_clan_leaderboard_position(
 	}
 
 @router.get(
-	"/{clanId}/",
+	"/{clanId}",
 	summary="Gets data about the given squadron"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
