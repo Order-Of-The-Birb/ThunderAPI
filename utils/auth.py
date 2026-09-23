@@ -112,8 +112,8 @@ class _pending2FA:
 	requestId: str
 	userId: int
 	types: set[Literal["WTR", "GaijinPass", "Email"]]
-	code: str = None
 	expires: datetime
+	code: str = None
 
 class UserTokenCache:
 	scheduler: AsyncIOScheduler
@@ -619,7 +619,7 @@ class UserTokenCache:
 			await entry._write_values()
 
 	async def _refresh(self):
-		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v.expires > round(datetime.now(UTC).timestamp(), 0)}
+		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v.expires > datetime.now(UTC)}
 		await self._force_write_used_cache()
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')")).fetchall()
