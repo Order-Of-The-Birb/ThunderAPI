@@ -3,11 +3,11 @@ from typing import Any
 from dataclasses import dataclass, asdict
 
 from tools import Request
-from utils.auth import UserTokenCache
+from utils.auth import UserAuth
 from utils import networkManager
 from api.v1.shared import IntString
 
-async def get_asset_class(user: UserTokenCache.Entry, hash:str) -> list[dict[str, str|IntString]]:
+async def get_asset_class(user: UserAuth.Entry, hash:str) -> list[dict[str, str|IntString]]:
 	return await Request.send_template(
 		user,
 		"cln_market_get_asset_class",
@@ -55,7 +55,7 @@ class InventoryItem:
 		)
 	def to_json(self):
 		return asdict(self)
-async def get_inventory(user: UserTokenCache.Entry) -> list[InventoryItem]:
+async def get_inventory(user: UserAuth.Entry) -> list[InventoryItem]:
 	items:list[InventoryItem] = []
 	async with networkManager.operation() as session:
 		contexts = await Request.send_template(
@@ -92,7 +92,7 @@ async def get_inventory(user: UserTokenCache.Entry) -> list[InventoryItem]:
 					items.append(InventoryItem.from_json(item_data["result"]["asset"], item["class"][0], int(item["id"]), context["id"]))
 	return items
 
-async def item_in_inventory(user: UserTokenCache.Entry, item_hash:str) -> InventoryItem|None:
+async def item_in_inventory(user: UserAuth.Entry, item_hash:str) -> InventoryItem|None:
 	inventory = await get_inventory(user)
 	for item in inventory:
 		if item.hash == item_hash:

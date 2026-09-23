@@ -2,7 +2,7 @@ from __future__ import annotations
 from dotenv import set_key
 from re import sub as re_sub, search as re_search
 from logging import getLogger
-from asyncio import sleep, Lock
+from asyncio import Lock
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
@@ -25,17 +25,6 @@ from utils.helper import dtToTimestamp, AuthenticationError
 from utils.network import NetworkManager
 
 _logger = getLogger(__name__)
-
-class TwoFactorRequired(AuthenticationError):
-	def __init__(self, types: set[str], request_id: str, user_id: int):
-		_ = {
-			"status": "2STEP",
-			"2fa_types": types,
-			"details": "Two-factor authentication is required for this account. Please try logging in again, and provide a valid 2FA code, along with the 'requestId' value",
-			"requestId": request_id,
-			"userId": user_id
-		}
-		super().__init__(status.HTTP_403_FORBIDDEN, _)
 
 @dataclass(frozen=True, slots=True)
 class jwtData:
@@ -70,12 +59,6 @@ class jwtData:
 			extras={k:v for k, v in data.items() if k not in ["auth","cntry","exp","fac","iat","lng","loc","nick","slt","tgs","uid"]}
 		)
 #region User Tokens Cache and refresh
-
-@dataclass(frozen=True, slots=True)
-class _sidValue:
-	sid: str
-	sid_expires: datetime
-
 class dbSchema:
 	class _table(StrEnum):
 		__table__: ClassVar[str]
@@ -106,20 +89,23 @@ class dbSchema:
 		SID = "sid"
 		SID_EXP = "exp"
 
-@dataclass(slots=True)
-class _pending2FA:
-	password_hash: str
-	requestId: str
-	userId: int
-	types: set[Literal["WTR", "GaijinPass", "Email"]]
-	expires: datetime
-	code: str = None
-
-class UserTokenCache:
+class UserAuth:
 	scheduler: AsyncIOScheduler
 	_auth_used_cache = {}
 	_auth_used_lock = Lock()
 
+	@dataclass(frozen=True, slots=True)
+	class _sidValue:
+		sid: str
+		sid_expires: datetime
+	@dataclass(slots=True)
+	class _pending2FA:
+		password_hash: str
+		requestId: str
+		userId: int
+		types: set[Literal["WTR", "GaijinPass", "Email"]]
+		expires: datetime = field(default_factory=lambda: datetime.fromtimestamp((datetime.now(UTC) + timedelta(minutes=15)).timestamp()))
+		code: str = None
 	@dataclass(slots=True)
 	class Entry: # Short lived data class with some helper methods
 		@dataclass(slots=True)
@@ -127,7 +113,7 @@ class UserTokenCache:
 			sid: str
 			exp: datetime
 			@classmethod
-			def from_row(cls, row:Row, parent:UserTokenCache.Entry):
+			def from_row(cls, row:Row, parent:UserAuth.Entry):
 				try:
 					sid = row[dbSchema.sso_sessions.SID]
 					if sid is None:
@@ -141,7 +127,7 @@ class UserTokenCache:
 			def to_json(self):
 				return asdict(self)
 
-		_parent: UserTokenCache
+		_parent: UserAuth
 
 		hashed: str
 		jwt: str # Session token
@@ -155,7 +141,7 @@ class UserTokenCache:
 		__saved:dict[str, str|int|datetime] = field(default_factory=dict) # Saved to file state, used for comparing what to change
 	
 		@classmethod
-		async def from_hash(cls, parent:"UserTokenCache", hash:str):
+		async def from_hash(cls, parent:"UserAuth", hash:str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
 				SELECT * 
@@ -166,7 +152,7 @@ class UserTokenCache:
 					return None
 				return await cls.from_row(parent, row)
 		@classmethod
-		async def from_email(cls, parent:"UserTokenCache", email:str):
+		async def from_email(cls, parent:"UserAuth", email:str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
 				SELECT * 
@@ -178,7 +164,7 @@ class UserTokenCache:
 				return await cls.from_row(parent, row)
 
 		@classmethod
-		async def from_row(cls, parent:"UserTokenCache", row:Row):
+		async def from_row(cls, parent:"UserAuth", row:Row):
 			t = dbSchema.tokens
 			jwt = parent._dec(str(row[t.JWT]))
 			self = cls(
@@ -336,7 +322,8 @@ class UserTokenCache:
 	
 	__autorefresh_job:Job = None
 	__db_path:Path = None
-	_pending_2fa:dict[str, _pending2FA] # email -> {hashed_passowrd, requestId, userId, types, code (after answering)}
+	_machine_id:str = None
+	_pending_2fa:dict[str, _pending2FA] # email -> {hashed_password, requestId, userId, types, code (after answering)}
 	_networkManager:NetworkManager
 
 	def __init__(self, networkManager:NetworkManager):
@@ -352,6 +339,14 @@ class UserTokenCache:
 			set_key(".env", "TOKEN_ENC_KEY", key)
 		self.__fernet = Fernet(key.encode())
 
+		key = getenv("MACHINE_ID")
+		if not key:
+			_logger.warning("No 'MACHINE_ID' env variable found, autogenerating a machine id")
+			key = md5(urandom(16)).hexdigest()
+			set_key(".env", "MACHINE_ID", key)
+		self._machine_id = key
+		
+
 		_logger.debug("User Token Cache initialized")
 
 	async def get(self, token:str):
@@ -359,20 +354,19 @@ class UserTokenCache:
 		return await self.Entry.from_hash(self, hash)
 	
 	async def login(self, email:str, password:str|None = None):
-		"""Adds the user to the database if needed and returns the token for the user"""
-		client_id = getenv("MACHINE_ID", "unknown")
+		"""Gaijin login flow, returns a new user token for the given account"""
 		logindata = {
 			"login": email,
 			"password": password,
 			"game": "wt",
-			"client": client_id
+			"client": self._machine_id
 		}
-		
+
 		async with self._networkManager.operation() as session:
 			#region Auth flow
 			async with session.post(
-				"https://auth.gaijinent.com/login.php", 
-				data=logindata, 
+				"https://auth.gaijinent.com/login.php",
+				data=logindata,
 				headers={
 					"Content-Type": "application/x-www-form-urlencoded",
 					"User-Agent": "ThunderAPI/1.0"
@@ -385,12 +379,11 @@ class UserTokenCache:
 				if data.get("hasGjPass"): two_factor_types.add("GaijinPass")
 				if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
 				if data.get("hasWTR"): two_factor_types.add("WTR")
-				self._pending_2fa[email] = _pending2FA(
+				self._pending_2fa[email] = self._pending2FA(
 					password_hash= md5(password.encode()).hexdigest(),
 					requestId= data['requestId'],
 					userId= data["userId"],
-					types= two_factor_types,
-					expires= datetime.fromtimestamp((datetime.now(UTC) + timedelta(minutes=15)).timestamp())
+					types= two_factor_types
 				)
 
 				tries = 0
@@ -437,7 +430,7 @@ class UserTokenCache:
 						"game": "wt",
 						"2step": data["Message"],
 						"requestId": data["Request"],
-						"client": client_id
+						"client": self._machine_id
 					},
 					headers={
 						"Content-Type": "application/x-www-form-urlencoded",
@@ -487,7 +480,7 @@ class UserTokenCache:
 		async with self._transaction() as cur:
 			row = await (await cur.execute(f"SELECT * FROM {dbSchema.sso_sessions.t()} WHERE {dbSchema.sso_sessions.EMAIL} = ? AND {dbSchema.sso_sessions.SID_EXP} > strftime('%s', 'now')", (entry.email,))).fetchone()
 			if row is not None:
-				return _sidValue(
+				return self._sidValue(
 					self._dec(row[dbSchema.sso_sessions.SID]),
 					datetime.fromtimestamp(row[dbSchema.sso_sessions.SID_EXP])
 				)
@@ -515,7 +508,6 @@ class UserTokenCache:
 				if nsid != sid:
 					sid = nsid.value
 
-			fp = getenv("MACHINE_ID", md5(urandom(16)).hexdigest())
 			async with session.post(
 				"https://login.gaijin.net/en/sso/login/procedure/",
 				data={
@@ -523,7 +515,7 @@ class UserTokenCache:
 					"password": password,
 					"action": "",
 					"referer": "",
-					"fingerprint": fp,
+					"fingerprint": self._machine_id,
 					"app_id": "",
 				},
 				headers={
@@ -552,7 +544,10 @@ class UserTokenCache:
 										"password_hidden": password_hidden.group(1),
 										"code": msg["Message"],
 										"request_id": msg["Request"],
-										"action": "", "referer": "", "fingerprint": fp, "app_id": "",
+										"action": "", 
+										"referer": "", 
+										"fingerprint": self._machine_id, 
+										"app_id": ""
 									},
 									headers={},
 									allow_redirects=False,

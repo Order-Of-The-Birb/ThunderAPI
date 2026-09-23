@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from enum import StrEnum, Enum
 from datetime import datetime, UTC
 from tools import Request
-from utils.auth import UserTokenCache
+from utils.auth import UserAuth
 
 class ReplayType(StrEnum):
 	RANDOM_BATTLE = "randomBattle"
@@ -22,7 +22,7 @@ class ReplayMode(Enum):
 	SIMULATOR = "simulation"
 
 async def search_replay(
-	user: UserTokenCache.Entry,
+	user: UserAuth.Entry,
 	uid: int | None = None,
 	nickname: str | None = None,
 	gameType: ReplayType = ReplayType.RANDOM_BATTLE,

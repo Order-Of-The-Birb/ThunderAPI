@@ -2,10 +2,10 @@ from fastapi import HTTPException, status
 from typing import Any
 
 from tools import Request
-from utils.auth import UserTokenCache
+from utils.auth import UserAuth
 from api.v1.models.clans import ClanModel
 
-async def searchClan(user: UserTokenCache.Entry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanModel]:
+async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanModel]:
 	response = await Request.from_template(
 		user, 
 		"clan_find_by_prefix",
@@ -27,7 +27,7 @@ async def searchClan(user: UserTokenCache.Entry, clanName: str | None = None, cl
 		response["clan"] = [response["clan"],]
 	return response["clan"]
 
-async def getClan(user: UserTokenCache.Entry, clanId: int) -> dict[str, Any]:
+async def getClan(user: UserAuth.Entry, clanId: int) -> dict[str, Any]:
 	data = await Request.send_template(
 		user,
 		"clan_get",

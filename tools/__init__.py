@@ -10,7 +10,7 @@ from utils import networkManager
 from utils.helper import AuthenticationError
 from .blk_utils import Compress, Decompress
 if TYPE_CHECKING:
-	from utils import UserTokenCache
+	from utils import UserAuth
 
 #region Fetch server list once at import
 char_servers: list[str] = []
@@ -49,7 +49,7 @@ def get_server(action: Action|UserAction) -> str:
 
 class Request:
 	"""Request framework for sending messages to Gaijin's servers"""
-	user: UserTokenCache.Entry = None
+	user: UserAuth.Entry = None
 	session = None
 
 	body: dict[str, Any]
@@ -62,7 +62,7 @@ class Request:
 		action: Action|UserAction, 
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
-		user: UserTokenCache.Entry = None,
+		user: UserAuth.Entry = None,
 		host:str|None = None,
 		method:str = "POST",
 		session:ClientSession|None=None
@@ -95,7 +95,7 @@ class Request:
 		self.session = session
 
 	@classmethod
-	async def from_template(cls, user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
+	async def from_template(cls, user:UserAuth.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
 		if user.timeLeft() <= timedelta(minutes=30):
 			await user.refresh()
 		if template not in TEMPLATES:
@@ -143,7 +143,7 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:UserTokenCache.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
+	async def send_template(user:UserAuth.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
 		return await cls.send()
 

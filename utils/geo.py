@@ -11,9 +11,6 @@ from datetime import datetime, UTC
 from zoneinfo import ZoneInfo
 from threading import Lock
 from logging import getLogger
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.job import Job
 
 _logger = getLogger(__name__)
 _db = Path(__file__).parent / "GeoLite2-City.mmdb"
@@ -21,7 +18,6 @@ _db_tmp = _db.parent / "GeoLite2-City.mmdb.tmp"
 _db_id = _db.parent / "GeoLite2-City.hash"
 _reader = None
 _lock = Lock()
-_scheduler = AsyncIOScheduler()
 _github_repo = None
 
 def lookup_city(ip: str) -> City | None:

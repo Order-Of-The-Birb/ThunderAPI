@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from utils import users_cache
-from utils.auth import UserTokenCache
+from utils.auth import UserAuth
 from typing_extensions import Annotated
 from pydantic import StringConstraints, Field
 from datetime import datetime, UTC
@@ -38,6 +38,6 @@ IpString = Annotated[
 	Field(description="IP address represented as a string", examples=["0.0.0.0"])
 ]
 TokenBearer = Annotated[
-	UserTokenCache.Entry,
+	UserAuth.Entry,
 	Depends(get_auth),
 ]
