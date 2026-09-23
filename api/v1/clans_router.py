@@ -47,7 +47,7 @@ async def send_application(
 	return response.get("clanTag") is not None
 
 @router.post(
-	"/cancelApply/{clanId}", 
+	"/cancelApply/", 
 	summary="Cancels the current squadron application",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}

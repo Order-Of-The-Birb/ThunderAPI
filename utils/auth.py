@@ -113,7 +113,7 @@ class _pending2FA:
 	userId: int
 	types: set[Literal["WTR", "GaijinPass", "Email"]]
 	code: str = None
-	expires: datetime = int((datetime.now(UTC) + timedelta(minutes=15)).timestamp())
+	expires: datetime
 
 class UserTokenCache:
 	scheduler: AsyncIOScheduler
@@ -386,10 +386,11 @@ class UserTokenCache:
 				if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
 				if data.get("hasWTR"): two_factor_types.add("WTR")
 				self._pending_2fa[email] = _pending2FA(
-					password_hash=md5(password.encode()).hexdigest(),
+					password_hash= md5(password.encode()).hexdigest(),
 					requestId= data['requestId'],
 					userId= data["userId"],
-					types= two_factor_types
+					types= two_factor_types,
+					expires= datetime.fromtimestamp((datetime.now(UTC) + timedelta(minutes=15)).timestamp())
 				)
 
 				tries = 0
@@ -470,14 +471,14 @@ class UserTokenCache:
 						{schema.tokens.LAST_USED} = ?
 					WHERE {schema.tokens.EMAIL} = ?;
 					""", 
-					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], 0, email)
+					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
 				)
 			else:
 				await cur.execute(f"""
 					INSERT INTO {schema.tokens.t()} 
 					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.JWT_EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED}) 
 					VALUES ({', '.join(["?" for i in range(7)])})""", 
-					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], email, 0)
+					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
 				)		
 		return raw
 

@@ -831,7 +831,23 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- `meta` (only sends metadata, such as creation location, CC URL used, registration IP, etc.)  
 	- `v` (Unsure what this does)  
 	- `2step` (2FA verification code)  
+- 2FA Auth flow
+  - Response form schema, if the account is protected by 2FA, and isn't authenticated yet  
+	```json
+	{
+		"status": "2STEP", 
+		"error": "2-step authentication code lost",
+		"hasGjPass": true, 
+		"hasTwoStepEmail": false, 
+		"hasWTR": false, 
+		"requestId": "REQUEST_ID", 
+		"userId": 00000000
+	}
+	```	 
+  - Send the `requestId` and `userId` to the [2FA request endpoint](#httpsauthgaijinentcomapiauthrequesttwostep) to request the current 2FA code
+  - Resend this request, this time with the `code` value filled in, that is returned by the previous endpoint
 - Response form schema:  
+  - ``
 	```json  
 	{  
 		"auth": "login",  

@@ -13,7 +13,7 @@ class ItemModel(BaseModel):
 	commodity: bool
 	icon: str = Field(description="The URL to the icon of said item")
 	buy_price: float = Field(description="The highest 'buy' price")
-	buy_order: int = Field(description="The amount of buy orders on this item")
+	buy_orders: int = Field(description="The amount of buy orders on this item")
 	sell_price: float = Field(description="The lowest 'sell' price")
 	sell_orders: int = Field(description="The amount of sell orders on this item")
 	tags: dict = Field(description="The tags associated with this item", examples=[
