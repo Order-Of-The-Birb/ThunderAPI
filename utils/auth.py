@@ -104,7 +104,7 @@ class UserAuth:
 		requestId: str
 		userId: int
 		types: set[Literal["WTR", "GaijinPass", "Email"]]
-		expires: datetime = field(default_factory=lambda: datetime.fromtimestamp((datetime.now(UTC) + timedelta(minutes=15)).timestamp()))
+		expires: datetime = field(default_factory=lambda: datetime.now(UTC) + timedelta(minutes=15))
 		code: str = None
 	@dataclass(slots=True)
 	class Entry: # Short lived data class with some helper methods
