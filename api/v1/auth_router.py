@@ -80,7 +80,7 @@ async def answer_2fa(
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
 
-@router.post(
+"""@router.post(
 	"/get-sid",
 	summary="Gets an 'identifier_sid' value, used for replay searching. Value is not displayed, but will be used in the requests that require it. Has to be refreshed every 14 days",
 	responses={
@@ -88,7 +88,7 @@ async def answer_2fa(
 		status.HTTP_400_BAD_REQUEST: {"description": "Generic fetch failure"},
 		status.HTTP_404_NOT_FOUND: {"description": "User not found in database"}
 	}
-)
+)""" # Removed until get_sid() is fixed
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def get_sid(
 	request: Request,
