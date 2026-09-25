@@ -2,7 +2,7 @@
 ThunderAPI is an API that interfaces with Gaijin's backend used by War Thunder, [warthunder.com](https://warthunder.com/), and the [Gaijin marketplace](https://trade.gaijin.net/).  
 It handles the authentication and token refreshing automatically, so the user only has to worry about a single ThunderAPI token.  
 > [!IMPORTANT]  
-> Due to a limitation imposed by Gaijin, the token must be used once every hour.  
+> Due to unused token cleanup, tokens are cleared after 24 hours of inactivity, so tokens have to be used at least once per day, to be kept active.  
 > This can be done by calling any endpoint or the dedicated `/v1/refresh-token` endpoint.  
 > Refreshing is handled internally, so your existing ThunderAPI token remains valid afterward.  
 
