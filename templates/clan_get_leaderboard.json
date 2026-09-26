@@ -1,0 +1,11 @@
+{
+    "method": "POST",
+    "headers": {
+        "action":"cln_clan_get_leaderboard",
+        "sortField": "dr_era5_hist",
+        "token": "<replace>",
+        "clanId": "<replace>",
+        "count": 20,
+        "start": 0
+    }
+}

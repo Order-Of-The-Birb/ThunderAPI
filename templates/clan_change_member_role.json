@@ -1,0 +1,12 @@
+{
+    "headers": {
+        "token": "<replace>",
+        "action":"ano_clan_change_member_role",
+        "compr": "lz4hc",
+        "userid": "<replace>",
+        "Content-Type": "application/octet-stream"
+    },
+    "body": {
+        "role": "<replace>"
+    }
+}

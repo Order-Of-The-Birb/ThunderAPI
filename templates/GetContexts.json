@@ -1,0 +1,10 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "GetContexts",
+        "appid": "1067"
+    }
+}

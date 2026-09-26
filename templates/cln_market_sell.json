@@ -1,0 +1,20 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "cln_market_sell",
+        "transactid": "<replace>",
+        "reqstamp": "<replace>",
+        "appid": "1067",
+        "contextid": "<replace>",
+        "assetid": "<replace>",
+        "amount": "<replace>",
+        "currencyid": "gjn",
+        "price": "<replace>",
+        "seller_should_get": "<replace>",
+        "agree_stamp":	"<replace>",
+        "privateMode": false
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "headers": {
+        "token": "<replace>",
+        "action":"cln_find_users_by_nick_prefix_json",
+        "Content-Type": "application/json"
+    },
+    "body": {
+        "ignoreCase": true,
+        "maxCount": 10,
+        "nick": "<replace>",
+        "specificAppId": "1067"
+    }
+}

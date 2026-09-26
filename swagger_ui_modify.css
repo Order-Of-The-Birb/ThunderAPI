@@ -1,0 +1,106 @@
+/* ============================================================
+   WebSocket operation color
+   ============================================================ */
+
+.swagger-ui .opblock.opblock-ws {
+	background: rgba(108, 54, 1, 0.1);
+	border-color: #6c3601;
+}
+
+.swagger-ui .opblock.opblock-ws .opblock-summary {
+	border-color: #6c3601;
+}
+
+.swagger-ui
+.opblock.opblock-ws
+.opblock-summary-method {
+	background: #6c3601;
+	color: #fff;
+}
+
+
+/* ============================================================
+   Expanded WebSocket content
+   ============================================================ */
+
+.swagger-ui .websocket-connection-container,
+.swagger-ui .websocket-messages-container {
+	padding: 15px 20px;
+}
+
+.swagger-ui .websocket-controls {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+
+/* ============================================================
+   Status
+   ============================================================ */
+
+.swagger-ui .websocket-status {
+	font-size: 12px;
+	font-weight: 700;
+	margin-left: 5px;
+}
+
+.swagger-ui .websocket-status-disconnected {
+	opacity: 0.65;
+}
+
+.swagger-ui .websocket-status-connecting {
+	opacity: 0.8;
+}
+
+.swagger-ui .websocket-status-connected {
+	opacity: 1;
+}
+
+.swagger-ui .websocket-status-error {
+	opacity: 1;
+}
+
+
+/* ============================================================
+   URL
+   ============================================================ */
+
+.swagger-ui .websocket-url-row {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+}
+
+.swagger-ui .websocket-url-row code {
+	font-size: 12px;
+}
+
+
+/* ============================================================
+   Message console
+   ============================================================ */
+
+.swagger-ui .websocket-output {
+	box-sizing: border-box;
+
+	margin: 0;
+	width: 100%;
+
+	min-height: 120px;
+	max-height: 400px;
+
+	overflow: auto;
+	padding: 12px;
+
+	background: #263238;
+	color: #fff;
+
+	border-radius: 4px;
+
+	font-family: monospace;
+	font-size: 12px;
+	line-height: 1.5;
+	white-space: pre-wrap;
+}

@@ -1,0 +1,13 @@
+{
+    "headers": {
+        "action":"cln_clan_get_log",
+        "compr": "lz4hc",
+        "Content-Type": "application/octet-stream",
+        "token": "<replace>"
+    },
+    "body": {
+        "_id": "<replace>",
+        "count": 10,
+        "events": "create;info"
+    }
+}

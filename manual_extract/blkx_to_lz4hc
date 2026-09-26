@@ -1,0 +1,18 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+input="$1"
+name="${input%.blkx}"
+
+blkConvert "$input" - | ./.venv/bin/python -c "
+import sys, struct
+import lz4.block
+data = sys.stdin.buffer.read()
+compressed = lz4.block.compress(data, mode='high_compression', store_size=False)
+wire = struct.pack('>I', len(data)) + compressed
+with open('${name}.compr.blk', 'wb') as f:
+    f.write(wire)
+print(f'Compressed {len(data)} -> {len(wire)} bytes (BE size prefix + raw lz4hc block)')
+" && echo "Written to '${name}.compr.blk'" && exit 0
+
+echo "Failed to compress '$input'" && exit 1

@@ -1,9 +1,0 @@
-fastapi
-fastapi[standard]
-mariadb
-requests
-urllib3
-psutil
-celery
-kombu
-redis

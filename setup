@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+cd "$(dirname "$0")"
+
+PYTHON_BIN="${PYTHON_BIN:-python3.14}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "Error: '$PYTHON_BIN' is not installed or not in PATH."
+  echo "Tip: install Python 3.14 or run with another interpreter:"
+  echo "  PYTHON_BIN=python3 ./setup"
+  exit 1
+fi
+
+"$PYTHON_BIN" -m venv .venv
+source .venv/bin/activate
+
+pip_args=()
+if [[ -n "${PIP_INDEX_URL:-}" ]]; then
+  pip_args+=(--index-url "$PIP_INDEX_URL")
+fi
+if [[ -n "${PIP_EXTRA_INDEX_URL:-}" ]]; then
+  pip_args+=(--extra-index-url "$PIP_EXTRA_INDEX_URL")
+fi
+
+UPGRADE_PIP="${UPGRADE_PIP:-0}"
+
+run_or_fail() {
+  local step="$1"
+  shift
+  if ! "$@"; then
+    echo
+    echo "Setup failed during: $step"
+    echo "Likely cause: network/DNS access to PyPI is unavailable."
+    echo "Quick checks:"
+    echo "  getent hosts files.pythonhosted.org"
+    echo "  getent hosts pypi.org"
+    echo "If you use a mirror, run:"
+    echo "  PIP_INDEX_URL=https://<your-mirror>/simple ./setup"
+    deactivate 2>/dev/null || true
+    exit 1
+  fi
+}
+
+if [[ -z "${PIP_INDEX_URL:-}" ]]; then
+  if ! getent hosts pypi.org >/dev/null 2>&1 || ! getent hosts files.pythonhosted.org >/dev/null 2>&1; then
+    echo "Warning: DNS resolution for PyPI hosts failed."
+    echo "Run these checks on your host:"
+    echo "  getent hosts pypi.org"
+    echo "  getent hosts files.pythonhosted.org"
+    echo "If they fail, fix DNS first (or pass PIP_INDEX_URL to a reachable mirror)."
+  fi
+fi
+
+if [[ "$UPGRADE_PIP" == "1" ]]; then
+  run_or_fail "pip upgrade" python -m pip install --upgrade pip "${pip_args[@]}"
+else
+  echo "Skipping pip self-upgrade (set UPGRADE_PIP=1 to enable)."
+fi
+run_or_fail "dependency install" pip install -r requirements.txt "${pip_args[@]}"
+
+deactivate
+echo "Setup complete."
+
+if [[ -t 0 ]]; then
+  read -rp "Press any key to continue..." -n1
+  echo
+fi

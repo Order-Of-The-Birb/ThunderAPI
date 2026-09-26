@@ -1,0 +1,19 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+uuidColor=$'\033[0;31m'
+NC=$'\033[0m'
+
+printf '%suuid2=%s' "$NC" "$uuidColor"
+grep -Po 'root=UUID=\K\S+\s' /proc/cmdline | head -c -1 | sha1sum
+
+root=$(readlink -f "$(findmnt -no SOURCE /)")
+hash=$(
+	ls -U1 /dev/disk/by-id | while IFS= read -r name; do
+		p="/dev/disk/by-id/$name"
+		[ -L "$p" ] || continue
+		[ "$(readlink -f "$p")" = "$root" ] || continue
+		printf '%s' "$name"
+	done | sha1sum | awk '{print $1}'
+)
+printf '%suuid3=%s%s %s(changes with every boot)\n' "$NC" "$uuidColor" "$hash" "$NC"

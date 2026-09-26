@@ -1,0 +1,25 @@
+python-dotenv
+orjson
+packaging
+
+# API Backend
+slowapi
+fastapi==0.136.1
+uvicorn
+apscheduler
+requests
+python-multipart
+PyGithub
+
+# Data processing
+lz4
+bs4
+pandas
+PyJWT[crypto]
+pydantic[email]
+cryptography
+geoip2
+
+# Async
+aiosqlite
+aiohttp

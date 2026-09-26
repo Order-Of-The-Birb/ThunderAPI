@@ -1,0 +1,112 @@
+#!/bin/bash
+cd "$(dirname "$0")"
+
+force_args=()
+positional=()
+convertTo=Json
+outputFileExt=json
+to_stdout=false
+raw_hex_file="$(mktemp /tmp/hex_to_blk_raw.XXXXXX)"
+stdout_work_dir=""
+trap 'rm -f "$raw_hex_file"; [[ -n "$stdout_work_dir" ]] && rm -rf "$stdout_work_dir"' EXIT
+
+log() {
+    if [[ "$to_stdout" == true ]]; then
+        echo "$@" >&2
+    else
+        echo "$@"
+    fi
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --force)
+            if [[ -z "$2" || "$2" == --* ]]; then
+                echo "--force requires an algorithm: lz4 or bzip"
+                exit 1
+            fi
+            if [[ "$2" != "lz4" && "$2" != "bzip" ]]; then
+                echo "--force must be one of: lz4, bzip"
+                exit 1
+            fi
+            force_args=(--force "$2")
+            shift 2
+            ;;
+        --force=*)
+            if [[ "${1#*=}" != "lz4" && "${1#*=}" != "bzip" ]]; then
+                echo "--force must be one of: lz4, bzip"
+                exit 1
+            fi
+            force_args=(--force "${1#*=}")
+            shift
+            ;;
+        --to-blk) 
+            convertTo=BlkText
+            outputFileExt=blkx
+            shift
+            ;;
+        --to-stdout)
+            to_stdout=true
+            shift
+            ;;
+        --*)
+			echo "Unknown argument: $1" >&2
+			exit 1
+			;;
+        *)
+            positional+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [[ ${#positional[@]} -eq 0 && "$to_stdout" != true ]]; then
+    echo "Usage: $0 [--force lz4|bzip] [--to-blk] [--to-stdout] name [suffix]"
+    echo "       cat hex.txt | $0 [--force lz4|bzip] [--to-blk] [--to-stdout] name [suffix]"
+    echo "       cat hex.txt | $0 [--force lz4|bzip] [--to-blk] --to-stdout"
+    exit 1
+fi
+
+if [[ "$to_stdout" == true ]]; then
+    stdout_work_dir="$(mktemp -d /tmp/hex_to_blk_output.XXXXXX)"
+    filename="$stdout_work_dir/output"
+elif [[ ${#positional[@]} -ge 2 ]]; then
+    filename="${positional[0]}_${positional[1]}"
+elif [[ ${#positional[@]} -eq 1 ]]; then
+    filename="${positional[0]}"
+fi
+
+if [[ -t 0 ]]; then
+    nano "$raw_hex_file"
+else
+    cat > "$raw_hex_file"
+fi
+
+if [[ ! -s "$raw_hex_file" ]]; then
+    echo "No HEX input provided" >&2
+    exit 1
+fi
+
+xxd -r -p "$raw_hex_file" > "$filename.blk" && log "Outputted HEX values into '$filename.blk'"
+if [[ "$to_stdout" == true ]]; then
+    ./.venv/bin/python ./decompress.py "${force_args[@]}" "$filename.blk" >&2
+else
+    ./.venv/bin/python ./decompress.py "${force_args[@]}" "$filename.blk"
+fi
+rm -f "$filename.$outputFileExt"
+if wt_ext_cli unpack_raw_blk --input_dir "$filename.blk" --output_dir "$filename.$outputFileExt" --format "$convertTo" >/dev/null 2>&1; then
+    if [[ "$to_stdout" == true ]]; then
+        cat "$filename.$outputFileExt"
+        rm -f "$filename.$outputFileExt"
+    else
+        echo "Converted file can be found at $filename.$outputFileExt"
+    fi
+    rm "$filename.blk"
+else
+    echo "Failed to convert from binary BLK to $convertTo format" >&2
+    if [[ "$to_stdout" == true ]]; then
+        rm -f "$filename.blk" "$filename.$outputFileExt"
+    else
+        echo "Kept the HEX file saved for further analysis" >&2
+    fi
+fi

@@ -1,0 +1,13 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "GetAssetClassInfo",
+        "appid": "1067",
+        "class_name0": "<replace>",
+        "class_value0": "<replace>",
+        "class_count": "1"
+    }   
+}

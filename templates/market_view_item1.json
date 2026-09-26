@@ -1,0 +1,19 @@
+{
+    "host": "https://login.gaijin.net/proxy/api/matching/notifyClient",
+	"headers": {
+		"Authorization": "<replace>",
+        "Content-Type": "application/x-www-form-urlencoded"
+	},
+    "body": {
+        "action": "market_view_item",
+        "params": {
+            "appId": "1067",
+            "assetClass": [
+                {
+                    "name": "<replace>",
+                    "value": "<replace>"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "cln_market_buy",
+        "transactid": "<replace>",
+        "reqstamp": "<replace>",
+        "appid": "1067",
+        "market_name": "<replace>",
+        "amount": "<replace>",
+        "currencyid": "gjn",
+        "price": "<replace>",
+        "agree_stamp":	"<replace>",
+        "privateMode": false
+    }
+}

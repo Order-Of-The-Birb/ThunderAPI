@@ -1,0 +1,13 @@
+{
+    "headers": {
+        "Content-Type": "application/octet-stream",
+        "action":"cln_clan_membership_request",
+        "compr": "lz4hc",
+        "token": "<replace>"
+    },
+    "body": {
+        "_id": "<replace>",
+        "comments": "",
+        "cancelRequest": "<replace>"
+    }
+}

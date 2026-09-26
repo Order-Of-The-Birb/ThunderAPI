@@ -1,0 +1,7 @@
+{
+    "headers": {
+        "action":"cln_get_users_terse_info",
+        "token": "<replace>",
+        "usersList": "<replace>"
+    }
+}
