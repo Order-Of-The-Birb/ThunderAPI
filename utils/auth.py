@@ -353,7 +353,7 @@ class UserAuth:
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
 	
-	async def login(self, email:str, password:str|None = None):
+	async def login(self, email:str, password:str|None = None) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
 		logindata = {
 			"login": email,
@@ -473,7 +473,7 @@ class UserAuth:
 					VALUES ({', '.join(["?" for i in range(7)])})""", 
 					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
 				)		
-		return raw
+		return raw, data["user_id"]
 
 	async def get_sid(self, entry:Entry, password:str|None = None) -> _sidValue | None:
 		"""Returns the identity_sid and its expiry time for the given user"""
