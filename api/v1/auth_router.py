@@ -33,11 +33,12 @@ async def login_post(
 	email: Annotated[EmailStr, Form()],
 	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"})]
 ):
-	token = await users_cache.login(email, password)
+	token, uidHint = await users_cache.login(email, password)
 
 	return JSONResponse({
 		"status": "OK",
-		"token": token
+		"token": token,
+		"user_id": uidHint
 	}, status_code=status.HTTP_200_OK)
 
 @router.post(
