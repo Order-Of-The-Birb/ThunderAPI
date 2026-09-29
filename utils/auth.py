@@ -26,38 +26,6 @@ from utils.network import NetworkManager
 
 _logger = getLogger(__name__)
 
-@dataclass(frozen=True, slots=True)
-class jwtData:
-	auth: str
-	cntry: str
-	exp: datetime
-	fac: str
-	iat: datetime
-	lng: str
-	loc: str
-	nick: str
-	slt: str
-	tgs: tuple[str]
-	uid: int
-	extras: dict[str, Any]
-
-	@classmethod
-	def from_jwt(cls, jwt:str) -> jwtData:
-		data = jwt_decode(jwt, options={"verify_signature": False})
-		return cls(
-			data["auth"],
-			data["cntry"],
-			datetime.fromtimestamp(data["exp"], UTC),
-			data["fac"],
-			datetime.fromtimestamp(data["iat"], UTC),
-			data["lng"],
-			data["loc"],
-			data["nick"],
-			data["slt"],
-			tuple(data["tgs"].split(",")),
-			data["uid"],
-			extras={k:v for k, v in data.items() if k not in ["auth","cntry","exp","fac","iat","lng","loc","nick","slt","tgs","uid"]}
-		)
 #region User Tokens Cache and refresh
 class dbSchema:
 	class _table(StrEnum):
@@ -75,7 +43,7 @@ class dbSchema:
 		HASH = "hash_token"
 		EMAIL = "email"
 		JWT = "jwt"
-		JWT_EXPIRES = "jwt_expires"
+		EXPIRES = "jwt_expires"
 		USER_TOKEN = "token"
 		UID = "uidHint"
 		REQUESTS_CNT = "requests_count"
@@ -131,7 +99,7 @@ class UserAuth:
 
 		hashed: str
 		jwt: str # Session token
-		jwt_expires: datetime # Inferred from jwt
+		expires: datetime
 		user_token: str # User token
 		last_used: datetime # Used for invalidating old tokens
 		uidHint: int # uidHint value for refresh and other auth calls
@@ -146,7 +114,7 @@ class UserAuth:
 				row = await cur.execute(f"""
 				SELECT * 
 				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
-				WHERE {dbSchema.tokens.HASH} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')""", (hash,))
+				WHERE {dbSchema.tokens.HASH} = ? AND {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')""", (hash,))
 				row = await row.fetchone()
 				if row is None:
 					return None
@@ -157,7 +125,7 @@ class UserAuth:
 				row = await cur.execute(f"""
 				SELECT * 
 				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
-				WHERE {dbSchema.tokens.EMAIL} = ? AND {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')""", (email,))
+				WHERE {dbSchema.tokens.EMAIL} = ? AND {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')""", (email,))
 				row = await row.fetchone()
 				if row is None:
 					return None
@@ -170,7 +138,7 @@ class UserAuth:
 			self = cls(
 				hashed = str(row[t.HASH]),
 				jwt=jwt,
-				jwt_expires = jwtData.from_jwt(jwt).exp,
+				expires = datetime.fromtimestamp(int(row[t.EXPIRES]), UTC),
 				user_token = parent._dec(str(row[t.USER_TOKEN])),
 				last_used = datetime.fromtimestamp(int(row[t.LAST_USED]), UTC),
 				requests_count = int(row[t.REQUESTS_CNT]),
@@ -186,7 +154,7 @@ class UserAuth:
 
 		async def refresh(self):
 			_logger.debug(f"Refreshing entry for {self.email}")
-			if datetime.now(UTC) > self.jwt_expires:
+			if datetime.now(UTC) > self.expires:
 				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, "Login expired. Please reauthenticate.")
 
 			async with self._parent._networkManager.operation() as session:
@@ -202,19 +170,19 @@ class UserAuth:
 
 			if content.get("status") == "LOGINERROR":
 				if content.get("error") == "Wrong token":
-					self.jwt_expires = datetime.now(UTC)
+					self.expires = datetime.now(UTC)
 					return
 				raise AuthenticationError(status.HTTP_400_BAD_REQUEST, f"An error occurred during authentication: {content}")
 
-			if "jwt" not in content:
-				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, f"Unexpected refresh response: {content}")
-			if self.jwt != content["jwt"]:
+			self.expires = datetime.now(UTC) + timedelta(seconds=int(content["token_exp"]))
+
+			if "jwt" in content:
 				self.jwt = content["jwt"]
-				self.jwt_expires = jwtData.from_jwt(self.jwt).exp
+
 			await self._write_values()
 
 		def timeLeft(self) -> timedelta:
-			return self.jwt_expires - datetime.now(UTC)
+			return self.expires - datetime.now(UTC)
 		def usedWithin(self, minutes:int) -> bool:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
 		async def getSquadronId(self) -> int|None:
@@ -305,7 +273,7 @@ class UserAuth:
 			obj = {
 				t.HASH: self.hashed,
 				t.JWT: self.jwt,
-				t.JWT_EXPIRES: self.jwt_expires,
+				t.EXPIRES: self.expires,
 				t.USER_TOKEN: self.user_token,
 				t.LAST_USED: self.last_used,
 				t.UID:self.uidHint,
@@ -450,7 +418,6 @@ class UserAuth:
 		async with self._transaction() as cur:
 			schema = dbSchema
 			raw, hash = self._generate_hash()
-			jwt_decoded = jwtData.from_jwt(data["jwt"])
 			if await (await cur.execute(f"SELECT 1 FROM {schema.tokens.t()} WHERE {schema.tokens.EMAIL} = ?", (email,))).fetchone() is not None:
 				_logger.debug(f"Overwriting old loginentry for {email}")
 				await cur.execute(f"""
@@ -458,20 +425,20 @@ class UserAuth:
 					SET 
 						{schema.tokens.HASH} = ?, 
 						{schema.tokens.JWT} = ?,
-						{schema.tokens.JWT_EXPIRES} = ?, 
+						{schema.tokens.EXPIRES} = ?, 
 						{schema.tokens.USER_TOKEN} = ?, 
 						{schema.tokens.UID} = ?,
 						{schema.tokens.LAST_USED} = ?
 					WHERE {schema.tokens.EMAIL} = ?;
 					""", 
-					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
+					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
 				)
 			else:
 				await cur.execute(f"""
 					INSERT INTO {schema.tokens.t()} 
-					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.JWT_EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED}) 
+					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED}) 
 					VALUES ({', '.join(["?" for i in range(7)])})""", 
-					(hash, self._enc(data["jwt"]), dtToTimestamp(jwt_decoded.exp), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
+					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
 				)		
 		return raw, data["user_id"]
 
@@ -617,7 +584,7 @@ class UserAuth:
 		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v.expires > datetime.now(UTC)}
 		await self._force_write_used_cache()
 		async with self._transaction() as cur:
-			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.JWT_EXPIRES} > strftime('%s', 'now')")).fetchall()
+			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')")).fetchall()
 
 			for row in rows:
 				entry = await self.Entry.from_row(self, row)
@@ -627,9 +594,10 @@ class UserAuth:
 					else:
 						await self.remove_entry(entry)
 				except AuthenticationError:
+					_logger.error(f"Could not refresh entry {entry.email}")
 					await self.remove_entry(entry)
 
-			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.JWT_EXPIRES} <= strftime('%s', 'now')")
+			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} <= strftime('%s', 'now')")
 			if operation.rowcount > 0:
 				_logger.info(f"Deleted {operation.rowcount} expired entries")	
 		

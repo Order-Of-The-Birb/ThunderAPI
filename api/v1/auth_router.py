@@ -58,7 +58,7 @@ async def login_token(
 ):
 	await user.refresh()
 	return {
-		"expires": dtToTimestamp(user.jwt_expires),
+		"expires": dtToTimestamp(user.expires),
 		"status": "OK"
 	}
 

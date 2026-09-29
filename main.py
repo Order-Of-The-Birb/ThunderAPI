@@ -76,6 +76,9 @@ async def lifespan(app: FastAPI):
 	await users_cache.start()
 	await networkManager.start()
 
+
+	await users_cache._refresh() # Clean up old entries on startup
+
 	#region Gaijin servers config init
 	content = {}
 	try:
