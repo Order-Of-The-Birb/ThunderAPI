@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dotenv import set_key
 from re import sub as re_sub, search as re_search
 from logging import getLogger
 from asyncio import Lock
@@ -16,7 +15,6 @@ from secrets import token_urlsafe
 from pathlib import Path
 from enum import StrEnum
 from contextlib import asynccontextmanager
-from jwt import decode as jwt_decode
 from dataclasses import dataclass, asdict, field
 from base64 import b64encode
 from cryptography.fernet import Fernet
