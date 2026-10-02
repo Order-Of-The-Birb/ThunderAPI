@@ -1,11 +1,8 @@
 import struct
 from asyncio import to_thread
 from logging import getLogger
-from os import getenv
-from shutil import which
 from pathlib import Path
 from enum import IntEnum
-from sys import platform
 from subprocess import run as run_process
 from json import loads
 from lz4.block import compress as lz4compress, decompress as lz4decompress

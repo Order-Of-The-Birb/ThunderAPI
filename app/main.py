@@ -280,7 +280,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host="0.0.0.0", port=8000) # host set to 0.0.0.0:8000 for Docker
+		uvicorn_run(app, host="0.0.0.0", port=8000)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:

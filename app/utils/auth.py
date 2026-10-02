@@ -306,19 +306,21 @@ class UserAuth:
 
 		if not self.__db_enc.exists():
 			_logger.warning("No 'users.key' file found, autogenerating a key")
-			key = Fernet.generate_key().decode("utf-8")
-			self.__db_enc.write_text(key)
+			enc_key = Fernet.generate_key().decode("utf-8")
+			self.__db_enc.write_text(enc_key)
+			self.__db_enc.chmod(0o600)
 		else:
-			key = self.__db_enc.read_text()
-		self.__fernet = Fernet(key.encode())
+			enc_key = self.__db_enc.read_text().strip()
+		self.__fernet = Fernet(enc_key.encode())
 
 		if not self.__machine_id_file.exists():
 			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
-			key = md5(urandom(16)).hexdigest()
-			self.__machine_id_file.write_text(key)
+			machID = md5(urandom(16)).hexdigest()
+			self.__machine_id_file.write_text(machID)
+			self.__machine_id_file.chmod(0o600)
 		else:
-			key = self.__machine_id_file.read_text()
-		self._machine_id = key
+			machID = self.__machine_id_file.read_text().strip()
+		self._machine_id = machID
 
 		_logger.debug("User Token Cache initialized")
 
