@@ -94,11 +94,11 @@ cp ./.example.env ./.env
 4. Edit the `.env` to fit your needs  
 5. Build the Docker image  
 ```bash  
-docker build  
+docker compose build  
 ```  
 6. Run the Docker image  
 ```bash  
-docker run  
+docker compose up -d  
 ```  
 
 ## Contributions  

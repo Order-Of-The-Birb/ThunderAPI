@@ -656,10 +656,10 @@ class UserAuth:
 		dbPath.parent.mkdir(parents=True, exist_ok=True)
 
 		if dbPath.exists():
-			dbPath.chmod(mode=0o640)
+			dbPath.chmod(mode=0o644)
 			return
 
-		dbPath.touch(mode=0o640)
+		dbPath.touch(mode=0o644)
 
 		try:
 			async with connect(dbPath) as con:
