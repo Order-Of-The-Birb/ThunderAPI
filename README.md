@@ -75,9 +75,9 @@ The official ThunderAPI instance does not sell or share your personal data with 
 
 ## Self-hosting  
 ### Prerequisites  
-- Python 3.14  
-- `wt_ext_cli` binary (if not in the [tools](/tools/) folder, specify its path in the `.env`)  
-- `binBlk` binary (if not in the [tools](/tools/) folder, specify its path in the `.env`)  
+- `wt_ext_cli` binary (put in the [tools](/tools/) folder)  
+- `binBlk` binary (put in the [tools](/tools/) folder)  
+- Docker  
 ### Setup  
 1. Clone the repo  
 ```bash  
@@ -92,18 +92,13 @@ cd ./ThunderAPI
 cp ./.example.env ./.env  
 ```  
 4. Edit the `.env` to fit your needs  
-5. Add execution permissions, if needed  
+5. Build the Docker image  
 ```bash  
-chmod +x ./run ./setup  
+docker build  
 ```  
-6. Run the `setup` script - This sets up the Python virtual environment (`.venv`)  
+6. Run the Docker image  
 ```bash  
-./setup  
-```  
-7. Modify the `.env` to fit your needs  
-8. Start the server by using the `run` script  
-```bash  
-./run  
+docker run  
 ```  
 
 ## Contributions  

@@ -1,19 +1,7 @@
 import logging, asyncio
-from dotenv import load_dotenv
 from pathlib import Path
 
 logger = logging.getLogger()
-
-if not load_dotenv(".env"):
-	logger.warning(".env not found, copying .example.env")
-	example_env = (Path(__file__).parent / ".example.env")
-	dotenv = Path(__file__).parent / ".env"
-	example_env.copy(dotenv)
-	if not load_dotenv(".env"):
-		raise RuntimeError("Could not load .env data")
-	dotenv.chmod(0o600)
-else:
-	(Path(__file__).parent / ".env").chmod(0o600)
 
 from logging.handlers import TimedRotatingFileHandler
 from fastapi import FastAPI, status
