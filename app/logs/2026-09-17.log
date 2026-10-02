@@ -1,0 +1,14 @@
+2026-09-17 21:15:53:root                          :main           :259:INFO   :Starting up on 127.0.0.1:8001
+2026-09-17 21:15:53:utils.auth                    :_init_db       :665:DEBUG  :Database successfully initialized
+2026-09-17 21:15:53:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-17 21:15:53:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1381
+2026-09-17 21:15:53:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1094
+2026-09-17 21:15:54:utils.news                    :_writeID       :323:DEBUG  :Writing value 10236 for NEWS
+2026-09-17 21:15:54:utils.news                    :mainloop       :156:DEBUG  :News have been posted since last check
+2026-09-17 21:15:54:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/assets/567277259 HTTP/1.1" 302 0
+2026-09-17 21:15:54:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-09-17 21:15:54:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/249855791/40e3f557-f059-469f-80c6-487b213d118e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-09-17T19%3A55%3A24Z&rscd=attachment%3B+filename%3DGeoLite2-City.mmdb&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-09-17T18%3A54%3A28Z&ske=2026-09-17T19%3A55%3A24Z&sks=b&skv=2018-11-09&sig=jvPwqvX%2FTX1yqopyxtpsjeWhw7izj5h0%2BrCjEtJml80%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4OTY3NDM1NCwibmJmIjoxNzg5NjcyNTU0LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.byxDTGADfrEaNYy9Hgmx2T-hTGEZ13s_ZzLSZXfM-OM&response-content-disposition=attachment%3B%20filename%3DGeoLite2-City.mmdb&response-content-type=application%2Foctet-stream HTTP/1.1" 200 65881334
+2026-09-17 21:15:54:utils.news                    :_writeID       :323:DEBUG  :Writing value 1895 for CHANGELOG
+2026-09-17 21:15:54:utils.news                    :mainloop       :169:DEBUG  :Changelogs have been posted since last check
+2026-09-17 21:15:54:utils.news                    :_writeID       :323:DEBUG  :Writing value 1894 for MAJOR_CHLOG
+2026-09-17 21:15:54:utils.news                    :mainloop       :179:DEBUG  :New major update changelog posted

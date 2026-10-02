@@ -1,0 +1,325 @@
+2026-09-29 19:28:42:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 19:28:42:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 19:28:42:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 19:28:42:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 19:28:42:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:28:42:utils.news                    :mainloop       :156:DEBUG  :News have been posted since last check
+2026-09-29 19:28:42:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 19:28:43:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:28:43:utils.news                    :mainloop       :169:DEBUG  :Changelogs have been posted since last check
+2026-09-29 19:28:43:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1089
+2026-09-29 19:28:43:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/assets/594682129 HTTP/1.1" 302 0
+2026-09-29 19:28:43:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-09-29 19:28:44:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/249855791/70f30948-238b-4d42-9981-828cc640dc21?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-09-29T18%3A18%3A49Z&rscd=attachment%3B+filename%3DGeoLite2-City.mmdb&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-09-29T17%3A18%3A48Z&ske=2026-09-29T18%3A18%3A49Z&sks=b&skv=2018-11-09&sig=bdAcbpdDaRuu%2Bp1uXQv%2Fd6IQGtrbrUVlklipUSVvIH8%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5MDcwNDcyMywibmJmIjoxNzkwNzAyOTIzLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.pjj8OQU56qmVjvl1jTUfqOPEVBc2nxNpzJiSnkNGz-k&response-content-disposition=attachment%3B%20filename%3DGeoLite2-City.mmdb&response-content-type=application%2Foctet-stream HTTP/1.1" 200 65345887
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:29:27:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 19:29:28:utils.auth                    :login          :455:DEBUG  :Overwriting old loginentry for legendaryevenweeb@gmail.com
+2026-09-29 19:29:45:root                          :main           :287:INFO   :Shutting down
+2026-09-29 19:29:49:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 19:29:49:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 19:29:49:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 19:29:49:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 19:29:49:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:29:49:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 19:29:50:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:29:50:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1089
+2026-09-29 19:30:06:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 19:30:06:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 19:30:07:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 855
+2026-09-29 19:34:50:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:34:50:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:39:49:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 19:39:49:utils.auth                    :_refresh       :630:ERROR  :Could not refresh entry legendaryevenweeb@gmail.com
+2026-09-29 19:39:49:utils.auth                    :remove_entry   :595:DEBUG  :Removed entry legendaryevenweeb@gmail.com
+2026-09-29 19:39:51:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:39:51:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:44:52:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:44:52:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:49:52:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:49:53:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:51:35:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 19:51:38:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23072
+2026-09-29 19:53:13:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23072
+2026-09-29 19:54:02:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23072
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:31]
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[32:40]
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[41:53]
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 19:54:37:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 19:54:53:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:54:54:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 19:54:59:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 262568
+2026-09-29 19:55:23:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23204
+2026-09-29 19:55:35:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23204
+2026-09-29 19:56:43:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23204
+2026-09-29 19:59:49:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 19:59:49:utils.auth                    :_refresh       :630:ERROR  :Could not refresh entry legendaryevenweeb@gmail.com
+2026-09-29 19:59:49:utils.auth                    :remove_entry   :595:DEBUG  :Removed entry legendaryevenweeb@gmail.com
+2026-09-29 19:59:49:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 19:59:49:utils.auth                    :_refresh       :630:ERROR  :Could not refresh entry peckbotgaming@gmail.com
+2026-09-29 19:59:49:utils.auth                    :remove_entry   :595:DEBUG  :Removed entry peckbotgaming@gmail.com
+2026-09-29 19:59:54:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 19:59:54:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:02:02:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 20:02:06:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:02:28:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:02:50:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:03:23:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:04:55:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:04:55:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:09:49:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:09:49:utils.auth                    :_refresh       :630:ERROR  :Could not refresh entry legendaryevenweeb@gmail.com
+2026-09-29 20:09:49:utils.auth                    :remove_entry   :595:DEBUG  :Removed entry legendaryevenweeb@gmail.com
+2026-09-29 20:09:55:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:09:56:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:14:56:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:14:57:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:19:57:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:19:57:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:23:03:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:23:04:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:23:04:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:23:04:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:23:04:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:23:04:root                          :main           :287:INFO   :Shutting down
+2026-09-29 20:23:07:root                          :main           :287:INFO   :Shutting down
+2026-09-29 20:23:13:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:23:13:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:23:13:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:23:13:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:23:13:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:23:13:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:23:14:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1092
+2026-09-29 20:23:14:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:23:16:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 20:23:23:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:23:23:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:23:23:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:23:23:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:23:23:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:23:23:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:23:23:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1092
+2026-09-29 20:23:24:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:23:42:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:23:42:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:23:42:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:23:42:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:23:42:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:23:42:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:23:43:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1092
+2026-09-29 20:23:43:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:24:09:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:24:27:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:24:27:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:24:27:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:24:27:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:24:27:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:24:27:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:24:27:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1092
+2026-09-29 20:24:51:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:25:00:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:25:05:root                          :main           :287:INFO   :Shutting down
+2026-09-29 20:25:20:root                          :main           :281:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:25:25:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:25:25:root                          :main           :287:INFO   :Shutting down
+2026-09-29 20:26:13:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:26:13:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:31:00:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:31:00:root                          :main           :290:INFO   :Shutting down
+2026-09-29 20:31:18:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:31:55:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:31:59:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:31:59:root                          :main           :290:INFO   :Shutting down
+2026-09-29 20:32:15:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:32:15:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:32:16:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:32:16:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:32:16:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:32:16:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:32:17:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:32:17:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1092
+2026-09-29 20:32:17:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:32:47:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:37:18:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:37:18:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:42:15:utils.auth                    :refresh        :188:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:42:19:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:42:19:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:42:58:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:42:58:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:42:58:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:42:58:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:42:58:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:42:58:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:42:59:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:42:59:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:42:59:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1098
+2026-09-29 20:44:37:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:44:37:utils.auth                    :_init_db       :671:DEBUG  :Database successfully initialized
+2026-09-29 20:44:38:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:44:38:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:44:38:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:44:38:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:44:38:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:44:38:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:44:38:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1098
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:44:51:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 20:44:54:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:45:07:root                          :main           :284:INFO   :Starting up on 127.0.0.1:8008
+2026-09-29 20:45:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:45:07:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 be-size prefix; potential uncompressed size: 49023232
+2026-09-29 20:45:07:tools.blk_utils               :lz4_decompress_try:128:DEBUG  :LZ4 be-size prefix decompression failed: Decompression failed: corrupt input or insufficient space in destination buffer. Error code: 6
+2026-09-29 20:45:07:urllib3.connectionpool        :_new_conn      :1062:DEBUG  :Starting new HTTPS connection (1): api.github.com:443
+2026-09-29 20:45:07:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb HTTP/1.1" 200 1384
+2026-09-29 20:45:07:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:45:07:urllib3.connectionpool        :_make_request  :544:DEBUG  :https://api.github.com:443 "GET /repos/P3TERX/GeoLite.mmdb/releases/latest HTTP/1.1" 200 1098
+2026-09-29 20:45:08:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:45:09:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:48:32:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:49:58:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:49:58:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:49:58:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 855
+2026-09-29 20:49:59:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:50:08:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:50:08:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:51:40:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:53:03:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:54:49:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:54:49:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:54:49:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 855
+2026-09-29 20:54:55:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:54:55:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:54:55:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 855
+2026-09-29 20:54:57:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:54:58:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:55:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 20:55:09:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 20:55:09:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 20:55:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:56:26:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:56:26:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:56:26:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 855
+2026-09-29 20:56:27:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23224
+2026-09-29 20:57:20:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:57:20:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:57:20:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23087
+2026-09-29 20:57:22:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 20:57:22:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 20:57:22:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 886
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:31]
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[32:40]
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[41:53]
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 20:57:36:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 20:57:51:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 262770
+2026-09-29 21:00:09:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:00:10:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 21:01:50:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 21:01:53:utils.auth                    :login          :422:DEBUG  :Overwriting old loginentry for legendaryevenweeb@gmail.com
+2026-09-29 21:03:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 21:03:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 21:03:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 886
+2026-09-29 21:04:12:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23222
+2026-09-29 21:04:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 21:04:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10050
+2026-09-29 21:04:19:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 23331
+2026-09-29 21:04:36:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 21:04:37:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10138
+2026-09-29 21:04:37:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 864
+2026-09-29 21:05:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 21:05:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 21:05:10:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:05:11:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[0:5]
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[6:35]
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_start with no data
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_name with data[36:44]
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :633:DEBUG  :Calling on_field_data with data[45:60]
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_field_end with no data
+2026-09-29 21:07:08:python_multipart.multipart    :callback       :636:DEBUG  :Calling on_end with no data
+2026-09-29 21:07:09:utils.auth                    :login          :422:DEBUG  :Overwriting old loginentry for legendaryevenweeb@gmail.com
+2026-09-29 21:07:25:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 367
+2026-09-29 21:07:25:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 10138
+2026-09-29 21:07:25:tools.blk_utils               :lz4_decompress_try:125:DEBUG  :Trying LZ4 marker+size; potential uncompressed size: 864
+2026-09-29 21:10:11:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:10:11:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:15:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 21:15:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 21:15:12:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:15:12:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:20:12:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:20:13:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:25:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 21:25:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 21:25:13:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:25:14:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:30:14:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:30:15:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:35:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 21:35:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 21:35:15:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:35:15:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:40:16:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:40:16:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:45:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for legendaryevenweeb@gmail.com
+2026-09-29 21:45:07:utils.auth                    :refresh        :156:DEBUG  :Refreshing entry for peckbotgaming@gmail.com
+2026-09-29 21:45:16:utils.news                    :_writeID       :326:DEBUG  :Writing value 10243 for NEWS
+2026-09-29 21:45:17:utils.news                    :_writeID       :326:DEBUG  :Writing value 1899 for CHANGELOG
+2026-09-29 21:49:07:root                          :main           :290:INFO   :Shutting down

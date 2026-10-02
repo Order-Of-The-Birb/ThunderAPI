@@ -1,0 +1,5 @@
+-- Use latest version from https://github.com/Warthunder-Open-Source-Foundation/wt_ext_cli/releases (As of writing, v0.6.6 works)
+wt_ext_cli* 
+
+-- Use latest prebuilt binaries from https://github.com/GaijinEntertainment/DagorEngine/releases (As of writing, Build 2026/05/02 works)
+binBlk*

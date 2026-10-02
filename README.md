@@ -14,7 +14,7 @@ The API also handles the conversion from Gaijin's compressed binary `BLK` format
 ## About  
 This project is meant to be a spiritual successor to [Thunderinsights](https://github.com/djandDK/thunderinsights).  
 After it was completely shut down around May 2026, I decided to continue this API and make it something even better.  
-The Thunderinsights source code was used as a reference for some endpoints in the beginning. However, the majority of the endpoint logic was reverse-engineered using [HTTP Toolkit](https://httptoolkit.com/), Firefox DevTools, and my custom scripts (found in the `manual_extract` directory) that converted the raw hex to readable JSON.  
+The Thunderinsights source code was used as a reference for some endpoints in the beginning. However, the majority of the endpoint logic was reverse-engineered using [HTTP Toolkit](https://httptoolkit.com/), Firefox DevTools, and my custom scripts (found in the [dev_tools](/dev_tools/) directory) that converted the raw hex to readable JSON.  
 
 This API uses a different design philosophy from `Thunderinsights`: each user authenticates using their own Gaijin account. This allows the API to support functionality that the original project could not, including squadron management, marketplace access, and replay searching.  
 
@@ -40,7 +40,7 @@ Setup instructions can be found in the [Self-hosting](#self-hosting) section.
 ## Features  
 - Squadron management  
 - Marketplace access  
-- Replay searching and parsing  
+- Replay searching and parsing *(Searching in development)*  
 - Player lookup  
 - Squadron lookup  
 - News and changelogs feed  
@@ -76,8 +76,8 @@ The official ThunderAPI instance does not sell or share your personal data with 
 ## Self-hosting  
 ### Prerequisites  
 - Python 3.14  
-- `wt_ext_cli` binary (if not in the `tools` folder, specify its path in the `.env`)  
-- `binBlk` binary (if not in the `tools` folder, specify its path in the `.env`)  
+- `wt_ext_cli` binary (if not in the [tools](/tools/) folder, specify its path in the `.env`)  
+- `binBlk` binary (if not in the [tools](/tools/) folder, specify its path in the `.env`)  
 ### Setup  
 1. Clone the repo  
 ```bash  
@@ -100,7 +100,8 @@ chmod +x ./run ./setup
 ```bash  
 ./setup  
 ```  
-7. Start the server by using the `run` script  
+7. Modify the `.env` to fit your needs  
+8. Start the server by using the `run` script  
 ```bash  
 ./run  
 ```  

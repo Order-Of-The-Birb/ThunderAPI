@@ -135,7 +135,7 @@ class NewsManager:
 		self._networkManager = networkManager
 		self.websocket_mgr = WebsocketManager()
 
-		self._ids_json = Path(__file__).parent / "news.json"
+		self._ids_json = Path("/data/news.json")
 		if (not self._ids_json.exists()):
 			self._ids_json.write_text(dumps({
 				self._IDTYPE.NEWS.value[1]: 0,

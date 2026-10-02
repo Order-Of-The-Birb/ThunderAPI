@@ -13,9 +13,9 @@ from threading import Lock
 from logging import getLogger
 
 _logger = getLogger(__name__)
-_db = Path(__file__).parent / "GeoLite2-City.mmdb"
-_db_tmp = _db.parent / "GeoLite2-City.mmdb.tmp"
-_db_id = _db.parent / "GeoLite2-City.hash"
+_db = Path("/data/GeoLite2-City.mmdb")
+_db_tmp = Path("/data/GeoLite2-City.mmdb.tmp")
+_db_id = Path("/data/GeoLite2-City.hash")
 _reader = None
 _lock = Lock()
 _github_repo = None

@@ -299,21 +299,21 @@ class UserAuth:
 		self.scheduler = AsyncIOScheduler()
 
 		self._pending_2fa = {}
-		self.__db_path = Path(__file__).parent / "users.db"
-		key = getenv("TOKEN_ENC_KEY")
-		if not key:
-			_logger.warning("No 'TOKEN_ENC_KEY' env variable found, autogenerating a key")
+		self.__db_path = Path("/data/users.db")
+		self.__db_enc = Path("/data/users.key")
+		self.__db_init_path = Path(__file__).parent / "users_create.sql"
+		self.__machine_id_file = Path("/data/machine.id")
+		if not self.__db_enc.exists():
+			_logger.warning("No 'users.key' file found, autogenerating a key")
 			key = Fernet.generate_key().decode("utf-8")
-			set_key(".env", "TOKEN_ENC_KEY", key)
+			self.__db_enc.write_text(key)
 		self.__fernet = Fernet(key.encode())
 
-		key = getenv("MACHINE_ID")
-		if not key:
-			_logger.warning("No 'MACHINE_ID' env variable found, autogenerating a machine id")
+		if not self.__machine_id_file.exists():
+			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
 			key = md5(urandom(16)).hexdigest()
-			set_key(".env", "MACHINE_ID", key)
+			self.__machine_id_file.write_text(key)
 		self._machine_id = key
-		
 
 		_logger.debug("User Token Cache initialized")
 
@@ -630,7 +630,7 @@ class UserAuth:
 			await con.close()
 	
 	async def start(self):
-		await self._init_db(self.__db_path)
+		await self._init_db(self.__db_path, self.__db_init_path)
 		if self.__autorefresh_job is None:
 			self.__autorefresh_job = self.scheduler.add_job(
 				self._refresh,
@@ -647,17 +647,18 @@ class UserAuth:
 			self.scheduler.shutdown(wait=True)
 
 	@staticmethod
-	async def _init_db(dbPath:Path):
+	async def _init_db(dbPath:Path, dbInitPath:Path):
+		dbPath.mkdir(parents=True, exist_ok=True)
+
 		if dbPath.exists():
 			dbPath.chmod(mode=0o600)
 			return
 
-		init_script = dbPath.parent / (".".join(dbPath.name.split(".")[:-1]) + "_create.sql")
 		dbPath.touch(mode=0o600)
 
 		try:
 			async with connect(dbPath) as con:
-				lines = re_sub("--.*\n", "", init_script.read_text()).replace("\n", "").split(";")
+				lines = re_sub("--.*\n", "", dbInitPath.read_text()).replace("\n", "").split(";")
 
 				for line in lines:
 					line = line.strip()

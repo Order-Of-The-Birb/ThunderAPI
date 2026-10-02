@@ -227,8 +227,8 @@ def custom_swagger_ui():
 def main():
 	# region Logging
 
-	logFolder = Path(__file__).parent / "logs"
-	logFolder.mkdir(mode=0o755, exist_ok=True)
+	logFolder = Path("/data/logs")
+	logFolder.mkdir(mode=0o755, exist_ok=True, parents=True)
 
 	#region Handler and Formatter
 	def log_namer(default_name:str):
@@ -243,6 +243,10 @@ def main():
 	handler.namer = log_namer
 	logger.addHandler(handler)
 	logger.propagate = False
+
+	console_handler = logging.StreamHandler()
+	console_handler.setFormatter(formatter)
+	logger.addHandler(console_handler)
 	#endregion
 
 	#region Log level
@@ -269,8 +273,9 @@ def main():
 
 		uvicorn_logger.handlers.clear()
 
-		uvicorn_logger.setLevel(logging.INFO)
-		uvicorn_logger.propagate = True
+		uvicorn_logger.addHandler(handler)
+		uvicorn_logger.setLevel(level)
+		uvicorn_logger.propagate = False
 	#endregion
 	# endregion
 
@@ -280,10 +285,9 @@ def main():
 		raise EnvironmentError("Environment variable \"PORT\" is not a valid integer")
 	if not 1 <= port <= 65535:
 		raise EnvironmentError("Invalid port number provided")
-	host = getenv("HOST", "127.0.0.1")
-	logger.info(f"Starting up on {host}:{port}")
+
 	try:
-		uvicorn_run(app, host=host, port=port)
+		uvicorn_run(app, host="0.0.0.0", port=8000) # host set to 0.0.0.0:8000 for Docker
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:
