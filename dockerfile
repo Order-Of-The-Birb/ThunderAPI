@@ -10,4 +10,4 @@ COPY tools/ /opt/tools/
 
 RUN chmod +x /opt/tools/wt_ext_cli /opt/tools/binBlk
 
-CMD ["python", "main.py"]
+CMD ["python", "app/main.py"]

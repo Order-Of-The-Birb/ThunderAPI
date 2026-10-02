@@ -303,16 +303,21 @@ class UserAuth:
 		self.__db_enc = Path("/data/users.key")
 		self.__db_init_path = Path(__file__).parent / "users_create.sql"
 		self.__machine_id_file = Path("/data/machine.id")
+
 		if not self.__db_enc.exists():
 			_logger.warning("No 'users.key' file found, autogenerating a key")
 			key = Fernet.generate_key().decode("utf-8")
 			self.__db_enc.write_text(key)
+		else:
+			key = self.__db_enc.read_text()
 		self.__fernet = Fernet(key.encode())
 
 		if not self.__machine_id_file.exists():
 			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
 			key = md5(urandom(16)).hexdigest()
 			self.__machine_id_file.write_text(key)
+		else:
+			key = self.__machine_id_file.read_text()
 		self._machine_id = key
 
 		_logger.debug("User Token Cache initialized")
@@ -648,7 +653,7 @@ class UserAuth:
 
 	@staticmethod
 	async def _init_db(dbPath:Path, dbInitPath:Path):
-		dbPath.mkdir(parents=True, exist_ok=True)
+		dbPath.parent.mkdir(parents=True, exist_ok=True)
 
 		if dbPath.exists():
 			dbPath.chmod(mode=0o600)

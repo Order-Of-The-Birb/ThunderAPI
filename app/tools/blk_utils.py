@@ -13,72 +13,8 @@ from bz2 import compress as bzcompress, decompress as bzdecompress
 
 _logger = getLogger(__name__)
 
-def _find_wtextcli() -> Path:
-	"""Locate the wt_ext_cli executable."""
-	explicit_path = getenv("WT_EXT_CLI_PATH")
-	if explicit_path:
-		try:
-			p = Path(explicit_path)
-			if p.is_file():
-				return p
-		except FileNotFoundError:
-			system_ext = which(explicit_path)
-			if system_ext:
-				try:
-					return Path(system_ext)
-				except FileNotFoundError:
-					raise LookupError(f"wt_ext_cli not found at: {explicit_path}")
-
-	# Check tools/ directory next to this script
-	script_dir = Path(__file__).resolve().parent
-	if platform == "win32":
-		local = script_dir / 'wt_ext_cli.exe'
-	else:
-		local = script_dir / 'wt_ext_cli'
-
-	if local.is_file():
-		return local
-
-	# Check PATH
-	system_bin = which('wt_ext_cli')
-	if system_bin:
-		return Path(system_bin)
-
-	raise LookupError(
-		'Missing dependency: Install wt_ext_cli from '
-		'https://github.com/Warthunder-Open-Source-Foundation/wt_ext_cli/releases'
-	)
-def _find_binblk() -> Path:
-	"""Locate the binBlk executable."""
-	explicit_path = getenv("BINBLK_PATH")
-	if explicit_path:
-		p = Path(explicit_path)
-		if p.is_file():
-			return p
-		raise LookupError(f'binBlk not found at: {explicit_path}')
-
-	# Check tools/ directory next to this script
-	script_dir = Path(__file__).resolve().parent
-	if platform == "win32":
-		local = script_dir / 'binBlk.exe'
-	else:
-		local = script_dir / 'binBlk'
-
-	if local.is_file():
-		return local
-
-	# Check PATH
-	system_bin = which('binBlk')
-	if system_bin:
-		return Path(system_bin)
-
-	raise LookupError(
-		'Missing dependency: Install binBlk from\n'
-		'https://github.com/GaijinEntertainment/DagorEngine/releases/latest'
-	)
-
-wt_ext_cli: Path = _find_wtextcli()
-binBlk: Path = _find_binblk()
+wt_ext_cli: Path = Path("/opt/tools/wt_ext_cli")
+binBlk: Path = Path("/opt/tools/binBlk")
 
 class Decompress(dict):
 	def __init__(self, data: bytes):

@@ -280,13 +280,6 @@ def main():
 	# endregion
 
 	try:
-		port = int(getenv("PORT", "8001"))
-	except ValueError:
-		raise EnvironmentError("Environment variable \"PORT\" is not a valid integer")
-	if not 1 <= port <= 65535:
-		raise EnvironmentError("Invalid port number provided")
-
-	try:
 		uvicorn_run(app, host="0.0.0.0", port=8000) # host set to 0.0.0.0:8000 for Docker
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
