@@ -4,7 +4,6 @@
 .env
 .venv
 *.db-journal
-logs
 
 __pycache__
 *.pyc

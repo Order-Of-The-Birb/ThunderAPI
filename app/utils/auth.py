@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dotenv import set_key
 from re import sub as re_sub, search as re_search
 from logging import getLogger
 from asyncio import Lock
@@ -9,14 +8,13 @@ from apscheduler.job import Job
 from aiosqlite import connect, Row, OperationalError
 from os import getenv, urandom
 from datetime import UTC, datetime, timedelta
-from typing import Any, ClassVar, Literal
+from typing import ClassVar, Literal
 from fastapi import HTTPException, status
 from hashlib import sha256, md5
 from secrets import token_urlsafe
 from pathlib import Path
 from enum import StrEnum
 from contextlib import asynccontextmanager
-from jwt import decode as jwt_decode
 from dataclasses import dataclass, asdict, field
 from base64 import b64encode
 from cryptography.fernet import Fernet
@@ -299,21 +297,28 @@ class UserAuth:
 		self.scheduler = AsyncIOScheduler()
 
 		self._pending_2fa = {}
-		self.__db_path = Path(__file__).parent / "users.db"
-		key = getenv("TOKEN_ENC_KEY")
-		if not key:
-			_logger.warning("No 'TOKEN_ENC_KEY' env variable found, autogenerating a key")
-			key = Fernet.generate_key().decode("utf-8")
-			set_key(".env", "TOKEN_ENC_KEY", key)
-		self.__fernet = Fernet(key.encode())
+		self.__db_path = Path("/data/users.db")
+		self.__db_enc = Path("/data/users.key")
+		self.__db_init_path = Path(__file__).parent / "users_create.sql"
+		self.__machine_id_file = Path("/data/machine.id")
 
-		key = getenv("MACHINE_ID")
-		if not key:
-			_logger.warning("No 'MACHINE_ID' env variable found, autogenerating a machine id")
-			key = md5(urandom(16)).hexdigest()
-			set_key(".env", "MACHINE_ID", key)
-		self._machine_id = key
-		
+		if not self.__db_enc.exists():
+			_logger.warning("No 'users.key' file found, autogenerating a key")
+			enc_key = Fernet.generate_key().decode("utf-8")
+			self.__db_enc.write_text(enc_key)
+			self.__db_enc.chmod(0o600)
+		else:
+			enc_key = self.__db_enc.read_text().strip()
+		self.__fernet = Fernet(enc_key.encode())
+
+		if not self.__machine_id_file.exists():
+			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
+			machID = md5(urandom(16)).hexdigest()
+			self.__machine_id_file.write_text(machID)
+			self.__machine_id_file.chmod(0o600)
+		else:
+			machID = self.__machine_id_file.read_text().strip()
+		self._machine_id = machID
 
 		_logger.debug("User Token Cache initialized")
 
@@ -630,7 +635,7 @@ class UserAuth:
 			await con.close()
 	
 	async def start(self):
-		await self._init_db(self.__db_path)
+		await self._init_db(self.__db_path, self.__db_init_path)
 		if self.__autorefresh_job is None:
 			self.__autorefresh_job = self.scheduler.add_job(
 				self._refresh,
@@ -647,17 +652,24 @@ class UserAuth:
 			self.scheduler.shutdown(wait=True)
 
 	@staticmethod
-	async def _init_db(dbPath:Path):
+	async def _init_db(dbPath:Path, dbInitPath:Path):
+		dbPath.parent.mkdir(parents=True, exist_ok=True)
+
 		if dbPath.exists():
-			dbPath.chmod(mode=0o600)
+			if int(getenv("DEBUG_MODE", "0")) == 1:
+				dbPath.chmod(mode=0o644)
+			else:
+				dbPath.chmod(mode=0o600)
 			return
 
-		init_script = dbPath.parent / (".".join(dbPath.name.split(".")[:-1]) + "_create.sql")
-		dbPath.touch(mode=0o600)
+		if int(getenv("DEBUG_MODE", "0")) == 1:
+			dbPath.touch(mode=0o644)
+		else:
+			dbPath.touch(mode=0o600)
 
 		try:
 			async with connect(dbPath) as con:
-				lines = re_sub("--.*\n", "", init_script.read_text()).replace("\n", "").split(";")
+				lines = re_sub("--.*\n", "", dbInitPath.read_text()).replace("\n", "").split(";")
 
 				for line in lines:
 					line = line.strip()

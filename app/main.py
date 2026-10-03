@@ -1,19 +1,7 @@
 import logging, asyncio
-from dotenv import load_dotenv
 from pathlib import Path
 
 logger = logging.getLogger()
-
-if not load_dotenv(".env"):
-	logger.warning(".env not found, copying .example.env")
-	example_env = (Path(__file__).parent / ".example.env")
-	dotenv = Path(__file__).parent / ".env"
-	example_env.copy(dotenv)
-	if not load_dotenv(".env"):
-		raise RuntimeError("Could not load .env data")
-	dotenv.chmod(0o600)
-else:
-	(Path(__file__).parent / ".env").chmod(0o600)
 
 from logging.handlers import TimedRotatingFileHandler
 from fastapi import FastAPI, status
@@ -227,8 +215,8 @@ def custom_swagger_ui():
 def main():
 	# region Logging
 
-	logFolder = Path(__file__).parent / "logs"
-	logFolder.mkdir(mode=0o755, exist_ok=True)
+	logFolder = Path("/data/logs")
+	logFolder.mkdir(mode=0o755, exist_ok=True, parents=True)
 
 	#region Handler and Formatter
 	def log_namer(default_name:str):
@@ -243,6 +231,10 @@ def main():
 	handler.namer = log_namer
 	logger.addHandler(handler)
 	logger.propagate = False
+
+	console_handler = logging.StreamHandler()
+	console_handler.setFormatter(formatter)
+	logger.addHandler(console_handler)
 	#endregion
 
 	#region Log level
@@ -269,21 +261,14 @@ def main():
 
 		uvicorn_logger.handlers.clear()
 
-		uvicorn_logger.setLevel(logging.INFO)
-		uvicorn_logger.propagate = True
+		uvicorn_logger.addHandler(handler)
+		uvicorn_logger.setLevel(level)
+		uvicorn_logger.propagate = False
 	#endregion
 	# endregion
 
 	try:
-		port = int(getenv("PORT", "8001"))
-	except ValueError:
-		raise EnvironmentError("Environment variable \"PORT\" is not a valid integer")
-	if not 1 <= port <= 65535:
-		raise EnvironmentError("Invalid port number provided")
-	host = getenv("HOST", "127.0.0.1")
-	logger.info(f"Starting up on {host}:{port}")
-	try:
-		uvicorn_run(app, host=host, port=port)
+		uvicorn_run(app, host="0.0.0.0", port=8000)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:
