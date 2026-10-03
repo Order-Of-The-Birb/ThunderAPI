@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 from aiosqlite import connect, Row, OperationalError
-from os import urandom
+from os import getenv, urandom
 from datetime import UTC, datetime, timedelta
 from typing import ClassVar, Literal
 from fastapi import HTTPException, status
@@ -656,10 +656,16 @@ class UserAuth:
 		dbPath.parent.mkdir(parents=True, exist_ok=True)
 
 		if dbPath.exists():
-			dbPath.chmod(mode=0o644)
+			if int(getenv("DEBUG_MODE", "0")) == 1:
+				dbPath.chmod(mode=0o644)
+			else:
+				dbPath.chmod(mode=0o600)
 			return
 
-		dbPath.touch(mode=0o644)
+		if int(getenv("DEBUG_MODE", "0")) == 1:
+			dbPath.touch(mode=0o644)
+		else:
+			dbPath.touch(mode=0o600)
 
 		try:
 			async with connect(dbPath) as con:

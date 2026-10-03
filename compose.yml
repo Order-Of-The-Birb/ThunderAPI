@@ -6,5 +6,5 @@ services:
     volumes:
       - "./data:/data"
     ports:
-      - "${PORT}:8000"
+      - "${HOST}:${PORT}:8000"
     restart: unless-stopped
