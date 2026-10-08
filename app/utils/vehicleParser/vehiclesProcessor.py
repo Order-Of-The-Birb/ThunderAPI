@@ -12,6 +12,7 @@ from time import perf_counter
 from pandas import read_csv, DataFrame
 from .constants import *
 from utils import networkManager
+from vars import VEHICLES
 
 _logger = getLogger(__name__)
 
@@ -28,7 +29,7 @@ def git_check():
 git_check()
 #endregion
 #region Module setup
-gamefiles = Path("/data/vehicles") / "gamefiles"
+gamefiles = VEHICLES / "gamefiles"
 gamefiles.mkdir(exist_ok=True, parents=True)
 CACHED_VALIDITY_UNTIL:int
 @dataclass(frozen=True, init=False)

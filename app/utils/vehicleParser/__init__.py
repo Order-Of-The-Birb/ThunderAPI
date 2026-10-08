@@ -1,15 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from enum import Enum
 from logging import getLogger
 from pathlib import Path
 from utils.vehicleParser.vehiclesProcessor import Vehicle, Weapon, Sensor
+from vars import VEHICLES
 
 _logger = getLogger(__name__)
 
 class DatabasePaths:
-	ROOT:Path = Path("/data/vehicles/")
-
 	@dataclass(frozen=True, slots=True)
 	class _dbpaths:
 		ROOT: Path
@@ -19,13 +17,13 @@ class DatabasePaths:
 		ALL: Path
 
 	DATABASE:_dbpaths = _dbpaths(
-		ROOT / "database",
-		ROOT / "database" / "units",
-		ROOT / "database" / "weapons",
-		ROOT / "database" / "sensors",
-		ROOT / "database" / "all.json"
+		VEHICLES / "database",
+		VEHICLES / "database" / "units",
+		VEHICLES / "database" / "weapons",
+		VEHICLES / "database" / "sensors",
+		VEHICLES / "database" / "all.json"
 	)
-	GAMEFILES:Path = ROOT / "gamefiles"
+	GAMEFILES:Path = VEHICLES / "gamefiles"
 
 class Vehicles:
 	def __init__(self):

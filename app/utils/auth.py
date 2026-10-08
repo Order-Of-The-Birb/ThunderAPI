@@ -12,7 +12,6 @@ from typing import ClassVar, Literal
 from fastapi import HTTPException, status
 from hashlib import sha256, md5
 from secrets import token_urlsafe
-from pathlib import Path
 from enum import StrEnum
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict, field
@@ -21,6 +20,7 @@ from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
 from utils.network import NetworkManager
+from vars import USERS_DB
 
 _logger = getLogger(__name__)
 
@@ -287,7 +287,6 @@ class UserAuth:
 			return obj
 	
 	__autorefresh_job:Job = None
-	__db_path:Path = None
 	_machine_id:str = None
 	_pending_2fa:dict[str, _pending2FA] # email -> {hashed_password, requestId, userId, types, code (after answering)}
 	_networkManager:NetworkManager
@@ -297,27 +296,23 @@ class UserAuth:
 		self.scheduler = AsyncIOScheduler()
 
 		self._pending_2fa = {}
-		self.__db_path = Path("/data/users.db")
-		self.__db_enc = Path("/data/users.key")
-		self.__db_init_path = Path(__file__).parent / "users_create.sql"
-		self.__machine_id_file = Path("/data/machine.id")
 
-		if not self.__db_enc.exists():
+		if not USERS_DB.KEY.exists():
 			_logger.warning("No 'users.key' file found, autogenerating a key")
 			enc_key = Fernet.generate_key().decode("utf-8")
-			self.__db_enc.write_text(enc_key)
-			self.__db_enc.chmod(0o600)
+			USERS_DB.KEY.write_text(enc_key)
+			USERS_DB.KEY.chmod(0o600)
 		else:
-			enc_key = self.__db_enc.read_text().strip()
+			enc_key = USERS_DB.KEY.read_text().strip()
 		self.__fernet = Fernet(enc_key.encode())
 
-		if not self.__machine_id_file.exists():
+		if not USERS_DB.MACHINE_ID.exists():
 			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
 			machID = md5(urandom(16)).hexdigest()
-			self.__machine_id_file.write_text(machID)
-			self.__machine_id_file.chmod(0o600)
+			USERS_DB.MACHINE_ID.write_text(machID)
+			USERS_DB.MACHINE_ID.chmod(0o600)
 		else:
-			machID = self.__machine_id_file.read_text().strip()
+			machID = USERS_DB.MACHINE_ID.read_text().strip()
 		self._machine_id = machID
 
 		_logger.debug("User Token Cache initialized")
@@ -619,7 +614,7 @@ class UserAuth:
 
 	@asynccontextmanager
 	async def _transaction(self):
-		con = await connect(self.__db_path)
+		con = await connect(USERS_DB.DB)
 		con.row_factory = Row
 		try:
 			cur = await con.cursor()
@@ -635,7 +630,7 @@ class UserAuth:
 			await con.close()
 	
 	async def start(self):
-		await self._init_db(self.__db_path, self.__db_init_path)
+		await self._init_db()
 		if self.__autorefresh_job is None:
 			self.__autorefresh_job = self.scheduler.add_job(
 				self._refresh,
@@ -651,25 +646,24 @@ class UserAuth:
 		if self.scheduler.running:
 			self.scheduler.shutdown(wait=True)
 
-	@staticmethod
-	async def _init_db(dbPath:Path, dbInitPath:Path):
-		dbPath.parent.mkdir(parents=True, exist_ok=True)
+	async def _init_db(self):
+		USERS_DB.DB.parent.mkdir(parents=True, exist_ok=True)
 
-		if dbPath.exists():
+		if USERS_DB.DB.exists():
 			if int(getenv("DEBUG_MODE", "0")) == 1:
-				dbPath.chmod(mode=0o644)
+				USERS_DB.DB.chmod(mode=0o644)
 			else:
-				dbPath.chmod(mode=0o600)
+				USERS_DB.DB.chmod(mode=0o600)
 			return
 
 		if int(getenv("DEBUG_MODE", "0")) == 1:
-			dbPath.touch(mode=0o644)
+			USERS_DB.DB.touch(mode=0o644)
 		else:
-			dbPath.touch(mode=0o600)
+			USERS_DB.DB.touch(mode=0o600)
 
 		try:
-			async with connect(dbPath) as con:
-				lines = re_sub("--.*\n", "", dbInitPath.read_text()).replace("\n", "").split(";")
+			async with connect(USERS_DB.DB) as con:
+				lines = re_sub("--.*\n", "", USERS_DB.INIT_SQL.read_text()).replace("\n", "").split(";")
 
 				for line in lines:
 					line = line.strip()
@@ -683,7 +677,7 @@ class UserAuth:
 			_logger.debug("Database successfully initialized")
 
 		except OperationalError:
-			dbPath.unlink()
+			USERS_DB.DB.unlink()
 			_logger.exception("An error occurred during database setup")
 			raise
 	#endregion

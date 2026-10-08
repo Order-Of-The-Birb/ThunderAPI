@@ -1,5 +1,4 @@
 import logging, asyncio
-from pathlib import Path
 
 logger = logging.getLogger()
 
@@ -23,6 +22,7 @@ from tools import _populate_serverlist
 from tools.blk_utils import Decompress
 from api import router
 from api.shared import limiter
+from vars import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT
 
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 logging.getLogger("asyncio").setLevel(logging.WARNING)
@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 			pass
 	if not content:
 		logger.warning(f"Failed to fetch server list, using default server list")
-		content = loads((Path(__file__).parent / "tools" / "default_network_cfg.json").read_text())
+		content = loads(DEFAULT_NETWORK_CFG.read_text())
 	_populate_serverlist(content)
 	del content
 	#endregion
@@ -202,10 +202,10 @@ def custom_swagger_ui():
 
 	html = page.body.decode("utf-8")
 
-	websocket_script = (Path(__file__).parent / "swagger_ui_modify.js").read_text()
+	websocket_script = SWAGGER_JS.read_text()
 	html = html.replace("</body>", "<script>"+websocket_script+"</script></body>")
 
-	websocket_css = (Path(__file__).parent / "swagger_ui_modify.css").read_text()
+	websocket_css = SWAGGER_CSS.read_text()
 	html = html.replace("</head>", "<style>"+websocket_css+"</style></head>")
 
 	swagger_docs = html
@@ -215,8 +215,7 @@ def custom_swagger_ui():
 def main():
 	# region Logging
 
-	logFolder = Path("/data/logs")
-	logFolder.mkdir(mode=0o755, exist_ok=True, parents=True)
+	LOGS_DIR.mkdir(mode=0o755, exist_ok=True, parents=True)
 
 	#region Handler and Formatter
 	def log_namer(default_name:str):
@@ -224,7 +223,7 @@ def main():
 		filename = path.basename(default_name)
 		_, _, date = filename.rpartition(".")
 		return path.join(dirname, f"{date}.log")
-	handler = TimedRotatingFileHandler(logFolder / "latest.log", when="midnight", interval=1, utc=True, backupCount=5)
+	handler = TimedRotatingFileHandler(LOGS_DIR / "latest.log", when="midnight", interval=1, utc=True, backupCount=5)
 	handler.suffix = "%Y-%m-%d"
 	formatter = logging.Formatter(f"%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 	handler.setFormatter(formatter)
@@ -268,7 +267,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host="0.0.0.0", port=8000)
+		uvicorn_run(app, host=HOST, port=PORT)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:
