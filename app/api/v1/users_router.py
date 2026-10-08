@@ -7,9 +7,10 @@ from urllib.parse import unquote
 from tools import Request
 from api.shared import limiter
 from api.v1.shared import TokenBearer
-from api.v1.models.users import TerseReturnModel, getUserDirectModel
+from api.v1.models.users import TerseReturnModel, getUserDirectModel, PlayerRank, SelfUserDataModel
+from api.v1.models.clans import Roles, RolesDisplay, Platforms
 from api.v1.backends.users import get_terse
-
+from api.v1.backends.clans import getClan
 
 router = APIRouter(
 	prefix="/users",
@@ -31,6 +32,82 @@ async def get_users_terse_info(
 ) -> dict[str, TerseReturnModel]:
 	"""Get terse information about users by their IDs."""
 	return JSONResponse(await get_terse(user, *id))
+
+@router.get(
+	"/self", 
+	summary="Get metadata about the logged in user",
+	responses={
+		200: {"model": SelfUserDataModel}
+	}
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
+async def get_self_meta(
+	request: faRequest,
+	user: TokenBearer
+):
+	data = {}
+	userData = await Request.send_template(
+		user,
+		"get_public_userstat",
+		userId = user.uidHint
+	)
+	data["nick"] = userData["nick"]
+	data["userid"] = userData["userid"]
+	data["penaltyStatus"] = userData["penaltyStatus"]
+	data["registerDay"] = userData["registerDay"]
+	data["lastDay"] = userData["lastDay"]
+	level = PlayerRank.get_level(userData["exp"])
+	data["level"] = {
+		"name": PlayerRank.from_level(level).label,
+		"rank": level
+	}
+	data["acedVehicles"] = userData["numEliteUnits"]
+	
+	data["unitsData"] = {}
+	for k in userData["era"]:
+		data["unitsData"].setdefault(k, {})
+		data["unitsData"][k]["max_rank"] = userData["era"][k]
+	for k in userData["unitsPerCountry"]:
+		data["unitsData"].setdefault(k, {})
+		data["unitsData"][k]["collection"] = {
+			"overall": userData["unitsPerCountry"][k]["numUnits"],
+			"aced": userData["unitsPerCountry"][k]["numEliteUnits"]
+		}
+
+	userSquadronID = await user.getSquadronId()
+	if userSquadronID:
+		data["squadron"] = {
+			"tag": userData["clanTag"],
+			"id": userData["clanId"],
+			"name": userData["clanName"],
+			"type": userData["clanType"]
+		}
+		data["squadron"]["user"] = {}
+		clanData = await getClan(user, userSquadronID)
+		for cuser in clanData["members"]:
+			if cuser["uid"] != str(user.uidHint):
+				continue
+
+			role = Roles(cuser["role"])
+			platform = Platforms(cuser["platform"])
+			data["squadron"]["user"] = {
+				"initiator": cuser["initiator"],
+				"join_timestamp": cuser["date"],
+				"role": {
+					"name": RolesDisplay[role.name],
+					"value": role.value
+				},
+				"platform": {
+					"name": platform.name,
+					"value": platform.value
+				}
+			}
+			break
+
+		data["squadron"]["user"]["activity"] = clanData.get("activity", {}).get(str(user.uidHint), {}).get("total", 0)
+		data["squadron"]["user"]["sqb_activity"] = clanData.get("member_ratings", {}).get(str(user.uidHint), {}).get("dr_era5_hist", 0.0)
+
+	return data
 
 @router.get("/{userid}", summary="Get user by ID")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
