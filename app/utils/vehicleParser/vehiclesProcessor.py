@@ -28,7 +28,8 @@ def git_check():
 git_check()
 #endregion
 #region Module setup
-gamefiles = Path(__file__).parent / "gamefiles"
+gamefiles = Path("/data/vehicles") / "gamefiles"
+gamefiles.mkdir(exist_ok=True, parents=True)
 CACHED_VALIDITY_UNTIL:int
 @dataclass(frozen=True, init=False)
 class DataLocations:

@@ -8,7 +8,7 @@ from utils.vehicleParser.vehiclesProcessor import Vehicle, Weapon, Sensor
 _logger = getLogger(__name__)
 
 class DatabasePaths:
-	ROOT:Path = Path(__file__).parent
+	ROOT:Path = Path("/data/vehicles/")
 
 	@dataclass(frozen=True, slots=True)
 	class _dbpaths:
