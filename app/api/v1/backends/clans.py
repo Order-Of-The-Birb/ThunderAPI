@@ -3,6 +3,7 @@ from typing import Any
 
 from tools import Request
 from utils.auth import UserAuth
+from utils.geo import lookup_city, lookup_utc_offset
 from api.v1.models.clans import ClanModel
 
 async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanModel]:
@@ -37,5 +38,13 @@ async def getClan(user: UserAuth.Entry, clanId: int) -> dict[str, Any]:
 	candidates = data.get("candidates")
 	if isinstance(candidates, dict):
 		data["candidates"] = [candidates,]
+
+	for candidate in data["candidates"]:
+		geo = lookup_city(candidate.pop("ip"))
+		candidate["geo"] = {
+			"offset": lookup_utc_offset(geo.location.time_zone),
+			"city": geo.city,
+			"country": geo.country
+		}
 
 	return data
