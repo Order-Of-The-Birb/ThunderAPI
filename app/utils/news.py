@@ -11,7 +11,7 @@ from re import search as re_search, IGNORECASE
 from json import loads, dumps
 from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
-from vars import NEWS_JSON
+from config import NEWS_JSON
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start

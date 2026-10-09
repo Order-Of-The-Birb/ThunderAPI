@@ -12,7 +12,7 @@ from time import perf_counter
 from pandas import read_csv, DataFrame
 from .constants import *
 from utils import networkManager
-from vars import VEHICLES
+from config import VEHICLES
 
 _logger = getLogger(__name__)
 

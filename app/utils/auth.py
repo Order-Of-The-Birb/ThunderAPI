@@ -20,7 +20,7 @@ from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
 from utils.network import NetworkManager
-from vars import USERS_DB
+from config import USERS_DB
 
 _logger = getLogger(__name__)
 

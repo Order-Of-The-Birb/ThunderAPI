@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Literal
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 from ..shared import IntString
 from enum import Enum
@@ -211,7 +211,7 @@ class SelfUserDataModel(BaseModel):
 		name: Literal["Rookie", "Lieutenant", "Captain", "Major", "Colonel", "Commander", "Commodore", "General", "Marshal"]
 		rank: int
 	class UnitsDataModel(BaseModel):
-		max_rank: dict[
+		max_rank: Optional[dict[
 			Literal[
 				"Aircraft",
 				"Tank",
@@ -220,8 +220,8 @@ class SelfUserDataModel(BaseModel):
 				"Boat",
 				"Human"
 			], int
-		]
-		collection: dict[Literal["overall", "aced"], int]
+		]]
+		collection: Optional[dict[Literal["overall", "aced"], int]]
 	class SquadronModel(BaseModel):
 		class SquadronUserModel(BaseModel):
 			class SquadronRoleModel(BaseModel):
@@ -235,23 +235,23 @@ class SelfUserDataModel(BaseModel):
 			role: SquadronRoleModel
 			platform: SquadronPlatformModel
 			activity: int
-			sqb_activity: int
+			sqb_activity: float
 			
 		tag: str
-		id: IntString
+		id: int
 		name: str
 		type: int
 		user: SquadronUserModel
 
 	nick: str
-	userId: IntString
+	userid: int
 	penaltyStatus: str
 	registerDay: int
 	lastDay: int
 	level: LevelModel
 	acedVehicles: int
 	unitsData: dict[COUNTRIES, UnitsDataModel]
-	squadron: SquadronModel
+	squadron: Optional[SquadronModel]
 
 USER_RANK: list[int] = [
 	0, 500, 1800, 5000, 11600, 23500, 42700, 71700, 113200, 170100,
@@ -288,6 +288,8 @@ class PlayerRank(Enum):
 
 	@classmethod
 	def from_level(cls, level: int) -> "PlayerRank":
+		if level < 0:
+			level = 0
 		for rank in cls:
 			if rank.rank_from <= level <= rank.rank_to:
 				return rank
@@ -296,10 +298,6 @@ class PlayerRank(Enum):
 	@staticmethod
 	def get_level(exp: int) -> int:
 		"""Map raw account XP to the numeric player level (0–100)."""
+		if exp < 0:
+			exp = 0
 		return bisect_right(USER_RANK, exp) - 1
-
-	@staticmethod
-	def get_rank(exp: int) -> tuple[int, PlayerRank]:
-		"""Map raw account XP to (level, PlayerRank)."""
-		level = PlayerRank.get_level(exp)
-		return level, PlayerRank.from_level(level)

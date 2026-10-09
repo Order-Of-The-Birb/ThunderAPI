@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from logging import getLogger
 from pathlib import Path
 from utils.vehicleParser.vehiclesProcessor import Vehicle, Weapon, Sensor
-from vars import VEHICLES
+from config import VEHICLES
 
 _logger = getLogger(__name__)
 

@@ -10,7 +10,7 @@ from datetime import datetime, UTC
 from zoneinfo import ZoneInfo
 from threading import Lock
 from logging import getLogger
-from vars import GEOLITE
+from config import GEOLITE
 
 _logger = getLogger(__name__)
 _reader = None

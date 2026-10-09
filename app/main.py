@@ -22,7 +22,7 @@ from tools import _populate_serverlist
 from tools.blk_utils import Decompress
 from api import router
 from api.shared import limiter
-from vars import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT
+from config import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT
 
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 logging.getLogger("asyncio").setLevel(logging.WARNING)

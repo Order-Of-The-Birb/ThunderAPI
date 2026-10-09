@@ -6,7 +6,7 @@ from subprocess import run as run_process
 from json import loads
 from lz4.block import compress as lz4compress, decompress as lz4decompress
 from bz2 import compress as bzcompress, decompress as bzdecompress
-from vars import WT_EXT_CLI, BINBLK
+from config import WT_EXT_CLI, BINBLK
 
 _logger = getLogger(__name__)
 

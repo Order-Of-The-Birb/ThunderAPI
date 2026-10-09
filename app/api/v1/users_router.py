@@ -38,7 +38,8 @@ async def get_users_terse_info(
 	summary="Get metadata about the logged in user",
 	responses={
 		200: {"model": SelfUserDataModel}
-	}
+	},
+	response_model=SelfUserDataModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_self_meta(
@@ -52,7 +53,7 @@ async def get_self_meta(
 		userId = user.uidHint
 	)
 	data["nick"] = userData["nick"]
-	data["userid"] = userData["userid"]
+	data["userid"] = int(userData["userid"])
 	data["penaltyStatus"] = userData["penaltyStatus"]
 	data["registerDay"] = userData["registerDay"]
 	data["lastDay"] = userData["lastDay"]
@@ -78,7 +79,7 @@ async def get_self_meta(
 	if userSquadronID:
 		data["squadron"] = {
 			"tag": userData["clanTag"],
-			"id": userData["clanId"],
+			"id": int(userData["clanId"]),
 			"name": userData["clanName"],
 			"type": userData["clanType"]
 		}
