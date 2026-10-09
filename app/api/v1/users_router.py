@@ -75,8 +75,7 @@ async def get_self_meta(
 			"aced": userData["unitsPerCountry"][k]["numEliteUnits"]
 		}
 
-	userSquadronID = await user.getSquadronId()
-	if userSquadronID:
+	if "clanId" in userData:
 		data["squadron"] = {
 			"tag": userData["clanTag"],
 			"id": int(userData["clanId"]),
@@ -84,7 +83,7 @@ async def get_self_meta(
 			"type": userData["clanType"]
 		}
 		data["squadron"]["user"] = {}
-		clanData = await getClan(user, userSquadronID)
+		clanData = await getClan(user, data["squadron"]["id"])
 		for cuser in clanData["members"]:
 			if cuser["uid"] != str(user.uidHint):
 				continue
@@ -92,10 +91,10 @@ async def get_self_meta(
 			role = Roles(cuser["role"])
 			platform = Platforms(cuser["platform"])
 			data["squadron"]["user"] = {
-				"initiator": cuser["initiator"],
+				"initiator": int(cuser["initiator"]) if isinstance(cuser["initiator"], str) else None,
 				"join_timestamp": cuser["date"],
 				"role": {
-					"name": RolesDisplay[role.name],
+					"name": RolesDisplay[role.name].value,
 					"value": role.value
 				},
 				"platform": {

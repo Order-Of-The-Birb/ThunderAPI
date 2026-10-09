@@ -211,17 +211,18 @@ class SelfUserDataModel(BaseModel):
 		name: Literal["Rookie", "Lieutenant", "Captain", "Major", "Colonel", "Commander", "Commodore", "General", "Marshal"]
 		rank: int
 	class UnitsDataModel(BaseModel):
-		max_rank: Optional[dict[
-			Literal[
-				"Aircraft",
-				"Tank",
-				"Ship",
-				"Helicopter",
-				"Boat",
-				"Human"
-			], int
-		]]
-		collection: Optional[dict[Literal["overall", "aced"], int]]
+		class maxRankModel(BaseModel):
+			Aircraft: int = -1
+			Tank: int = -1
+			Ship: int = -1
+			Helicopter: int = -1
+			Boat: int = -1
+			Human: int = -1
+		class collectionModel(BaseModel):
+			overall: int = 0
+			aced: int = 0
+		max_rank: maxRankModel = Field(default_factory=maxRankModel)
+		collection: collectionModel = Field(default_factory=collectionModel)
 	class SquadronModel(BaseModel):
 		class SquadronUserModel(BaseModel):
 			class SquadronRoleModel(BaseModel):
@@ -230,7 +231,7 @@ class SelfUserDataModel(BaseModel):
 			class SquadronPlatformModel(BaseModel):
 				name: PLATFORM_NAMES
 				value: int
-			initiator: IntString
+			initiator: int | None = None
 			join_timestamp: int
 			role: SquadronRoleModel
 			platform: SquadronPlatformModel
@@ -251,9 +252,9 @@ class SelfUserDataModel(BaseModel):
 	level: LevelModel
 	acedVehicles: int
 	unitsData: dict[COUNTRIES, UnitsDataModel]
-	squadron: Optional[SquadronModel]
+	squadron: Optional[SquadronModel] = None
 
-USER_RANK: list[int] = [
+USER_RANK: tuple[int] = (
 	0, 500, 1800, 5000, 11600, 23500, 42700, 71700, 113200, 170100,
 	245600, 322600, 401400, 482100, 564600, 648900, 735000, 822900, 912700, 1004300,
 	1097700, 1192900, 1290000, 1388900, 1489600, 1592100, 1696500, 1802700, 1910700, 2020500,
@@ -264,8 +265,8 @@ USER_RANK: list[int] = [
 	8094800, 8281300, 8469600, 8659700, 8851600, 9045400, 9241000, 9438400, 9637600, 9838700,
 	10041600, 10246300, 10452800, 10661200, 10871400, 11083400, 11297200, 11512900, 11730400, 11949700,
 	12170800, 12393800, 12618600, 12845200, 13073600, 13303900, 13536000, 13769900, 14005600, 14243100,
-	14482500,
-]
+	14482500
+)
 
 class PlayerRank(Enum):
 	ROOKIE = 0, 11, "Rookie"
