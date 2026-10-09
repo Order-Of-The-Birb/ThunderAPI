@@ -1,17 +1,14 @@
 import struct
 from asyncio import to_thread
 from logging import getLogger
-from pathlib import Path
 from enum import IntEnum
 from subprocess import run as run_process
 from json import loads
 from lz4.block import compress as lz4compress, decompress as lz4decompress
 from bz2 import compress as bzcompress, decompress as bzdecompress
+from config import WT_EXT_CLI, BINBLK
 
 _logger = getLogger(__name__)
-
-wt_ext_cli: Path = Path("/opt/tools/wt_ext_cli")
-binBlk: Path = Path("/opt/tools/binBlk")
 
 class Decompress(dict):
 	def __init__(self, data: bytes):
@@ -23,7 +20,7 @@ class Decompress(dict):
 
 		payload = decompressed or data
 		unpacked = run_process(
-			[str(wt_ext_cli), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
+			[str(WT_EXT_CLI), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
 			input=payload, 
 			capture_output=True,
 			timeout=60
@@ -145,7 +142,7 @@ class Compress(bytes):
 		blkx_text = ('\n'.join(lines) + '\n').encode("utf-8")
 
 		result = run_process(
-			[str(binBlk), '-', '-', '-b'],
+			[str(BINBLK), '-', '-', '-b'],
 			input=blkx_text,
 			capture_output=True,
 			timeout=60

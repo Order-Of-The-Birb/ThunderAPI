@@ -1,7 +1,9 @@
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
+from typing import Literal
 from ..shared import IpString, IntString
 
+PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):
 	rem = (0, "Kick user/Leave")
 	add = (1, "Accept membership request")

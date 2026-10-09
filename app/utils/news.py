@@ -4,7 +4,6 @@ from aiohttp.client_exceptions import ClientResponseError
 from utils.network import NetworkManager, WebsocketManager
 from datetime import datetime, time, UTC
 from asyncio import sleep
-from pathlib import Path
 from typing import Literal, Any
 from dataclasses import dataclass, asdict
 from enum import IntEnum, Enum
@@ -12,6 +11,7 @@ from re import search as re_search, IGNORECASE
 from json import loads, dumps
 from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
+from config import NEWS_JSON
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start
@@ -124,7 +124,6 @@ class NewsManager:
 	__logger: Logger
 	_networkManager: NetworkManager
 	task:Task
-	_ids_json: Path
 	_lock: Lock
 	websocket_mgr: WebsocketManager
 
@@ -135,14 +134,13 @@ class NewsManager:
 		self._networkManager = networkManager
 		self.websocket_mgr = WebsocketManager()
 
-		self._ids_json = Path("/data/news.json")
-		if (not self._ids_json.exists()):
-			self._ids_json.write_text(dumps({
+		if (not NEWS_JSON.exists()):
+			NEWS_JSON.write_text(dumps({
 				self._IDTYPE.NEWS.value[1]: 0,
 				self._IDTYPE.CHANGELOG.value[1]: 0,
 				self._IDTYPE.MAJOR_CHLOG.value[1]: 0
 			}))
-		content = loads(self._ids_json.read_text())
+		content = loads(NEWS_JSON.read_text())
 		self.lastNews = int(content.get(self._IDTYPE.NEWS.value[1], 0))
 		self.lastChangelog = int(content.get(self._IDTYPE.CHANGELOG.value[1], 0))
 		self.lastMajorChLog = int(content.get(self._IDTYPE.MAJOR_CHLOG.value[1], 0))
@@ -326,9 +324,9 @@ class NewsManager:
 		self.__logger.debug(f"Writing value {ID} for {_type.name}")
 
 		async with self._lock:
-			content = loads(self._ids_json.read_text())
+			content = loads(NEWS_JSON.read_text())
 			content[_type.value[1]] = ID
-			self._ids_json.write_text(dumps(content, indent=4))
+			NEWS_JSON.write_text(dumps(content, indent=4))
 
 			self.__setattr__(_type.value[1], ID)
 

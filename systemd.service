@@ -1,0 +1,14 @@
+[Unit]
+Description=Daemon for ThunderAPI
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/docker compose up
+WorkingDirectory={DIRECTORY}
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
