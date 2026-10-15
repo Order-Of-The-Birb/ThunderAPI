@@ -1,6 +1,10 @@
-from typing import Literal
+from __future__ import annotations
+from typing import Literal, Optional
 from pydantic import BaseModel, Field
 from ..shared import IntString
+from enum import Enum
+from bisect import bisect_right
+from .clans import PLATFORM_NAMES
 
 COUNTRIES = Literal[
 	"country_usa",
@@ -203,133 +207,98 @@ class TerseReturnModel(BaseModel):
 	showcase: Showcase_FavMode_Model | Showcase_BH_Model | Showcase_FavUnit_Model | Showcase_NukeDrop_Model | Showcase_NukeKill_Model | Showcase_unitCollector_Model | Showcase_AceOfSpades_Model | Showcase_Medalist_Model | Showcase_Achievement_Model
 
 class SelfUserDataModel(BaseModel):
-    class UnlockModel(BaseModel):
-        item: str
-        cachedIndex: int
-        earned: bool
-        progress: int
-        progressMax: int
+	class LevelModel(BaseModel):
+		name: Literal["Rookie", "Lieutenant", "Captain", "Major", "Colonel", "Commander", "Commodore", "General", "Marshal"]
+		rank: int
+	class UnitsDataModel(BaseModel):
+		class maxRankModel(BaseModel):
+			Aircraft: int = -1
+			Tank: int = -1
+			Ship: int = -1
+			Helicopter: int = -1
+			Boat: int = -1
+			Human: int = -1
+		class collectionModel(BaseModel):
+			overall: int = 0
+			aced: int = 0
+		max_rank: maxRankModel = Field(default_factory=maxRankModel)
+		collection: collectionModel = Field(default_factory=collectionModel)
+	class SquadronModel(BaseModel):
+		class SquadronUserModel(BaseModel):
+			class SquadronRoleModel(BaseModel):
+				name: Literal["Private", "Sergeant", "Officer", "Deputy", "Commander"]
+				value: int
+			class SquadronPlatformModel(BaseModel):
+				name: PLATFORM_NAMES
+				value: int
+			initiator: int | None = None
+			join_timestamp: int
+			role: SquadronRoleModel
+			platform: SquadronPlatformModel
+			activity: int
+			sqb_activity: float
+			
+		tag: str
+		id: int
+		name: str
+		type: int
+		user: SquadronUserModel
 
-    class UnlocksModel(BaseModel):
-        unlock: SelfUserDataModel.UnlockModel
+	nick: str
+	userid: int
+	penaltyStatus: str
+	registerDay: int
+	lastDay: int
+	level: LevelModel
+	acedVehicles: int
+	unitsData: dict[COUNTRIES, UnitsDataModel]
+	squadron: Optional[SquadronModel] = None
 
-    class EntitlementModel(BaseModel):
-        count: int
-        goldSpent: int | None = Field(default=None)
-        wpConverted: int | None = Field(default=None)
+USER_RANK: tuple[int] = (
+	0, 500, 1800, 5000, 11600, 23500, 42700, 71700, 113200, 170100,
+	245600, 322600, 401400, 482100, 564600, 648900, 735000, 822900, 912700, 1004300,
+	1097700, 1192900, 1290000, 1388900, 1489600, 1592100, 1696500, 1802700, 1910700, 2020500,
+	2132200, 2245700, 2361000, 2478100, 2597100, 2717900, 2840500, 2964900, 3091200, 3219300,
+	3349200, 3480900, 3614500, 3749900, 3887100, 4026100, 4167000, 4309700, 4454200, 4600500,
+	4748700, 4898700, 5050500, 5204100, 5359600, 5516900, 5676000, 5836900, 5999600, 6164200,
+	6330600, 6498800, 6668800, 6840700, 7014400, 7189900, 7367200, 7546400, 7727400, 7910200,
+	8094800, 8281300, 8469600, 8659700, 8851600, 9045400, 9241000, 9438400, 9637600, 9838700,
+	10041600, 10246300, 10452800, 10661200, 10871400, 11083400, 11297200, 11512900, 11730400, 11949700,
+	12170800, 12393800, 12618600, 12845200, 13073600, 13303900, 13536000, 13769900, 14005600, 14243100,
+	14482500
+)
 
-    class ComplaintsDataModel(BaseModel):
-        dayMark: int
+class PlayerRank(Enum):
+	ROOKIE = 0, 11, "Rookie"
+	LIEUTENANT = 12, 23, "Lieutenant"
+	CAPTAIN = 24, 35, "Captain"
+	MAJOR = 36, 47, "Major"
+	COLONEL = 48, 59, "Colonel"
+	COMMANDER = 60, 71, "Commander"
+	COMMODORE = 72, 83, "Commodore"
+	GENERAL = 84, 99, "General"
+	MARSHAL = 100, 100, "Marshal"
 
-    class FreeSparesStateModel(BaseModel):
-        lastDayId: int
+	def __new__(cls, rank_from: int, rank_to: int, label: str):
+		obj = object.__new__(cls)
+		obj._value_ = rank_from          # `.value` == rank_from
+		obj.rank_from = rank_from
+		obj.rank_to = rank_to
+		obj.label = label
+		return obj
 
-    class UserLogEntryModel(BaseModel):
-        type: int
-        time: int
-        disabled: bool | None = Field(default=None)
-        body: dict
+	@classmethod
+	def from_level(cls, level: int) -> "PlayerRank":
+		if level < 0:
+			level = 0
+		for rank in cls:
+			if rank.rank_from <= level <= rank.rank_to:
+				return rank
+		raise ValueError(f"No rank for level {level}")
 
-    class ShowcaseModel(BaseModel):
-        type: str
-        ucFavorites: list[str]
-        favoriteUnitDifficulty: str
-        favoriteUnit: str | None = Field(default=None)
-        favoriteGameMode: str | None = Field(default=None)
-        hardenedMode: str | None = Field(default=None)
-        medals: list[str]
-        achievements: list[str]
-        acesFilter: dict[str, str | list[str]] = Field(default_factory=dict)
-
-    class BinaryDataMetainfoModel(BaseModel):
-        class BinaryDataInfoModel(BaseModel):
-            hash: str
-            hint: str
-
-        currentTag: str
-        compressionSupported: str
-        aces: BinaryDataInfoModel
-        char: BinaryDataInfoModel
-        game: BinaryDataInfoModel
-        gui: BinaryDataInfoModel
-        lang: BinaryDataInfoModel
-        mis: BinaryDataInfoModel
-        webUi: BinaryDataInfoModel
-        wwdata: BinaryDataInfoModel
-        regional: BinaryDataInfoModel
-        regionalLang: BinaryDataInfoModel | None = Field(default=None, alias="regional-lang")
-
-    # Preferences
-    eulaVersionAccepted: int
-    ndaVersionAccepted: int
-    autoRefillWeapons: bool
-    autoRepairAircrafts: bool
-    autoBuyModifications: bool
-    onlineSaveVersion: int
-    allowToBeAddedToContacts: bool
-    allowToBeAddedToLB: bool
-
-    # Machine / session
-    curMachineHash: str
-    curMachineFingerprintHash: str
-
-    # Penalty
-    penaltyStart: int
-    penaltyTill: int
-    penaltyCategory: str
-    penaltyComment: str
-
-    # Timing
-    serverTime: int
-    registerTime: int
-    expiredTimeCorrection: int
-    currDayId: int
-    removeTimeLimit: int
-
-    # Economy / presentation
-    presented: int
-    valUnlocks: int
-    goldBalance: int
-    unitMaxRank: int
-    premiumSavedTime: int
-
-    # Clan
-    clanTag: str
-    clanName: str
-    storedRequestClanId: int
-    clanDuelNextReward: int
-    clanSeasonStart: int
-    clanSeasonInYear: int
-    clanSeasonOrdinal: int
-
-    # Platform
-    currentPlatform: int
-    registerPlatform: int
-    rawPlatformID: int
-    registerRawPlatformID: int
-    charServerVersionOnLogin: int
-
-    # Profile
-    cacheProfileUniqueSessionId: int
-    profileVersion: int
-    remoteSuccessSaveAsyncTaskId: str
-    classinessMarkPriorities: int
-    pilotIcon: str
-    chardToken: int
-    voiceToken: str
-    actualEntitlementPriceMD5: str
-    actualPriceMD5: str
-    actualAdverMD5: str
-    entitlementPriceRefferalName: str
-    isFirstBattleForDay: bool
-    charDrivenNick: str
-
-    # Nested payloads
-    unlocks: UnlocksModel
-    entitlementsInfo: dict[str, EntitlementModel]
-    complaintsData: ComplaintsDataModel
-    FreeSparesState: FreeSparesStateModel
-    userlogs: dict[str, UserLogEntryModel]
-    showcase: ShowcaseModel
-    entitlementGiftDependencies: dict
-    binaryDataMetainfo: BinaryDataMetainfoModel
+	@staticmethod
+	def get_level(exp: int) -> int:
+		"""Map raw account XP to the numeric player level (0–100)."""
+		if exp < 0:
+			exp = 0
+		return bisect_right(USER_RANK, exp) - 1
