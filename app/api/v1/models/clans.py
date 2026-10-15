@@ -33,14 +33,15 @@ class Platforms(Enum):
 	XBOX = 12
 
 class ApplicantModel(BaseModel):
-	uid: IntString
+	uid: int
 	nickname: str
 	timestamp: int
 	comment: str
 	class GeolocationDataModel(BaseModel):
+		offset: float
 		country: str
-		timezone: int
-	geodata:GeolocationDataModel = Field(default=None)
+		city: str
+	geo:GeolocationDataModel = Field(default=None)
 
 class LogsModel(BaseModel):
 	lastLog: str
@@ -152,6 +153,7 @@ class ClanModel(BaseModel):
 	membership_req: dict | None = None
 	astat: astatModel | None = None
 	clanRewardRatingPerUser_60: dict | None = None
+	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
 
 	class Config:
 		extra = "allow"

@@ -79,41 +79,11 @@ async def get_applicants(
 	clanId: squadronId
 ) -> list[ApplicantModel]:
 	clanData = await getClan(user, clanId)
-	data = []
-	candidates = clanData.get("candidates")
-	if candidates is None:
+	applicants = clanData.get("applicants")
+	if applicants is None:
 		return []
-	if isinstance(candidates, dict):
-		newdata = {
-			"uid": candidates["uid"],
-			"nickname": candidates["nick"],
-			"timestamp": candidates["date"],
-			"comment": candidates["comments"],				
-		}
 
-		geodata = lookup_city(candidates["ip"])
-		if geodata:
-			newdata["geodata"] = {
-				"country": geodata.country.iso_code,
-				"timezone": lookup_utc_offset(geodata.location.time_zone)
-			}
-		return [newdata,]
-	for entry in clanData.get("candidates"):
-		newdata = {
-			"uid": entry["uid"],
-			"nickname": entry["nick"],
-			"timestamp": entry["date"],
-			"comment": entry["comments"]
-		}
-
-		geodata = lookup_city(entry["ip"])
-		if geodata:
-			newdata["geodata"] = {
-				"country": geodata.country.iso_code,
-				"timezone": lookup_utc_offset(geodata.location.time_zone)
-			}
-		data.append(newdata)
-	return data
+	return applicants
 @router.post(
 	"/accept/{userId}",
 	responses={
