@@ -192,9 +192,9 @@ def sanitizeMembers(members:dict|list):
 		Keymod("platform", convert=lambda x: {
 			"name": Platforms(x).name,
 			"value": x
-		}),
-		Keymod("initiator", new_name="accepted_by", convert=lambda x: int(x)),
-		Keymod("initiator_nick", new_name="accepted_by_nick"),
+		}, default=Roles.NONE.value),
+		Keymod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
+		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
 		Keymod("date", new_name="joined_at")
 	)
 	def sanitize(member: dict[str, Any]):

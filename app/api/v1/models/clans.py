@@ -76,9 +76,9 @@ class LogsModel(BaseModel):
 
 
 		timestamp: int
-		affected: _affected
+		affected: _affected | None = Field(default=None)
 		action: _action
-		admin: _admin
+		admin: _admin | None = Field(default=None)
 		roleChange: _roleChange | None = Field(default=None)
 
 class ClanLeaderboardModel(BaseModel):
