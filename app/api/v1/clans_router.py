@@ -1,18 +1,14 @@
-from logging import getLogger
 from os import getenv
 from typing_extensions import Annotated
 from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRequest, status
-from fastapi.responses import JSONResponse
 
 from tools import Request
-from utils.geo import lookup_city, lookup_utc_offset
 from api.shared import limiter
 from api.v1.shared import TokenBearer
-from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, Actions, ClanPositionModel
+from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel
 from api.v1.models.base import SuccessEmptyDict
-from api.v1.backends.clans import getClan, searchClan
+from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs
 
-_logger = getLogger(__name__)
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
 gaijinUserId = Annotated[int, Path(title="The user's ID", gt=0)]
@@ -213,69 +209,7 @@ async def get_clan_logs(
 	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
 	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
 ) -> LogsModel:
-	allLogs = await user.getSquadronId() == clanId
-	response = await Request.from_template(
-		user, 
-		"clan_get_log",
-		_id = clanId,
-		count = limit
-	)
-	if (allLogs):
-		response.body.pop("events")
-	if fromEntry:
-		response.body["last"] = fromEntry
-
-	response = await response.send()
-
-	logs:list[dict[str, int|str]] = []
-	for item in response["log"]:
-		item:dict[str, int|str]
-		try:
-			action = Actions[item["ev"]]
-		except KeyError:
-			_logger.warning(f"Unhandled log type '{item["ev"]}' found")
-			continue
-		logEntry = {
-			"timestamp": item["time"],
-			"action": {
-				"value": action.value[0],
-				"detail": action.value[1]
-			}
-		}
-		if item.get("uId") is not None and not (action == Actions.rem and item.get("uid") is not None and item["uId"] == item["uid"]):
-			logEntry["admin"] = {
-				"_id": item["uId"],
-				"nickname": item["uN"]
-			}
-		if item.get("uid") is not None:
-			logEntry["affected"] = {
-				"_id": item["uid"],
-				"nickname": item["nick"],
-			}
-		match action:
-			case Actions.role:
-				logEntry.update({
-					"roleChange": {
-						"old": item["old"],
-						"new": item["new"]
-					}
-				})
-			case Actions.info:
-				for i in ["tag", "desc", "region", "status"]: 
-					if (_ := item.get(i)):
-						logEntry[i] = _
-			case Actions.create:
-				logEntry["info"] = {}
-				for i in ["type", "name", "tag", "slogan", "desc", "region", "announcement"]:
-					logEntry["info"][i] = item[i]
-			case Actions.reject_candidate:
-				logEntry["comment"] = item["comments"]
-		logs.append(logEntry)
-
-	return JSONResponse({
-		"lastLog": response["lastMark"],
-		"logs": logs
-	})
+	return await getLogs(user, clanId, limit, fromEntry)
 
 @router.get("/search/", summary="Search for squadron")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
@@ -286,7 +220,7 @@ async def get_clan_search(
 	clanTag: Annotated[str, Query(title="Squadron tag to look up")] = None,
 	limit: Annotated[int, Query(title="Amount of squadrons to return", gt=0, lt=50)] = 10,
 	page: Annotated[int, Query(title="The page to display. Count starts from 0", ge=0)] = 0,
-) -> list[ClanModel]:
+) -> list[ClanSearchResultModel]:
 	return await searchClan(user, clanName=clanName, clanTag=clanTag, limit=limit, page=page)
 
 @router.get(
@@ -299,48 +233,28 @@ async def get_clan_leaderboard(
 	user: TokenBearer,
 	limit: Annotated[int, Query(title="The max amount to get at once", gt=0, le=50)] = 20,
 	page: Annotated[int, Query(title="The page to look up. Starts from 0.", ge=0)] = 0,
-) -> list[ClanModel]:
-	response = await Request.from_template(
-		user, 
-		"clan_get_leaderboard",
-		count=limit,
-		start=limit*page
-	)
-	response.headers.pop("clanId")
-	response = await response.send()
-
-	if response.get("clan") is None:
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain leaderboard data from Gaijin")
-
-	modified = []
-	for clan in response["clan"]:
-		clan["pos"] += 1 # Convert from zero-based to one-based indexing
-		modified.append(clan)
-	
-	return modified
+) -> list[ClanLeaderboardModel]:
+	return await getLeaderboard(user, limit, page)
 
 @router.get(
 	"/leaderboard/{clanId}",
-	summary="Gets the leaderboard position of a given squadron."
+	summary="Gets the leaderboard position of a given squadron.",
+	responses={
+		404: {"description": "Clan not found"}
+	}
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard_position(
 	request: faRequest,
 	user: TokenBearer,
 	clanId: Annotated[int, Path(title="The squadron's ID")],
-) -> ClanPositionModel:
-	response = await Request.send_template(
-		user, 
-		"clan_get_leaderboard",
-		clanId=clanId
-	)
+) -> ClanLeaderboardModel:
+	r = await getLeaderboard(user, clanId=clanId)
 
-	if response.get("clan") is None:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not obtain leaderboard position data from Gaijin")
-	return {
-		"pos": response["clan"]["pos"],
-		"rating": response["clan"]["astat"]["dr_era5_hist"]
-	}
+	if r is None or len(r) < 1:
+		raise HTTPException(404, "Clan not found")
+
+	return r[0]
 
 @router.get(
 	"/{clanId}",

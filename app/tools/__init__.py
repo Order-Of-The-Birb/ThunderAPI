@@ -57,16 +57,19 @@ class Request:
 	host: str|None = None
 	method: str
 	action: Action|UserAction
+	__template: str
 	def __init__(
 		self,
 		action: Action|UserAction, 
+		template_name: str,
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
 		user: UserAuth.Entry = None,
 		host:str|None = None,
 		method:str = "POST",
-		session:ClientSession|None=None
+		session:ClientSession|None=None,
 	):
+		self.__template = template_name
 		self.body = body
 		self.headers = {
 			"Accept": "*/*",
@@ -120,18 +123,13 @@ class Request:
 			host=tpl.get("host", None),
 			method=tpl.get("method", "POST"),
 			action=action,
-			session=session
+			session=session,
+			template_name=template
 		)
 		await self.add_auth_headers()
 		for key, value in data.items():
-			if key in self.body and key in self.headers:
-				raise RuntimeError(f"Key `{key}` found in both headers and body for template `{template}`")
-			elif key in self.body:
-				self.body[key] = value
-			elif key in self.headers:
-				self.headers[key] = value
-			else:
-				raise RuntimeError(f"Unknown key `{key}` provided. Please edit template `{template}`")
+			self.replace(key, value)
+
 		for key in dict(self.body):
 			if key not in remove_keys:
 				continue
@@ -146,6 +144,16 @@ class Request:
 	async def send_template(user:UserAuth.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
 		return await cls.send()
+
+	def replace(self, key: str, value: Any):
+		if key in self.body and key in self.headers:
+			raise RuntimeError(f"Key `{key}` found in both headers and body for template `{self.__template}`")
+		elif key in self.body:
+			self.body[key] = value
+		elif key in self.headers:
+			self.headers[key] = value
+		else:
+			raise RuntimeError(f"Unknown key `{key}` provided. Please edit template `{self.__template}`")
 
 	async def add_auth_headers(self):
 		authTimeLeft = self.user.timeLeft()

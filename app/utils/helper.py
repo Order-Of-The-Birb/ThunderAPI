@@ -12,13 +12,28 @@ class AuthenticationError(HTTPException):
 	def __init__(self, status_code, detail = None, headers = None):
 		super().__init__(status_code, detail, headers)
 
-@dataclass
-class KeyRename:
-	_from: str
-	_to: str
-	convert: Callable[[Any]] = lambda x: x
-	default: Any = ...
+class Keymod:
+	key: str
+	new_name: str
+	convert: Callable[[Any]]
+	default: Any
+	rm: bool 
 
-	def rename(self, obj:dict[str, Any]) -> dict[str, Any]:
-		obj[self._to] = self.convert(obj.pop(self._from, self.default))
+	def __init__(self, key: str, /, *, new_name: str = None, convert: Callable[[Any]] = lambda x: x, default: Any = ..., rm: bool = False):
+		self.key = key
+		if new_name:
+			self.new_name = new_name
+		else:
+			self.new_name = key
+		self.convert = convert
+		self.rm = rm
+		if not self.rm:
+			self.default = default
+		else:
+			self.default = None
+
+	def run(self, obj:dict[str, Any]) -> dict[str, Any]:
+		new_val = self.convert(obj.pop(self.key, self.default))
+		if not self.rm:
+			obj[self.new_name] = new_val
 		return obj
