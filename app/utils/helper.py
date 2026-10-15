@@ -33,7 +33,7 @@ class Keymod:
 
 	def run(self, obj:dict[str, Any]) -> dict[str, Any]:
 		if self.key not in obj:
-			if self.default is not ...:
+			if self.default is not ... and not self.rm:
 				obj[self.new_name] = self.convert(self.default)
 			return obj
 		new_val = self.convert(obj.pop(self.key, self.default))
