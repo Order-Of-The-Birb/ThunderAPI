@@ -64,6 +64,21 @@ async def unsend_application(
 	)
 	return response.get("clanTag") is None
 
+@router.post(
+	"/leave",
+	summary="Leaves the current squadron"
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
+async def leave_squadron(
+	request: faRequest,
+	user: TokenBearer
+) -> bool:
+	response = await Request.send_template(
+		user, 
+		"clan_leave"
+	)
+	return response.get("clanTag") is None
+
 @router.get(
 	"/applicants/{clanId}", 
 	summary="Gets the currently applying members"
@@ -182,21 +197,6 @@ async def kick_member(
 		comments = reason
 	)
 
-@router.post(
-	"/leave",
-	summary="Leaves the current squadron"
-)
-@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def leave_squadron(
-	request: faRequest,
-	user: TokenBearer
-) -> bool:
-	response = await Request.send_template(
-		user, 
-		"clan_leave"
-	)
-	return response.get("clanTag") is None
-
 @router.get(
 	"/logs/{clanId}", 
 	summary="Gets the squadron logs"
@@ -211,7 +211,10 @@ async def get_clan_logs(
 ) -> LogsModel:
 	return await getLogs(user, clanId, limit, fromEntry)
 
-@router.get("/search", summary="Search for squadron")
+@router.get(
+	"/search", 
+	summary="Search for squadron"
+)
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,
@@ -255,6 +258,27 @@ async def get_clan_leaderboard_position(
 		raise HTTPException(404, "Clan not found")
 
 	return r[0]
+
+@router.get(
+	"/sqb"
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
+async def _(
+	request: faRequest,
+	user: TokenBearer
+):
+	pass
+
+
+@router.get(
+	"/sqb/current"
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
+async def _(
+	request: faRequest,
+	user: TokenBearer
+):
+	pass
 
 @router.get(
 	"/{clanId}",
