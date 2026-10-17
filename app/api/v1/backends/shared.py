@@ -14,20 +14,20 @@ class Authentication:
 	@staticmethod
 	async def _track_usage(user: LoginEntry):
 		# move the existing flush/counter block here
-		if user.user_entry is None:
+		if user.entry is None:
 			raise HTTPException(status.HTTP_409_CONFLICT, "You must be logged in")
 		flush = False
 		async with users_auth._auth_used_lock:
-			cache = users_auth._auth_used_cache.setdefault(user.user_entry.hashed, {"cnt": 0})
+			cache = users_auth._auth_used_cache.setdefault(user.entry.hashed, {"cnt": 0})
 			cache["cnt"] += 1
 			cache["used"] = datetime.now(UTC)
 			if cache["cnt"] >= 10:
-				user.user_entry.requests_count += cache["cnt"]
-				user.user_entry.last_used = cache["used"]
+				user.entry.requests_count += cache["cnt"]
+				user.entry.last_used = cache["used"]
 				cache["cnt"] = 0
 				flush = True
 		if flush:
-			await user.user_entry._write_values()
+			await user.entry._write_values()
 
 	@staticmethod
 	async def get_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):

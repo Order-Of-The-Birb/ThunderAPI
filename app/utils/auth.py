@@ -222,8 +222,9 @@ class UserAuth:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
 		async def getSquadronId(self) -> int|None:
 			from tools.http import Request
+			loginEntry = self.getEntry()
 			userEntry = (await Request.send_template(
-				self,
+				loginEntry,
 				"get_users_terse_info",
 				usersList=str(self.uidHint)
 			)).get(str(self.uidHint))
@@ -235,13 +236,17 @@ class UserAuth:
 				return None
 
 			squadronData = await Request.send_template(
-				self,
+				loginEntry,
 				"clan_find_by_prefix",
 				namePrefix=userEntry["clanName"],
 				tagPrefix=userEntry["clanTag"]
 			)
 			if "clan" in squadronData:
-				return int(squadronData["clan"]["_id"])
+				for member in squadronData["clan"]["members"]: 
+					# Extra check, when applying Gaijin already sets `clanName`, before being accepted
+					if int(member["uid"]) == self.uidHint:
+						return int(squadronData["clan"]["_id"])
+				return
 			elif isinstance(squadronData, dict):
 				squadronData = [squadronData,]
 

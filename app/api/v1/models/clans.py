@@ -60,26 +60,23 @@ class LogsModel(BaseModel):
 	lastLog: str
 	logs: list[ClanLogs]
 	class ClanLogs(BaseModel):
-		class _affected(BaseModel):
+		class _userEntry(BaseModel):
 			_id: int
 			nickname: str
 		class _action(BaseModel):
 			value: int
 			detail: str
-		class _admin(BaseModel):
-			_id: int
-			nickname: str
-
+		
 		class _roleChange(BaseModel):
 			old: str | None = Field(default=None, description="Previous role. Only present for role-change log entries.")
 			new: str | None = Field(default=None, description="New role. Only present for role-change log entries.")
 
 
 		timestamp: int
-		affected: _affected | None = Field(default=None)
+		affected: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
 		action: _action
-		admin: _admin | None = Field(default=None)
-		roleChange: _roleChange | None = Field(default=None)
+		admin: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
+		roleChange: _roleChange | None = Field(default=None, exclude_if=lambda x: x is None)
 
 class ClanLeaderboardModel(BaseModel):
 	class ClanStatsModel(BaseModel):
