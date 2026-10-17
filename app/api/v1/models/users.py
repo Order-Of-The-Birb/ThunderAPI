@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
-from ..shared import IntString
+from ..backends.shared import IntString
 from enum import Enum
 from bisect import bisect_right
 from .clans import PLATFORM_NAMES

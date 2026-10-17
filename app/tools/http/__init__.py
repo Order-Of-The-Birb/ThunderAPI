@@ -11,11 +11,11 @@ from tools.http.load import TEMPLATES, load as load_template
 from tools.const import Actions, GaijinErrorCodes, AuthLevel
 from tools import get_server
 if TYPE_CHECKING:
-	from utils import UserAuth
+	from utils.auth import LoginEntry
 
 class Request:
 	"""Request framework for sending messages to Gaijin's servers"""
-	user: UserAuth.Entry = None
+	user: LoginEntry = None
 	session = None
 
 	body: dict[str, Any]
@@ -30,7 +30,7 @@ class Request:
 		template_name: str,
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
-		user: UserAuth.Entry | None = None,
+		user: LoginEntry | None = None,
 		host:str|None = None,
 		method:str = "POST",
 		session:ClientSession|None=None,
@@ -64,9 +64,9 @@ class Request:
 		self.session = session
 
 	@classmethod
-	async def from_template(cls, user:UserAuth.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
-		if user.timeLeft() <= timedelta(minutes=30):
-			await user.refresh()
+	async def from_template(cls, user:LoginEntry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
+		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes=30):
+			await user.entry.refresh()
 		if template not in TEMPLATES:
 			raise ValueError(f"Unknown template '{template}'. Available: {TEMPLATES}")
 		tpl = load_template(template)
@@ -107,7 +107,7 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:UserAuth.Entry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
+	async def send_template(user:LoginEntry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
 		return await cls.send()
 
@@ -122,11 +122,12 @@ class Request:
 			raise RuntimeError(f"Unknown key `{key}` provided. Please edit template `{self.__template}`")
 
 	async def add_auth_headers(self):
-		authTimeLeft = self.user.timeLeft()
-		if authTimeLeft <= timedelta(minutes=30):
-			await self.user.refresh()
-		elif authTimeLeft < timedelta():
-			raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, "Your login has expired, please log in again to reauthenticate.")
+		if self.user.entry is not None:
+			authTimeLeft = self.user.entry.timeLeft()
+			if authTimeLeft <= timedelta(minutes=30):
+				await self.user.entry.refresh()
+			elif authTimeLeft < timedelta():
+				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, "Your login has expired, please log in again to reauthenticate.")
 		if self.user.jwt:
 			if "Authorization" in self.body:
 				self.body["Authorization"] = f"Bearer {self.user.jwt}"
@@ -146,15 +147,9 @@ class Request:
 
 	async def send(self) -> dict[str, Any]:
 		if self.action is None and self.url is None: return
-		if self.action is not None:
-			match (self.action.value.seq):
-				case AuthLevel.USER:
-					if self.user is None:
-						raise HTTPException(403, "You must be logged in for this action")
-				case AuthLevel.USER_PREFERRED:
-					pass
-				case AuthLevel.SERVER:
-					pass
+		if self.user.entry is None and self.action.value.auth is AuthLevel.USER:
+			raise HTTPException(403, "You must be logged in for this action")
+		
 		kwargs: dict[str, Any] = {"headers": self.headers}
 		for key, value in self.body.items():
 			if value == "<replace>":

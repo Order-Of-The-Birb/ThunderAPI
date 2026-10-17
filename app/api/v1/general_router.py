@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query, Request, WebSocket, status
 from utils import newsManager
 from utils.news import NewsEntry
 from api.shared import limiter
-from api.v1.shared import TokenBearer, IpString
+from api.v1.backends.shared import ServerBearer, IpString
 from api.v1.backends.general import getLatestGameVer
 
 
@@ -18,7 +18,7 @@ router = APIRouter(
 @router.get("/latestGameVersion", summary="Get latest game version")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
 async def get_latest_game_ver(
-	request: Request, user: TokenBearer,
+	request: Request, user: ServerBearer,
 	branch: Annotated[Literal["dev", "dev-stable"], Query(title="The game version to get")] = None,
 ) -> IpString:
 	return await getLatestGameVer(branch)
@@ -29,7 +29,7 @@ async def get_latest_game_ver(
 	description="Puts the pinned news first (Current update changelog + latest big news). There is additionally a `/v1/news_ws` websocket, that doesn't require any authentication, and provides the news through there. This websocket is the single exception to the 'token auth everywhere' rule. Websocket returns the same format for an entry like this endpoint"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
-async def get_news(request: Request, user: TokenBearer) -> list[NewsEntry]:
+async def get_news(request: Request, user: ServerBearer) -> list[NewsEntry]:
 	return await newsManager.fetch()
 
 @router.websocket(

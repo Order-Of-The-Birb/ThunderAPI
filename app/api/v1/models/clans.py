@@ -1,7 +1,7 @@
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
 from typing import Literal
-from ..shared import IpString, IntString
+from ..backends.shared import IpString, IntString
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):
@@ -146,34 +146,23 @@ class ClanModel(BaseModel):
 		activity: int
 		clan_activity_by_periods: int    
 	pos: int | None = None
-	_id: IntString | None = None
-	announcement: str | None = None
+	_id: int | None = None
 	autoaccept: bool | None = None
 	cdate: int | None = None
-	changed_by_uid: IntString | None = None
+	changed_by_uid: int | None = None
 	changed_time: int | None = None
-	creator_uid: IntString | None = None
-	currentTagRegalia: str | None = None
+	creator_uid: int | None = None
 	desc: str | None = None
-	interlockid: int | None = None
-	lastPaidTag: str | None = None
 	members_cnt: int | None = None
 	name: str | None = None
-	namel: str | None = None
 	region: str | None = None
-	region_last_updated: int | None = None
-	regionl: str | None = None
 	slogan: str | None = None
 	status: str | None = None
 	tag: str | None = None
-	tagl: str | None = None
-	transactions: list[str] | None = None
-	type: str | None = None
 	clanSeasonRatingRewards: ClanSeasonRatingRewardsModel | dict | None = None
 	members: list[MemberModel] | None = None
 	membership_req: dict | None = None
 	astat: astatModel | None = None
-	clanRewardRatingPerUser_60: dict | None = None
 	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
 
 	class Config:

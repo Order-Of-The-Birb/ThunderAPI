@@ -8,7 +8,7 @@ from fastapi import APIRouter, Query, Path, Request as faRequest, HTTPException,
 from tools.http import Request
 from utils.helper import dtToTimestampMs
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.backends.marketplace import item_in_inventory, get_inventory
 from api.v1.models.marketplace import SellModel, ItemModel
 from api.v1.models.base import GenericEmptyResponse
@@ -153,7 +153,7 @@ async def get_balance(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def searchItem(
-	request: faRequest, user: TokenBearer,
+	request: faRequest, user: ServerBearer,
 	name: Annotated[str, Query(title="The item to search for. Leave empty to search for ALL units")] = "",
 	count: Annotated[int, Query(title="Amount to get at once")] = 25,
 	page: Annotated[int, Query(title="Pagination page. Works based off of `count`")] = 0,
@@ -207,7 +207,7 @@ async def searchItem(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_history(
-	request: faRequest, user: TokenBearer,
+	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
 ):
 	pairData = await Request.send_template(
@@ -244,7 +244,7 @@ async def get_item_history(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_orders(
-	request: faRequest, user: TokenBearer,
+	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
 ):
 	books_brief = await Request.send_template(
@@ -308,7 +308,7 @@ async def view_item(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item(
-	request: faRequest, user: TokenBearer,
+	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
 ):
 	hashData = await Request.send_template(

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRe
 
 from tools.http import Request
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel
 from api.v1.models.base import SuccessEmptyDict
 from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs
@@ -86,7 +86,7 @@ async def leave_squadron(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_applicants(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	clanId: squadronId
 ) -> list[ApplicantModel]:
 	clanData = await getClan(user, clanId)
@@ -117,7 +117,7 @@ async def accept_applicant(
 	userId: gaijinUserId,
 	role:RolesDisplay = RolesDisplay.PRIVATE
 ):
-	squadronId = await user.getSquadronId()
+	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
 	return await Request.send_template(
@@ -143,7 +143,7 @@ async def reject_applicant(
 	userId: gaijinUserId,
 	message: Annotated[str, Query(title="Message to include alongside rejection")] = "",
 ): 
-	squadronId = await user.getSquadronId()
+	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
 	return await Request.send_template(
@@ -204,7 +204,7 @@ async def kick_member(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_logs(
 	request: faRequest,
-	user: TokenBearer,
+	user: OptionalAuth,
 	clanId: squadronId, 
 	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
 	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
@@ -218,7 +218,7 @@ async def get_clan_logs(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	clanName: Annotated[str, Query(title="Squadron name to look up")] = None,
 	clanTag: Annotated[str, Query(title="Squadron tag to look up")] = None,
 	limit: Annotated[int, Query(title="Amount of squadrons to return", gt=0, lt=50)] = 10,
@@ -233,7 +233,7 @@ async def get_clan_search(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	limit: Annotated[int, Query(title="The max amount to get at once", gt=0, le=50)] = 20,
 	page: Annotated[int, Query(title="The page to look up. Starts from 0.", ge=0)] = 0,
 ) -> list[ClanLeaderboardModel]:
@@ -249,7 +249,7 @@ async def get_clan_leaderboard(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard_position(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	clanId: Annotated[int, Path(title="The squadron's ID")],
 ) -> ClanLeaderboardModel:
 	r = await getLeaderboard(user, clanId=clanId)
@@ -263,9 +263,9 @@ async def get_clan_leaderboard_position(
 	"/sqb"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def _(
+async def get_sqb_brackets(
 	request: faRequest,
-	user: TokenBearer
+	user: ServerBearer
 ):
 	pass
 
@@ -274,9 +274,9 @@ async def _(
 	"/sqb/current"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def _(
+async def get_sqb_current_br(
 	request: faRequest,
-	user: TokenBearer
+	user: ServerBearer
 ):
 	pass
 
@@ -287,7 +287,7 @@ async def _(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	clanId: Annotated[int, Path(title="The squadron's ID")],
 ) -> ClanModel:
 	return await getClan(user, clanId)

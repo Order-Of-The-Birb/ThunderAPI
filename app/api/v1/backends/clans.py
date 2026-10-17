@@ -3,14 +3,14 @@ from fastapi import HTTPException, status
 from typing import Any
 
 from tools.http import Request
-from utils.auth import UserAuth
+from utils.auth import LoginEntry
 from utils.geo import lookup_city, lookup_utc_offset
 from utils.helper import Keymod
 from api.v1.models.clans import ClanModel, Roles, Platforms, Actions, ClanLeaderboardModel, ClanSearchResultModel
 
 _logger = _gL(__name__)
 
-async def getLeaderboard(user: UserAuth.Entry, limit: int = 20, page: int = 0, clanId: int | None = None) -> list[ClanLeaderboardModel]:
+async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanId: int | None = None) -> list[ClanLeaderboardModel]:
 	response = await Request.from_template(
 		user, 
 		"clan_get_leaderboard",
@@ -59,8 +59,8 @@ async def getLeaderboard(user: UserAuth.Entry, limit: int = 20, page: int = 0, c
 
 	return clans
 
-async def getLogs(user: UserAuth.Entry, clanId: int, limit: int = 10, fromEntry: str | None = None):
-	allLogs = await user.getSquadronId() == clanId
+async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str | None = None):
+	allLogs = user.entry is not None and await user.entry.getSquadronId() == clanId
 
 	response = await Request.from_template(
 		user, 
@@ -125,7 +125,7 @@ async def getLogs(user: UserAuth.Entry, clanId: int, limit: int = 10, fromEntry:
 		"logs": logs
 	}
 
-async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
+async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
 	response = await Request.from_template(
 		user, 
 		"clan_find_by_prefix",
@@ -159,7 +159,7 @@ async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag:
 
 	return response["clan"]
 
-async def getClan(user: UserAuth.Entry, clanId: int) -> ClanModel:
+async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	data = await Request.send_template(
 		user,
 		"clan_get",
@@ -168,7 +168,14 @@ async def getClan(user: UserAuth.Entry, clanId: int) -> ClanModel:
 
 	SANITIZE = (
 		Keymod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
-		Keymod("members", convert=lambda x: sanitizeMembers(x))
+		Keymod("members", convert=lambda x: sanitizeMembers(x)),
+		Keymod("transactions", rm=True),
+		Keymod("namel", rm=True),
+		Keymod("regionl", rm=True),
+		Keymod("tagl", rm=True),
+		Keymod("currentTagRegalia", rm=True),
+		Keymod("interlockid", rm=True),
+		Keymod("type", rm=True)
 	)
 	data = Keymod.run_all(data, SANITIZE)
 	

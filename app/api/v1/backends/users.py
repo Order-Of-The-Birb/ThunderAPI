@@ -1,8 +1,8 @@
 from tools.http import Request
-from utils.auth import UserAuth
+from utils.auth import LoginEntry
 from api.v1.models.users import TerseReturnModel
 
-async def get_terse(user:UserAuth.Entry, *userIds:int|str) -> dict[str, TerseReturnModel]:
+async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnModel]:
 	return await Request.send_template(
 		user, 
 		"get_users_terse_info",

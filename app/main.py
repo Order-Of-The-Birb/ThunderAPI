@@ -16,9 +16,10 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict
 from json import loads
 
-from utils import users_auth, newsManager, server_auth
-from utils.auth import scheduler
+from utils import users_auth, newsManager
+from utils.auth import scheduler, ServerAuth
 import utils.network as Network
+import utils
 from utils.geo import update_db
 from tools import _populate_serverlist
 from tools.blk_utils import Decompress
@@ -65,7 +66,7 @@ tags_metadata = [
 async def lifespan(app: FastAPI):
 	await users_auth.start()
 	await Network.start()
-
+	utils.server_auth = await ServerAuth.start()
 
 	await users_auth._refresh() # Clean up old entries on startup
 

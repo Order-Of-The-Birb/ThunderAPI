@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Request as faRequest, Query, status
 
 from utils.replayParser import Replay
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.backends.replay import search_replay, ReplayType, ReplayMode, ReplayTechType
 from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel
 
@@ -91,7 +91,7 @@ async def search_replays(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	replayId: Annotated[
 		str, 
 		Path(

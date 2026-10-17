@@ -3,12 +3,12 @@ from typing_extensions import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
-from hashlib import md5
 
 from utils import users_auth
+from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.auth import Login, LoginToken
 
 router = APIRouter(
@@ -56,9 +56,9 @@ async def login_token(
 	request: Request, 
 	user: TokenBearer
 ):
-	await user.refresh()
+	await user.entry.refresh()
 	return {
-		"expires": dtToTimestamp(user.expires),
+		"expires": dtToTimestamp(user.entry.expires),
 		"status": "OK"
 	}
 
@@ -73,10 +73,10 @@ async def answer_2fa(
 	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title="The 2FA code")]
 ):
-	if email not in users_auth._pending_2fa:
+	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	if users_auth._pending_2fa[email].password_hash == md5(password.encode()).hexdigest():
-		users_auth._pending_2fa[email].code = code
+	if _PENDING_2FA[email].check_password(password):
+		_PENDING_2FA[email].code = code
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement

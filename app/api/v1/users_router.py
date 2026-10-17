@@ -6,7 +6,7 @@ from urllib.parse import unquote
 
 from tools.http import Request
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.users import TerseReturnModel, getUserDirectModel, PlayerRank, SelfUserDataModel
 from api.v1.models.clans import Roles, RolesDisplay, Platforms
 from api.v1.backends.users import get_terse
@@ -22,7 +22,7 @@ router = APIRouter(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_users_terse_info(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	id: Annotated[list[int], Query(
 		title="The ID of the users to get information about",
 		description="Provide multiple IDs to get information about multiple users at once",
@@ -113,7 +113,7 @@ async def get_self_meta(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	userid: Annotated[int, Path(title="The ID of the user to get information about", description="The ID of the user to get information about", gt=0)],
 ) -> getUserDirectModel:
 	return JSONResponse(
@@ -132,7 +132,7 @@ async def get_user_direct(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_users_search(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	nick: Annotated[str, Path(title="The nickname to search for")],
 	limit: Annotated[int, Query(title="How many users to retrieve", ge=2, le=50)] = 10,
 ) -> dict[str, TerseReturnModel]:

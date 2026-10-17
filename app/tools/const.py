@@ -152,6 +152,10 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 		"code": status.HTTP_403_FORBIDDEN,
 		"detail": "Too high role requested"
 	}
+	OBSOLETE_USER_PROFILE = {
+		"code": status.HTTP_501_NOT_IMPLEMENTED,
+		"detail": "Non-converted obsolete profile"
+	}
 	@staticmethod
 	def parse(response: bytes) -> None:
 		"""Parse a Gaijin error code string into a properly formatted `HTTPException`. Returns early if error is not found or not given"""

@@ -80,7 +80,18 @@ class _pending2FA:
 	login: Event = field(default_factory=lambda: Event())
 	auth_data: dict[str, Any] = None
 	login_data: dict[str, Any] = None
+
+	def check_password(self, password: str):
+		return self.password_hash == md5(password.encode()).hexdigest()
 _PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
+
+@dataclass(slots=True, frozen=True)
+class LoginEntry:
+	jwt: str
+	token: str
+	uidHint: int
+
+	entry: UserAuth.Entry | None = None
 
 class UserAuth:
 	_auth_used_cache = {}
@@ -147,7 +158,6 @@ class UserAuth:
 				if row is None:
 					return None
 				return await cls.from_row(parent, row)
-
 		@classmethod
 		async def from_row(cls, parent:"UserAuth", row:Row):
 			t = dbSchema.tokens
@@ -168,6 +178,14 @@ class UserAuth:
 			self.sid = cls.sid_entry.from_row(row, self)
 			self.__saved = self.to_json()
 			return self
+
+		def getEntry(self) -> LoginEntry:
+			return LoginEntry(
+				self.jwt,
+				self.user_token,
+				self.uidHint,
+				self
+			)
 
 		async def refresh(self):
 			_logger.debug(f"Refreshing entry for {self.email}")
@@ -597,18 +615,12 @@ class UserAuth:
 	#endregion
 
 class ServerAuth:
-	@dataclass
-	class LoginData:
-		jwt: str
-		token: str
-		uidHint: int
-
 	__EMAIL: str
 	__PASS: str
 
-	__TOKEN: str
-	__JWT: str
-	__UID: int
+	_TOKEN: str
+	_JWT: str
+	_UID: int
 
 	REFRESH_JOB: Job
 
@@ -633,9 +645,9 @@ class ServerAuth:
 			else:
 				raise
 
-		self.__JWT = data["jwt"]
-		self.__TOKEN = data["token"]
-		self.__UID = data["user_id"]
+		self._JWT = data["jwt"]
+		self._TOKEN = data["token"]
+		self._UID = data["user_id"]
 
 		self.REFRESH_JOB = scheduler.add_job(
 			self.refresh,
@@ -647,17 +659,20 @@ class ServerAuth:
 
 		return self
 
-	def getLogin(self) -> LoginData:
-		return self.LoginData(
-			self.__JWT,
-			self.__TOKEN,
-			self.__UID
-		)
+	def getLogin(self) -> LoginEntry | None:
+		try:
+			return LoginEntry(
+				self._JWT,
+				self._TOKEN,
+				self._UID
+			)
+		except UnboundLocalError:
+			return
 
 	async def refresh(self) -> dict[str, Any]:
 		async with Network.post(
 			"https://auth.gaijinent.com/login_token.php", 
-			data={"token": self.__TOKEN}, 
+			data={"token": self._TOKEN}, 
 			headers={
 				"User-Agent": "ThunderAPI/1.0", 
 				"Content-Type": "application/x-www-form-urlencoded"
@@ -672,7 +687,7 @@ class ServerAuth:
 			raise AuthenticationError(status.HTTP_400_BAD_REQUEST, f"An error occurred during authentication: {content}")
 
 		if "jwt" in content:
-			self.__JWT = content["jwt"]
+			self._JWT = content["jwt"]
 
 async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
 	tries = 0
