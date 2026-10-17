@@ -170,8 +170,7 @@ async def getClan(user: UserAuth.Entry, clanId: int) -> ClanModel:
 		Keymod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
 		Keymod("members", convert=lambda x: sanitizeMembers(x))
 	)
-	for SAN in SANITIZE:
-		data = SAN.run(data)
+	data = Keymod.run_all(data, SANITIZE)
 	
 	return data
 
@@ -182,7 +181,7 @@ def sanitizeMembers(members:dict|list):
 	if isinstance(members, dict):
 		members = [members,]
 
-	SANITIZATION = (
+	SANITIZE = (
 		Keymod("uid", convert=lambda x: int(x)),
 		Keymod("nick", new_name="nickname"),
 		Keymod("role", new_name="rank", convert=lambda x: {
@@ -197,13 +196,9 @@ def sanitizeMembers(members:dict|list):
 		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
 		Keymod("date", new_name="joined_at")
 	)
-	def sanitize(member: dict[str, Any]):
-		for SAN in SANITIZATION:
-			member = SAN.run(member)
-		return member
 
 	for i, member in enumerate(members):
-		members[i] = sanitize(member)
+		members[i] = Keymod.run_all(member, SANITIZE)
 
 	return members
 
