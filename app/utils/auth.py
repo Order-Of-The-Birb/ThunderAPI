@@ -1,14 +1,14 @@
 from __future__ import annotations
 from re import sub as re_sub, search as re_search
 from logging import getLogger
-from asyncio import Lock
+from asyncio import Lock, Task, get_running_loop, Event, wait_for, to_thread
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.job import Job
 from aiosqlite import connect, Row, OperationalError
 from os import getenv, urandom
 from datetime import UTC, datetime, timedelta
-from typing import ClassVar, Literal
+from typing import ClassVar, Literal, Any
 from fastapi import HTTPException, status
 from hashlib import sha256, md5
 from secrets import token_urlsafe
@@ -19,7 +19,7 @@ from base64 import b64encode
 from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
-from utils.network import NetworkManager
+import utils.network as Network 
 from config import USERS_DB
 
 _logger = getLogger(__name__)
@@ -55,8 +55,34 @@ class dbSchema:
 		SID = "sid"
 		SID_EXP = "exp"
 
+scheduler = AsyncIOScheduler()
+
+_MACHINE_ID: str
+if not USERS_DB.MACHINE_ID.exists():
+	_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
+	_MACHINE_ID = md5(urandom(16)).hexdigest()
+	USERS_DB.MACHINE_ID.write_text(_MACHINE_ID)
+	USERS_DB.MACHINE_ID.chmod(0o600)
+else:
+	_MACHINE_ID = USERS_DB.MACHINE_ID.read_text().strip()
+
+@dataclass(slots=True)
+class _pending2FA:
+	password_hash: str
+	requestId: str
+	userId: int
+	password: str
+	types: set[Literal["WTR", "GaijinPass", "Email"]]
+	expires: datetime = field(default_factory=lambda: datetime.now(UTC) + timedelta(minutes=15))
+	code: str = None
+	await_task: Task = None
+	provided: Event = field(default_factory=lambda: Event())
+	login: Event = field(default_factory=lambda: Event())
+	auth_data: dict[str, Any] = None
+	login_data: dict[str, Any] = None
+_PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
+
 class UserAuth:
-	scheduler: AsyncIOScheduler
 	_auth_used_cache = {}
 	_auth_used_lock = Lock()
 
@@ -64,14 +90,7 @@ class UserAuth:
 	class _sidValue:
 		sid: str
 		sid_expires: datetime
-	@dataclass(slots=True)
-	class _pending2FA:
-		password_hash: str
-		requestId: str
-		userId: int
-		types: set[Literal["WTR", "GaijinPass", "Email"]]
-		expires: datetime = field(default_factory=lambda: datetime.now(UTC) + timedelta(minutes=15))
-		code: str = None
+
 	@dataclass(slots=True)
 	class Entry: # Short lived data class with some helper methods
 		@dataclass(slots=True)
@@ -155,7 +174,7 @@ class UserAuth:
 			if datetime.now(UTC) > self.expires:
 				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, "Login expired. Please reauthenticate.")
 
-			async with self._parent._networkManager.operation() as session:
+			async with Network.operation() as session:
 				async with session.post(
 					"https://auth.gaijinent.com/login_token.php", 
 					data={"token": self.user_token}, 
@@ -164,7 +183,7 @@ class UserAuth:
 						"Content-Type": "application/x-www-form-urlencoded"
 					}
 				) as r:
-					content = await self._parent._networkManager.handle_response(r)
+					content = await Network.handle_response(r)
 
 			if content.get("status") == "LOGINERROR":
 				if content.get("error") == "Wrong token":
@@ -184,7 +203,7 @@ class UserAuth:
 		def usedWithin(self, minutes:int) -> bool:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
 		async def getSquadronId(self) -> int|None:
-			from tools import Request
+			from tools.http import Request
 			userEntry = (await Request.send_template(
 				self,
 				"get_users_terse_info",
@@ -287,15 +306,8 @@ class UserAuth:
 			return obj
 	
 	__autorefresh_job:Job = None
-	_machine_id:str = None
-	_pending_2fa:dict[str, _pending2FA] # email -> {hashed_password, requestId, userId, types, code (after answering)}
-	_networkManager:NetworkManager
 
-	def __init__(self, networkManager:NetworkManager):
-		self._networkManager = networkManager
-		self.scheduler = AsyncIOScheduler()
-
-		self._pending_2fa = {}
+	def __init__(self):
 
 		if not USERS_DB.KEY.exists():
 			_logger.warning("No 'users.key' file found, autogenerating a key")
@@ -306,15 +318,6 @@ class UserAuth:
 			enc_key = USERS_DB.KEY.read_text().strip()
 		self.__fernet = Fernet(enc_key.encode())
 
-		if not USERS_DB.MACHINE_ID.exists():
-			_logger.warning("No 'machine.id' file found, autogenerating a machine ID")
-			machID = md5(urandom(16)).hexdigest()
-			USERS_DB.MACHINE_ID.write_text(machID)
-			USERS_DB.MACHINE_ID.chmod(0o600)
-		else:
-			machID = USERS_DB.MACHINE_ID.read_text().strip()
-		self._machine_id = machID
-
 		_logger.debug("User Token Cache initialized")
 
 	async def get(self, token:str):
@@ -323,97 +326,7 @@ class UserAuth:
 	
 	async def login(self, email:str, password:str|None = None) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
-		logindata = {
-			"login": email,
-			"password": password,
-			"game": "wt",
-			"client": self._machine_id
-		}
-
-		async with self._networkManager.operation() as session:
-			#region Auth flow
-			async with session.post(
-				"https://auth.gaijinent.com/login.php",
-				data=logindata,
-				headers={
-					"Content-Type": "application/x-www-form-urlencoded",
-					"User-Agent": "ThunderAPI/1.0"
-				}
-			) as r:
-				data = await self._networkManager.handle_response(r)
-
-			if data["status"] == "2STEP":
-				two_factor_types = set()
-				if data.get("hasGjPass"): two_factor_types.add("GaijinPass")
-				if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
-				if data.get("hasWTR"): two_factor_types.add("WTR")
-				self._pending_2fa[email] = self._pending2FA(
-					password_hash= md5(password.encode()).hexdigest(),
-					requestId= data['requestId'],
-					userId= data["userId"],
-					types= two_factor_types
-				)
-
-				tries = 0
-				success = False
-				while not success and tries < 10:
-					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
-						if "GaijinPass" in two_factor_types:
-							try:
-								data = await self._networkManager.handle_response(r)
-								success = True
-							except AuthenticationError:
-								async with session.post(
-									"https://auth.gaijinent.com/login.php", 
-									data=logindata, 
-									headers={
-										"Content-Type": "application/x-www-form-urlencoded",
-										"User-Agent": "ThunderAPI/1.0"
-									}
-								) as r:
-									data = await self._networkManager.handle_response(r)
-								tries += 1
-								continue
-						else: # UNTESTED PATH
-							if self._pending_2fa[email].code is None:
-								tries += 1
-								continue
-							data = {
-								"Message": self._pending_2fa[email].code,
-								"Request": self._pending_2fa[email].requestId
-							}
-							success = True
-
-				if not success:
-					raise AuthenticationError(status.HTTP_408_REQUEST_TIMEOUT, "Could not get 2FA login in time")
-
-				if data.get("Message") == "cancel":
-					raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
-
-				async with session.post(
-					"https://auth.gaijinent.com/login.php",
-					data={
-						"login": email,
-						"password": password,
-						"game": "wt",
-						"2step": data["Message"],
-						"requestId": data["Request"],
-						"client": self._machine_id
-					},
-					headers={
-						"Content-Type": "application/x-www-form-urlencoded",
-						"User-Agent": "ThunderAPI/1.0"
-					}
-				) as r:
-					data = await self._networkManager.handle_response(r)
-
-				if data["status"] == "2STEPERROR":
-					self._pending_2fa.pop(email, None)
-					raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Invalid 2FA code provided.")
-
-			if data["status"] == "LOGINERROR":
-				raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {data["error"]}")
-			#endregion
+		data = await login(email, password)
 
 		async with self._transaction() as cur:
 			schema = dbSchema
@@ -451,7 +364,7 @@ class UserAuth:
 					self._dec(row[dbSchema.sso_sessions.SID]),
 					datetime.fromtimestamp(row[dbSchema.sso_sessions.SID_EXP])
 				)
-		async with self._networkManager.operation() as session:
+		async with Network.operation() as session:
 			async with session.get("https://warthunder.com/") as response:
 				await response.read()
 				cookies = response.history[0].cookies
@@ -482,7 +395,7 @@ class UserAuth:
 					"password": password,
 					"action": "",
 					"referer": "",
-					"fingerprint": self._machine_id,
+					"fingerprint": _MACHINE_ID,
 					"app_id": "",
 				},
 				headers={
@@ -513,7 +426,7 @@ class UserAuth:
 										"request_id": msg["Request"],
 										"action": "", 
 										"referer": "", 
-										"fingerprint": self._machine_id, 
+										"fingerprint": _MACHINE_ID, 
 										"app_id": ""
 									},
 									headers={},
@@ -581,7 +494,8 @@ class UserAuth:
 			await entry._write_values()
 
 	async def _refresh(self):
-		self._pending_2fa = {k:v for k,v in self._pending_2fa.items() if v.expires > datetime.now(UTC)}
+		global _PENDING_2FA
+		_PENDING_2FA = {k:v for k,v in _PENDING_2FA.items() if v.expires > datetime.now(UTC)}
 		await self._force_write_used_cache()
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')")).fetchall()
@@ -630,21 +544,21 @@ class UserAuth:
 			await con.close()
 	
 	async def start(self):
+		global scheduler
 		await self._init_db()
 		if self.__autorefresh_job is None:
-			self.__autorefresh_job = self.scheduler.add_job(
+			self.__autorefresh_job = scheduler.add_job(
 				self._refresh,
 				IntervalTrigger(minutes=10)
 			)
-		if not self.scheduler.running:
-			self.scheduler.start()
+		if not scheduler.running:
+			scheduler.start()
 
 	async def close(self):
+		global scheduler
 		if self.__autorefresh_job is not None:
 			self.__autorefresh_job.remove()
 			self.__autorefresh_job = None
-		if self.scheduler.running:
-			self.scheduler.shutdown(wait=True)
 
 	async def _init_db(self):
 		USERS_DB.DB.parent.mkdir(parents=True, exist_ok=True)
@@ -681,3 +595,204 @@ class UserAuth:
 			_logger.exception("An error occurred during database setup")
 			raise
 	#endregion
+
+class ServerAuth:
+	@dataclass
+	class LoginData:
+		jwt: str
+		token: str
+		uidHint: int
+
+	__EMAIL: str
+	__PASS: str
+
+	__TOKEN: str
+	__JWT: str
+	__UID: int
+
+	REFRESH_JOB: Job
+
+	@classmethod
+	async def start(cls) -> ServerAuth | None:
+		self = cls()
+		self.__EMAIL = getenv("SERVER_EMAIL")
+		self.__PASS = getenv("SERVER_PASS")
+		if self.__EMAIL is None or self.__PASS is None:
+			_logger.warning("Server account could not be logged into. All endpoints act as having required login.")
+			return
+		try:
+			data = await login(self.__EMAIL, self.__PASS)
+		except HTTPException as e:
+			if e.status_code == status.HTTP_206_PARTIAL_CONTENT:
+				entry = _PENDING_2FA[self.__EMAIL]
+				if "GaijinPass" not in entry.types:
+					entry.code = await to_thread(input, "Please provide the 2FA code: ")
+					entry.provided.set()
+				await entry.provided.wait()
+				data = await login(self.__EMAIL, self.__PASS)
+			else:
+				raise
+
+		self.__JWT = data["jwt"]
+		self.__TOKEN = data["token"]
+		self.__UID = data["user_id"]
+
+		self.REFRESH_JOB = scheduler.add_job(
+			self.refresh,
+			IntervalTrigger(minutes=30)
+		)
+
+		if not scheduler.running:
+			scheduler.start()
+
+		return self
+
+	def getLogin(self) -> LoginData:
+		return self.LoginData(
+			self.__JWT,
+			self.__TOKEN,
+			self.__UID
+		)
+
+	async def refresh(self) -> dict[str, Any]:
+		async with Network.post(
+			"https://auth.gaijinent.com/login_token.php", 
+			data={"token": self.__TOKEN}, 
+			headers={
+				"User-Agent": "ThunderAPI/1.0", 
+				"Content-Type": "application/x-www-form-urlencoded"
+			}
+		) as r:
+			content = await Network.handle_response(r)
+
+		if content.get("status") == "LOGINERROR":
+			if content.get("error") == "Wrong token":
+				self.expires = datetime.now(UTC)
+				return
+			raise AuthenticationError(status.HTTP_400_BAD_REQUEST, f"An error occurred during authentication: {content}")
+
+		if "jwt" in content:
+			self.__JWT = content["jwt"]
+
+async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
+	tries = 0
+	success = False
+	entry = _PENDING_2FA.get(email)
+	if entry is None:
+		raise HTTPException(status.HTTP_400_BAD_REQUEST)
+
+	data = {
+		"requestId": entry.requestId,
+		"userId": entry.userId
+	}
+
+	async with Network.operation() as session:
+		while not success and tries < 10:
+			async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
+				if "GaijinPass" in entry.types:
+					try:
+						data = await Network.handle_response(r)
+						success = True
+						entry.provided.set()
+					except AuthenticationError:
+						async with session.post(
+							"https://auth.gaijinent.com/login.php", 
+							data={
+								"login": email,
+								"password": entry.password,
+								"game": "wt",
+								"client": _MACHINE_ID
+							},
+							headers={
+								"Content-Type": "application/x-www-form-urlencoded",
+								"User-Agent": "ThunderAPI/1.0"
+							}
+						) as r:
+							data = await Network.handle_response(r)
+						entry.requestId = data["requestId"]
+						tries += 1
+						continue
+				else: # UNTESTED PATH
+					data = await Network.handle_response(r)
+					await entry.provided.wait()
+					
+					success = True
+	if not success or data.get("Message") == "cancel":
+		raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
+
+	entry.auth_data = data
+	return await _login_2fa(email)
+
+async def _login_2fa(email: str):
+	if email not in _PENDING_2FA:
+		raise HTTPException(status.HTTP_404_NOT_FOUND, "2FA Entry not found")
+	entry = _PENDING_2FA[email]
+	await entry.provided.wait()
+	async with Network.post(
+		"https://auth.gaijinent.com/login.php",
+		data={
+			"login": email,
+			"password": entry.password,
+			"game": "wt",
+			"2step": entry.auth_data["Message"],
+			"requestId": entry.auth_data["Request"],
+			"client": _MACHINE_ID
+		},
+		headers={
+			"Content-Type": "application/x-www-form-urlencoded",
+			"User-Agent": "ThunderAPI/1.0"
+		}
+	) as r:
+		entry.login_data = await Network.handle_response(r)
+	_PENDING_2FA.pop(email, None)
+	entry.login.set()
+
+async def login(email: str, password: str):
+	if email in _PENDING_2FA:
+		e = _PENDING_2FA[email]
+		try:
+			await wait_for(e.login.wait(), timeout=60)
+		except TimeoutError:
+			raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA timed out")
+		if e.login_data["status"] == "2STEPERROR":
+			raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Invalid 2FA code provided.")
+		if e.login_data["status"] == "LOGINERROR":
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {e.login_data["error"]}")
+		return e.login_data
+
+	async with Network.operation() as session:
+		async with session.post(
+			"https://auth.gaijinent.com/login.php",
+			data={
+				"login": email,
+				"password": password,
+				"game": "wt",
+				"client": _MACHINE_ID
+			},
+			headers={
+				"Content-Type": "application/x-www-form-urlencoded",
+				"User-Agent": "ThunderAPI/1.0"
+			}
+		) as r:
+			data = await Network.handle_response(r)
+
+		if data["status"] == "2STEP":
+			two_factor_types = set()
+			if data.get("hasGjPass"): two_factor_types.add("GaijinPass")
+			if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
+			if data.get("hasWTR"): two_factor_types.add("WTR")
+			_PENDING_2FA[email] = _pending2FA(
+				password_hash= md5(password.encode()).hexdigest(),
+				requestId= data['requestId'],
+				userId= data["userId"],
+				types= two_factor_types,
+				password=password
+			)
+
+			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
+			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
+
+		if data["status"] == "LOGINERROR":
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {data["error"]}")
+
+	return data

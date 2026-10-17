@@ -2,9 +2,9 @@ from fastapi import HTTPException, status
 from typing import Any
 from dataclasses import dataclass, asdict
 
-from tools import Request
+from tools.http import Request
 from utils.auth import UserAuth
-from utils import networkManager
+import utils.network as Network
 from api.v1.shared import IntString
 
 async def get_asset_class(user: UserAuth.Entry, hash:str) -> list[dict[str, str|IntString]]:
@@ -57,7 +57,7 @@ class InventoryItem:
 		return asdict(self)
 async def get_inventory(user: UserAuth.Entry) -> list[InventoryItem]:
 	items:list[InventoryItem] = []
-	async with networkManager.operation() as session:
+	async with Network.operation() as session:
 		contexts = await Request.send_template(
 			user,
 			"GetContexts",

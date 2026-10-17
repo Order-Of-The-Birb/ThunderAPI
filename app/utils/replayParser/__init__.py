@@ -1,6 +1,6 @@
 from logging import getLogger
 from utils.replayParser.parser import ReplayParser
-from utils import networkManager
+import utils.network as Network
 from fastapi import HTTPException, status
 from asyncio import sleep
 
@@ -26,7 +26,7 @@ class Replay(dict):
 
 		#region wrpl download
 		async def get_data():
-			async with networkManager.operation() as session:
+			async with Network.operation() as session:
 				wrpl_num = 0
 				wait_time = 1
 				while True:

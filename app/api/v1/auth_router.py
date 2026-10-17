@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 from hashlib import md5
 
-from utils import users_cache
+from utils import users_auth
 from utils.helper import dtToTimestamp
 from api.shared import limiter
 from api.v1.shared import TokenBearer
@@ -33,7 +33,7 @@ async def login_post(
 	email: Annotated[EmailStr, Form()],
 	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"})]
 ):
-	token, uidHint = await users_cache.login(email, password)
+	token, uidHint = await users_auth.login(email, password)
 
 	return JSONResponse({
 		"status": "OK",
@@ -73,10 +73,10 @@ async def answer_2fa(
 	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title="The 2FA code")]
 ):
-	if email not in users_cache._pending_2fa:
+	if email not in users_auth._pending_2fa:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	if users_cache._pending_2fa[email].password_hash == md5(password.encode()).hexdigest():
-		users_cache._pending_2fa[email].code = code
+	if users_auth._pending_2fa[email].password_hash == md5(password.encode()).hexdigest():
+		users_auth._pending_2fa[email].code = code
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
@@ -96,7 +96,7 @@ async def get_sid(
 	user: TokenBearer,
 	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"}, description="Must be given, as we do not store passwords")]
 ):
-	await users_cache.get_sid(user, password)
+	await users_auth.get_sid(user, password)
 	if user.sid == None:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain sid value")
 	return JSONResponse({"status": "success"}, status.HTTP_200_OK)
@@ -110,6 +110,6 @@ async def remove_login(
 	request: Request,
 	user: TokenBearer
 ):
-	if (await users_cache.remove_entry(user)):
+	if (await users_auth.remove_entry(user)):
 		return JSONResponse({"success": True})
 	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")

@@ -1,4 +1,5 @@
 from enum import IntEnum, Enum, auto
+from typing import NamedTuple
 from re import search as re_search
 from fastapi import HTTPException, status
 
@@ -17,104 +18,103 @@ class ServerPool(IntEnum):
 	#endregion
 	VIEW_VEHICLE_PROXY = 10
 	WALLET = 11
-	
-def getAction(action:str|None):
-	if action is None:
-		return None
-	try:
-		return Action[action]
-	except KeyError:
-		try:
-			return UserAction[action]
-		except KeyError:
-			raise ValueError(f"Unknown action '{action}'. Available: {list(Action) + list(UserAction)}")
-class Action(Enum): # Filtered actions, only leaving those that do not affect the account directly
+	MATCHING = 12
+
+class AuthLevel(IntEnum):
+	SERVER = 0			# public — always use the server account
+	USER_PREFERRED = 1	# user token if present, else server account
+	USER = 2			# must be a real user session
+
+class ActionInfo(NamedTuple):
+	seq: int
+	pool: ServerPool
+	auth: AuthLevel = AuthLevel.USER
+
+class Actions(Enum):
 	#region Char
-	cln_get_users_terse_info = auto(), ServerPool.CHAR
-	cln_get_leaderboard_json = auto(), ServerPool.CHAR  
-	cln_clan_get = auto(), ServerPool.CHAR  
-	ano_get_public_userstat = auto(), ServerPool.CHAR  
-	cln_get_showcases = auto(), ServerPool.CHAR  
-	cln_get_entitlements_price_ex = auto(), ServerPool.CHAR  
-	cln_upd_entitlements_full = auto(), ServerPool.CHAR  
-	cln_get_events_leaderboard = auto(), ServerPool.CHAR  
-	cln_clan_get_leaderboard = auto(), ServerPool.CHAR  
-	cln_clan_get_log = auto(), ServerPool.CHAR  
-	cln_clan_find_by_prefix = auto(), ServerPool.CHAR  
-	cln_get_price_ex = auto(), ServerPool.CHAR
-	cln_require_unlock = auto(), ServerPool.CHAR
-	cln_get_news_ex = auto(), ServerPool.CHAR
-	ano_get_wishlist_json = auto(), ServerPool.CHAR
+	cln_get_users_terse_info = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_get_leaderboard_json = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_clan_get = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	ano_get_public_userstat = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_get_showcases = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_get_entitlements_price_ex = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_upd_entitlements_full = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_get_events_leaderboard = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_clan_get_leaderboard = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_clan_get_log = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER_PREFERRED)
+	cln_clan_find_by_prefix = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	cln_get_price_ex = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_require_unlock = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_get_news_ex = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.SERVER)
+	ano_get_wishlist_json = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER_PREFERRED)
+	cln_upgrade_crew = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_set_research_clan_unit = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_set_researchable = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_train_aircraft = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_add_to_wish_list = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_remove_from_wish_list = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_multi_consume_inventory_item_json = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_set_current_booster = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_bulk_train_aircraft = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_buy_aircraft = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_save_profile_showcase = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_save_pilot_appearance = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_select_title = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_recycle_items = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_inventory_purchase_item = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_apply_spare_item = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_clan_membership_request = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	ano_clan_accept_membership_request = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	ano_clan_dismiss_member = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	ano_clan_change_member_role = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	ano_clan_reject_membership_request = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_clan_leave = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
+	cln_flush_clan_exp_to_unit = ActionInfo(auto(), ServerPool.CHAR, AuthLevel.USER)
 	#endregion
 	#region Contact proxy
-	cln_find_users_by_nick_prefix_json = auto(), ServerPool.CONTACTS
-	#endregion
-	#region User stat
-	GetUnlocks = auto(), ServerPool.USERSTAT
-	GetStats = auto(), ServerPool.USERSTAT
-	GetUserStatDescList = auto(), ServerPool.USERSTAT
-	#endregion
-	#region UGC
-	cln_get_ugc_items_info = auto(), ServerPool.UGC
-	#endregion
-class UserAction(Enum):
-	#region Char
-	cln_upgrade_crew = auto(), ServerPool.CHAR
-	cln_set_research_clan_unit = auto(), ServerPool.CHAR
-	cln_set_researchable = auto(), ServerPool.CHAR
-	cln_train_aircraft = auto(), ServerPool.CHAR
-	cln_add_to_wish_list = auto(), ServerPool.CHAR
-	cln_remove_from_wish_list = auto(), ServerPool.CHAR
-	cln_multi_consume_inventory_item_json = auto(), ServerPool.CHAR
-	cln_set_current_booster = auto(), ServerPool.CHAR
-	cln_bulk_train_aircraft = auto(), ServerPool.CHAR
-	cln_buy_aircraft = auto(), ServerPool.CHAR
-	cln_save_profile_showcase = auto(), ServerPool.CHAR
-	cln_save_pilot_appearance = auto(), ServerPool.CHAR
-	cln_select_title = auto(), ServerPool.CHAR
-	cln_recycle_items = auto(), ServerPool.CHAR
-	cln_inventory_purchase_item = auto(), ServerPool.CHAR
-	cln_apply_spare_item = auto(), ServerPool.CHAR
-	cln_clan_membership_request = auto(), ServerPool.CHAR
-	ano_clan_accept_membership_request = auto(), ServerPool.CHAR
-	ano_clan_dismiss_member = auto(), ServerPool.CHAR
-	ano_clan_change_member_role = auto(), ServerPool.CHAR
-	ano_clan_reject_membership_request = auto(), ServerPool.CHAR
-	cln_clan_leave = auto(), ServerPool.CHAR
-	cln_flush_clan_exp_to_unit = auto(), ServerPool.CHAR
-	#endregion
-	#region Contacts proxy
-	GetContacts = auto(), ServerPool.CONTACTS
-	cln_cs_login = auto(), ServerPool.CONTACTS
+	cln_find_users_by_nick_prefix_json = ActionInfo(auto(), ServerPool.CONTACTS, AuthLevel.SERVER)
+	GetContacts = ActionInfo(auto(), ServerPool.CONTACTS, AuthLevel.USER)
+	cln_cs_login = ActionInfo(auto(), ServerPool.CONTACTS, AuthLevel.USER)
 	#endregion
 	#region Inventory Proxy
-	GetItemDefsClient = auto(), ServerPool.INVENTORY
-	GetInventory = auto(), ServerPool.INVENTORY
-	GetItemPrices = auto(), ServerPool.INVENTORY
-	ExchangeItems = auto(), ServerPool.INVENTORY
+	GetItemDefsClient = ActionInfo(auto(), ServerPool.INVENTORY, AuthLevel.USER)
+	GetInventory = ActionInfo(auto(), ServerPool.INVENTORY, AuthLevel.USER)
+	GetItemPrices = ActionInfo(auto(), ServerPool.INVENTORY, AuthLevel.USER)
+	ExchangeItems = ActionInfo(auto(), ServerPool.INVENTORY, AuthLevel.USER)
+	#endregion
+	#region User stat
+	GetUnlocks = ActionInfo(auto(), ServerPool.USERSTAT, AuthLevel.USER)
+	GetStats = ActionInfo(auto(), ServerPool.USERSTAT, AuthLevel.USER)
+	GetUserStatDescList = ActionInfo(auto(), ServerPool.USERSTAT, AuthLevel.USER)
+	#endregion
+	#region UGC
+	cln_get_ugc_items_info = ActionInfo(auto(), ServerPool.UGC, AuthLevel.SERVER)
 	#endregion
 	#region Marketplace Proxy
-	cln_filter_blocked_pairs = auto(), ServerPool.MARKET_JSON
-	cln_get_app_tags = auto(), ServerPool.MARKET_WEB
-	cln_market_info = auto(), ServerPool.MARKET_WEB
-	cln_get_pair_stat = auto(), ServerPool.MARKET_WEB
-	cln_books_brief = auto(), ServerPool.MARKET_WEB
-	cln_get_user_history = auto(), ServerPool.MARKET_WEB
-	cln_get_user_open_orders = auto(), ServerPool.MARKET_WEB
-	cln_market_sell = auto(), ServerPool.MARKET_WEB
-	cln_market_buy = auto(), ServerPool.MARKET_WEB
-	cln_market_search = auto(), ServerPool.MARKET_WEB
-	cln_market_get_asset_class = auto(), ServerPool.MARKET_WEB
-	cln_get_general_blk = auto(), ServerPool.MARKET_CHAR
-	cln_set_general_blk = auto(), ServerPool.MARKET_CHAR
-	cmn_check_user_auth = auto(), ServerPool.MARKET
-	cancel_order = auto(), ServerPool.MARKET
-	GetContexts = auto(), ServerPool.MARKET_ASSET
-	GetContextContents = auto(), ServerPool.MARKET_ASSET
-	GetAssetClassInfo = auto(), ServerPool.MARKET_ASSET
-	market_view_item = auto(), ServerPool.VIEW_VEHICLE_PROXY
+	cln_filter_blocked_pairs = ActionInfo(auto(), ServerPool.MARKET_JSON, AuthLevel.USER)
+	cln_get_app_tags = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_market_info = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_get_pair_stat = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_books_brief = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_get_user_history = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.USER)
+	cln_get_user_open_orders = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.USER)
+	cln_market_sell = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.USER)
+	cln_market_buy = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.USER)
+	cln_market_search = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_market_get_asset_class = ActionInfo(auto(), ServerPool.MARKET_WEB, AuthLevel.SERVER)
+	cln_get_general_blk = ActionInfo(auto(), ServerPool.MARKET_CHAR, AuthLevel.USER)
+	cln_set_general_blk = ActionInfo(auto(), ServerPool.MARKET_CHAR, AuthLevel.USER)
+	cmn_check_user_auth = ActionInfo(auto(), ServerPool.MARKET, AuthLevel.USER)
+	cancel_order = ActionInfo(auto(), ServerPool.MARKET, AuthLevel.USER)
+	GetContexts = ActionInfo(auto(), ServerPool.MARKET_ASSET, AuthLevel.SERVER)
+	GetContextContents = ActionInfo(auto(), ServerPool.MARKET_ASSET, AuthLevel.SERVER)
+	GetAssetClassInfo = ActionInfo(auto(), ServerPool.MARKET_ASSET, AuthLevel.SERVER)
+	market_view_item = ActionInfo(auto(), ServerPool.VIEW_VEHICLE_PROXY, AuthLevel.USER)
+	GetBalance = ActionInfo(auto(), ServerPool.WALLET, AuthLevel.USER)
 	#endregion
-	GetBalance = auto(), ServerPool.WALLET
+	#region Matching
+
+	#endregion
 
 class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 	# Will require a lot of testing to finish

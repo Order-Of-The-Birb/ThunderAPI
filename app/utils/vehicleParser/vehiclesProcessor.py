@@ -11,7 +11,7 @@ from datetime import datetime, UTC
 from time import perf_counter
 from pandas import read_csv, DataFrame
 from .constants import *
-from utils import networkManager
+import utils.network as Network
 from config import VEHICLES
 
 _logger = getLogger(__name__)
@@ -125,7 +125,7 @@ async def update_gamefiles():
 	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
 		return
 	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
-	async with networkManager.get(REMOTE_VERSION_URL) as response:
+	async with Network.get(REMOTE_VERSION_URL) as response:
 		remote_ver = Version(await response.text("utf-8"))
 	loop = get_running_loop()
 

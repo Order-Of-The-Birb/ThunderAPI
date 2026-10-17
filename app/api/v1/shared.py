@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from utils import users_cache
+from utils import users_auth
 from utils.auth import UserAuth
 from typing_extensions import Annotated
 from pydantic import StringConstraints, Field
@@ -10,12 +10,12 @@ security = HTTPBearer(description="Get the token from `POST /v1/login`")
 
 async def get_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
 	token = credentials.credentials
-	user = await users_cache.get(token)
+	user = await users_auth.get(token)
 	if not user:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
 	flush = False
-	async with users_cache._auth_used_lock:
-		cache = users_cache._auth_used_cache.setdefault(user.hashed, {"cnt": 0})
+	async with users_auth._auth_used_lock:
+		cache = users_auth._auth_used_cache.setdefault(user.hashed, {"cnt": 0})
 		cache["cnt"] += 1
 		cache["used"] = datetime.now(UTC)
 		if cache["cnt"] >= 10:

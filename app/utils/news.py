@@ -1,7 +1,6 @@
 from asyncio import Task, Lock, CancelledError
 from logging import getLogger, Logger
 from aiohttp.client_exceptions import ClientResponseError
-from utils.network import NetworkManager, WebsocketManager
 from datetime import datetime, time, UTC
 from asyncio import sleep
 from typing import Literal, Any
@@ -12,6 +11,8 @@ from json import loads, dumps
 from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
 from config import NEWS_JSON
+from utils.websocket import WebsocketManager
+import utils.network as Network
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start
@@ -122,16 +123,13 @@ class NewsManager:
 	lastNews:int
 	lastChangelog:int
 	__logger: Logger
-	_networkManager: NetworkManager
 	task:Task
 	_lock: Lock
 	websocket_mgr: WebsocketManager
 
-	def __init__(self, networkManager:NetworkManager):
+	def __init__(self):
 		self.__logger = getLogger(__name__)
 		self._lock = Lock()
-
-		self._networkManager = networkManager
 		self.websocket_mgr = WebsocketManager()
 
 		if (not NEWS_JSON.exists()):
@@ -216,7 +214,7 @@ class NewsManager:
 		global _news_endpoint_down
 		news:list[NewsEntry] = []
 		try:
-			async with self._networkManager.get(self._API_URL) as response:
+			async with Network.get(self._API_URL) as response:
 				if _news_endpoint_down:
 					self.__logger.info("Gaijin's news endpoint is back online")
 					_news_endpoint_down = False
@@ -233,7 +231,7 @@ class NewsManager:
 		global _changelog_maintenance
 		final_changelogs = []
 		try:
-			async with self._networkManager.get(self._CHANGELOG_URL) as resp:
+			async with Network.get(self._CHANGELOG_URL) as resp:
 				if _changelog_maintenance:
 					self.__logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
