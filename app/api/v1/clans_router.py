@@ -47,7 +47,7 @@ async def send_application(
 	return response.get("clanTag") is not None
 
 @router.post(
-	"/cancelApply/", 
+	"/cancelApply", 
 	summary="Cancels the current squadron application",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}
@@ -307,7 +307,7 @@ async def get_clan_logs(
 		"logs": logs
 	})
 
-@router.get("/search/", summary="Search for squadron")
+@router.get("/search", summary="Search for squadron")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,
