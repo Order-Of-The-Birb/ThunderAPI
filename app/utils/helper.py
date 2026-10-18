@@ -37,7 +37,11 @@ class Keymod:
 			if self.default is not ... and not self.rm:
 				obj[self.new_name] = self.convert(self.default)
 			return obj
-		new_val = self.convert(obj.pop(self.key, self.default))
+		try:
+			new_val = self.convert(obj.pop(self.key))
+		except KeyError:
+			new_val = self.default
+
 		if not self.rm:
 			obj[self.new_name] = new_val
 		return obj

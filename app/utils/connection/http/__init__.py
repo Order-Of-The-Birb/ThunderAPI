@@ -4,12 +4,12 @@ from aiohttp import ClientResponse, ClientSession
 from datetime import timedelta
 from random import randint
 from json import dumps, loads, JSONDecodeError
-import utils.network as Network
+import utils.connection.network as Network
 from utils.helper import AuthenticationError
-from tools.blk_utils import Compress, Decompress
-from tools.http.load import TEMPLATES, load as load_template
-from tools.const import Actions, GaijinErrorCodes, AuthLevel
-from tools import get_server
+from utils.connection.blk_utils import Compress, Decompress
+from utils.connection.http.load import TEMPLATES, load as load_template
+from utils.connection.const import Actions, GaijinErrorCodes, AuthLevel
+from utils.connection import get_server
 if TYPE_CHECKING:
 	from utils.auth import LoginEntry
 

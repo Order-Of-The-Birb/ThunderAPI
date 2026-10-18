@@ -18,11 +18,11 @@ from json import loads
 
 from utils import users_auth, newsManager
 from utils.auth import scheduler, ServerAuth
-import utils.network as Network
+import utils.connection.network as Network
 import utils
 from utils.geo import update_db
-from tools import _populate_serverlist
-from tools.blk_utils import Decompress
+from utils.connection import _populate_serverlist
+from utils.connection.blk_utils import Decompress
 from api import router
 from api.shared import limiter
 from config import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT

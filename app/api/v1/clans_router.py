@@ -2,7 +2,7 @@ from os import getenv
 from typing_extensions import Annotated
 from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRequest, status
 
-from tools.http import Request
+from utils.connection.http import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel

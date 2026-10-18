@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
 from config import NEWS_JSON
 from utils.websocket import WebsocketManager
-import utils.network as Network
+import utils.connection.network as Network
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start

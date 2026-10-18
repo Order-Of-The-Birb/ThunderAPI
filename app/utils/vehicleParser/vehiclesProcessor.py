@@ -11,7 +11,7 @@ from datetime import datetime, UTC
 from time import perf_counter
 from pandas import read_csv, DataFrame
 from .constants import *
-import utils.network as Network
+import utils.connection.network as Network
 from config import VEHICLES
 
 _logger = getLogger(__name__)

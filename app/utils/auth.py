@@ -19,7 +19,7 @@ from base64 import b64encode
 from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
-import utils.network as Network 
+import utils.connection.network as Network 
 from config import USERS_DB
 
 _logger = getLogger(__name__)
@@ -221,7 +221,7 @@ class UserAuth:
 		def usedWithin(self, minutes:int) -> bool:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
 		async def getSquadronId(self) -> int|None:
-			from tools.http import Request
+			from utils.connection.http import Request
 			loginEntry = self.getEntry()
 			userEntry = (await Request.send_template(
 				loginEntry,

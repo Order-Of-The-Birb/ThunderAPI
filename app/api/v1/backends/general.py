@@ -1,5 +1,5 @@
 from typing import Literal
-import utils.network as Network
+import utils.connection.network as Network
 
 async def getLatestGameVer(branch: Literal["dev", "dev-stable"]|None):
 	if branch is None: branch = ""

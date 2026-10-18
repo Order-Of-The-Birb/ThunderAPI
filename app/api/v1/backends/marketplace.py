@@ -2,9 +2,9 @@ from fastapi import HTTPException, status
 from typing import Any
 from dataclasses import dataclass, asdict
 
-from tools.http import Request
+from utils.connection.http import Request
 from utils.auth import LoginEntry
-import utils.network as Network
+import utils.connection.network as Network
 from api.v1.backends.shared import IntString
 
 async def get_asset_class(user: LoginEntry, hash:str) -> list[dict[str, str|IntString]]:

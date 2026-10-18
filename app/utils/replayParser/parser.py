@@ -3,7 +3,7 @@ from fastapi import status
 from fastapi.exceptions import HTTPException
 from json import JSONDecodeError
 from typing import Any
-from tools.blk_utils import Decompress
+from utils.connection.blk_utils import Decompress
 from enum import IntEnum, Enum, auto
 
 @dataclass

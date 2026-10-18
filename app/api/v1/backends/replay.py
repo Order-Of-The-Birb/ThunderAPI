@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from enum import StrEnum, Enum
 from datetime import datetime, UTC
-from tools.http import Request
+from utils.connection.http import Request
 from utils.auth import LoginEntry
 
 class ReplayType(StrEnum):

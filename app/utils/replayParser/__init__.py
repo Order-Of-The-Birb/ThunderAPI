@@ -1,6 +1,6 @@
 from logging import getLogger
 from utils.replayParser.parser import ReplayParser
-import utils.network as Network
+import utils.connection.network as Network
 from fastapi import HTTPException, status
 from asyncio import sleep
 
