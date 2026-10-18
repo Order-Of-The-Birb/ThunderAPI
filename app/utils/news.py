@@ -11,7 +11,7 @@ from json import loads, dumps
 from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
 from config import NEWS_JSON
-from utils.websocket import WebsocketManager
+from utils.connection.websocket import WebsocketManager
 import utils.connection.network as Network
 
 fasterUpdate = (
