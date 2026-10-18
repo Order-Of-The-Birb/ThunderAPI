@@ -7,7 +7,7 @@ from json import dumps, loads, JSONDecodeError
 import utils.connection.network as Network
 from utils.helper import AuthenticationError
 from utils.connection.blk_utils import Compress, Decompress
-from utils.connection.http.load import TEMPLATES, load as load_template
+from utils.connection.http.templates import TEMPLATES, load as load_template
 from utils.connection.const import Actions, GaijinErrorCodes, AuthLevel
 from utils.connection import get_server
 if TYPE_CHECKING:
