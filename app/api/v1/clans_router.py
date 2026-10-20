@@ -262,7 +262,7 @@ async def get_clan_leaderboard_position(
 @router.get(
 	"/sqb",
 	summary="Returns the current season's SQB/SRB battle rating brackets",
-	description="Data is obtained from https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446, if this data is outdated here, it is probably outdated there"
+	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_brackets(
@@ -274,7 +274,7 @@ async def get_brackets(
 @router.get(
 	"/sqb/current",
 	summary="Returns the current SQB/SRB battle rating bracket",
-	description="Data is obtained from https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446, if this data is outdated here, it is probably outdated there"
+	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_current_br(

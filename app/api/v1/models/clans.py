@@ -176,6 +176,6 @@ class ClanSearchResultModel(BaseModel):
 	region: str
 
 class SQBTimeBracket(BaseModel):
-	_from: datetime
-	_to: datetime
+	start: datetime
+	end: datetime
 	br: float

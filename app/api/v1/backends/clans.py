@@ -269,9 +269,20 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 		}) as resp:
 			resp.raise_for_status()
 			response = await resp.text()
-		post = str(BeautifulSoup(response, 'html.parser').find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+
+		bs = BeautifulSoup(response, 'html.parser')
+		title = bs.find("div", class_="title-wrapper").find("h1").find("a", class_="fancy-title")
+		year = re_search(r"\([0-9\. ]+ - ([0-9]+\.[0-9]+\.[0-9]+)\)", title.text, IGNORECASE)
+		if not year:
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not fetch forum post title")
+		end_date = datetime.strptime(year.group(1), "%d.%m.%Y").date()
+
+		if end_date < datetime.now(UTC).date():
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Forum post data is outdated. Please try again later.")
+
+		post = str(bs.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+		del bs
 	
-		rn = datetime.now(UTC)
 		weeks = []
 		for week in post:
 			find = re_search(r"мах (?:BR|БР) ([0-9.]+) \(([0-9.]+)\D+([0-9.]+)\)", week, IGNORECASE)
@@ -279,8 +290,8 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 				_logger.warning("regex could not find bracket data")
 				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not retrieve SQB brackets")
 			br = float(find.group(1))
-			start_time = datetime.strptime(f"{find.group(2)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[0][0].hour, minute=0, second=0, tzinfo=UTC)
-			end_time = datetime.strptime(f"{find.group(3)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[1][1].hour, minute=0, second=0, tzinfo=UTC)
+			start_time = datetime.combine(datetime.strptime(f"{find.group(2)}.{end_date.year}", "%d.%m.%Y").date(), SQB_BRACKET_TIMES[0][0], UTC)
+			end_time = datetime.combine(datetime.strptime(f"{find.group(3)}.{end_date.year}", "%d.%m.%Y").date(), SQB_BRACKET_TIMES[1][1], UTC)
 			weeks.append({
 				"start": start_time,
 				"end": end_time,
