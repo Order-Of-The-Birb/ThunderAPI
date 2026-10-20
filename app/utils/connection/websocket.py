@@ -9,14 +9,12 @@ class WebsocketManager:
 	__LOCK: Lock
 	__CLOSED: bool = False
 	__ON_IDLE: Callable[[], Awaitable[None]] | None
-	__TIMEOUT: dict[str, datetime]
 
 	def __init__(self, on_idle: Callable[[], Awaitable[None]] | None = None):
 		#TODO: Implement auth requiring for websockets
 		self.__CONN = set()
 		self.__LOCK = Lock()
 		self.__ON_IDLE = on_idle
-		self.__TIMEOUT = {}
 
 	async def connect(self, ws: WebSocket) -> AsyncGenerator[dict, None]:
 		if self.__CLOSED:
