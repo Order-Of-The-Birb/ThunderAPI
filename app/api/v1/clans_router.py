@@ -268,7 +268,7 @@ async def get_clan_leaderboard_position(
 async def get_brackets(
 	request: faRequest,
 	user: ServerBearer
-) -> list[SQBTimeBracket]:
+) -> tuple[SQBTimeBracket]:
 	return await get_sqb_brackets()
 
 @router.get(
