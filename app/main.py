@@ -134,9 +134,9 @@ app = FastAPI(
 #region Rate Limiter
 app.state.limiter = limiter
 app.add_exception_handler(
-	RateLimitExceeded, 
+	RateLimitExceeded,
 	lambda request, exc: (
-		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"), 
+		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"),
 		JSONResponse({"detail": "Rate limit exceeded"}, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
 	)[1]
 )

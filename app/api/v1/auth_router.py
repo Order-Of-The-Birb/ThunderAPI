@@ -17,8 +17,8 @@ router = APIRouter(
 )
 
 @router.post(
-	"/login", 
-	summary="Get a token to use in other endpoints", 
+	"/login",
+	summary="Get a token to use in other endpoints",
 	description="You can use this token for the endpoints. If given user has 2FA enabled, they must provide the 2FA code along with their credentials through either `Gaijin pass` or the `/v1/answer-2fa` endpoint. If you generated a token that hasn't expired yet, the endpoint will just give back the cached token.",
 	responses={
 		status.HTTP_200_OK: {"model": Login.LoginResponse},
@@ -42,7 +42,7 @@ async def login_post(
 	}, status_code=status.HTTP_200_OK)
 
 @router.post(
-	"/refresh-token", 
+	"/refresh-token",
 	summary="Refresh your token so it stays alive for longer. This is essentially a 'No op', just to keep the token active.",
 	description="If you are cached it will refresh the token. The game generally refreshes the token every 30 minutes. Returns an UNIX timestamp of the new token expiry",
 	responses={
@@ -53,7 +53,7 @@ async def login_post(
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_token(
-	request: Request, 
+	request: Request,
 	user: TokenBearer
 ):
 	await user.entry.refresh()

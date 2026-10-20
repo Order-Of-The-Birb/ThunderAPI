@@ -32,7 +32,7 @@ class WebsocketManager:
 			pass
 		finally:
 			await self.disconnect(ws)
-		
+
 	async def disconnect(self, ws: WebSocket):
 		_idle: bool = False
 		async with self.__LOCK:
@@ -42,7 +42,7 @@ class WebsocketManager:
 				pass
 			self.__CONN.discard(ws)
 			if len(self.__CONN) == 0:
-				_idle = True	
+				_idle = True
 		if _idle and self.__ON_IDLE is not None:
 			await self.__ON_IDLE()
 

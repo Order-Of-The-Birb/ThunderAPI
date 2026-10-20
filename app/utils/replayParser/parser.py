@@ -53,7 +53,7 @@ class _ReplayHeader:
 	battleType: str
 	environment: str
 	visibility: str
-	rezOffset: int 
+	rezOffset: int
 	diff: _Difficulty
 	sessionType: int
 	sessionIdHex: int

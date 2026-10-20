@@ -68,7 +68,7 @@ class Replay(dict):
 		#endregion
 		#region Parse gaijin JSON to proper JSON
 		resultsData = await get_data()
-		
+
 		self.update({
 			"status": "OK",
 			"matchId": resultsData.header.sessionIdHex,
@@ -129,7 +129,7 @@ class Replay(dict):
 					if key == "__array": continue
 					add_obj["lineup"]["vehicles"][value["name"]] = {
 						"rank": value["rank"],
-						"battlerating": round(value["mrank"] / 3, 1) 
+						"battlerating": round(value["mrank"] / 3, 1)
 					}
 				try:
 					add_obj["lineup"]["maxBr"] = round(lineupData["mrank"] / 3, 1)

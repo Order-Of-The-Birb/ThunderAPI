@@ -60,7 +60,7 @@ class Request:
 	__template: str
 	def __init__(
 		self,
-		action: Actions, 
+		action: Actions,
 		template_name: str,
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
@@ -117,7 +117,7 @@ class Request:
 			raise RuntimeError(f"No action provided for template {template}")
 
 		self = cls(
-			body=body, 
+			body=body,
 			headers=headers,
 			user=user,
 			host=tpl.get("host", None),
@@ -183,7 +183,7 @@ class Request:
 		if self.action is None and self.url is None: return
 		if self.user.entry is None and self.action.value.auth is AuthLevel.USER:
 			raise HTTPException(403, "You must be logged in for this action")
-		
+
 		kwargs: dict[str, Any] = {"headers": self.headers}
 		for key, value in self.body.items():
 			if value == "<replace>":
@@ -203,7 +203,7 @@ class Request:
 					status.HTTP_500_INTERNAL_SERVER_ERROR,
 					f"[{self.action.name}] Header value `{header}` is not replaced by code"
 				)
-			elif header == "<replace>": 
+			elif header == "<replace>":
 				raise HTTPException(
 					status.HTTP_500_INTERNAL_SERVER_ERROR,
 					f"[{self.action.name}] Header key with value `{value}` is not replaced by code"
@@ -230,7 +230,7 @@ class Request:
 			case None:
 				pass
 			case _:
-				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")	
+				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")
 
 		if self.session is None:
 			async with Network.request(self.method.upper(), self.url, **kwargs) as resp:

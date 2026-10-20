@@ -117,11 +117,11 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 	"""Enum for Gaijin's error codes."""
 	# HTTP code, error details
 	CLAN_NOT_MEMBER = {
-		"code": status.HTTP_403_FORBIDDEN, 
+		"code": status.HTTP_403_FORBIDDEN,
 		"detail":"You are not a member of the given clan"
-	} 
+	}
 	CLAN_CANDIDATE_TIMEOUT = {
-		"code": status.HTTP_400_BAD_REQUEST, 
+		"code": status.HTTP_400_BAD_REQUEST,
 		"detail":"You are already a candidate for this clan"
 	}
 	CLAN_YOU_HAVE_NO_RIGHT = {
@@ -163,7 +163,7 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 
 			err = GaijinErrorCodes[ match.group(1).strip() ]
 			raise HTTPException(
-				status_code=err.value["code"], 
+				status_code=err.value["code"],
 				detail=err.value["detail"]
 			)
 		except KeyError:

@@ -34,7 +34,7 @@ async def get_users_terse_info(
 	return JSONResponse(await get_terse(user, *id))
 
 @router.get(
-	"/self", 
+	"/self",
 	summary="Get metadata about the logged in user",
 	responses={
 		200: {"model": SelfUserDataModel}
@@ -63,7 +63,7 @@ async def get_self_meta(
 		"rank": level
 	}
 	data["acedVehicles"] = userData["numEliteUnits"]
-	
+
 	data["unitsData"] = {}
 	for k in userData["era"]:
 		data["unitsData"].setdefault(k, {})

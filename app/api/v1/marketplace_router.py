@@ -32,7 +32,7 @@ router = APIRouter(
 async def sell_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description="The item's hash value")],
-	price: Annotated[float, Query(description="The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge=0.1, le=2000)], 
+	price: Annotated[float, Query(description="The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge=0.1, le=2000)],
 	count: Annotated[int, Query(description="The amount to sell at once", gt=0)] = 1,
 	anonymous: Annotated[bool, Query(description="Appear as an anonymous seller")] = False
 ):
@@ -86,7 +86,7 @@ async def sell_item(
 async def buy_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description="The item's hash value")],
-	price: Annotated[float, Query(description="The price in GJN to buy for", ge=0.1, le=2000)], 
+	price: Annotated[float, Query(description="The price in GJN to buy for", ge=0.1, le=2000)],
 	count: Annotated[int, Query(description="The amount to buy", gt=0)] = 1,
 	anonymous: Annotated[bool, Query(description="Appear as an anonymous buyer")] = False
 ) -> GenericEmptyResponse:
@@ -110,7 +110,7 @@ async def buy_item(
 			raise HTTPException(status.HTTP_404_NOT_FOUND, "Item doesn't exist")
 		elif "details" in resp and resp["details"] == "NOT_ENOUGH_FUNDS":
 			raise HTTPException(status.HTTP_403_FORBIDDEN, "Not enough funds")
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, resp["error"])     
+		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, resp["error"])
 	if resp.get("success", False):
 		return {
 			"success": True

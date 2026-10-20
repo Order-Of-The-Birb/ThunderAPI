@@ -24,8 +24,8 @@ async def get_latest_game_ver(
 	return await getLatestGameVer(branch)
 
 @router.get(
-	"/news", 
-	summary="Gets the latest news from gaijin", 
+	"/news",
+	summary="Gets the latest news from gaijin",
 	description="Puts the pinned news first (Current update changelog + latest big news). There is additionally a `/v1/news_ws` websocket, that doesn't require any authentication, and provides the news through there. This websocket is the single exception to the 'token auth everywhere' rule. Websocket returns the same format for an entry like this endpoint"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")

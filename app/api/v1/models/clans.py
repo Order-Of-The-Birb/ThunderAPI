@@ -67,7 +67,7 @@ class LogsModel(BaseModel):
 		class _action(BaseModel):
 			value: int
 			detail: str
-		
+
 		class _roleChange(BaseModel):
 			old: str | None = Field(default=None, description="Previous role. Only present for role-change log entries.")
 			new: str | None = Field(default=None, description="New role. Only present for role-change log entries.")
@@ -103,7 +103,7 @@ class ClanModel(BaseModel):
 		seasonEndTimestamp: int | None = None
 		numInYear: int | None = None
 		regaliaTags: str | None = None
-	
+
 	class astatModel(BaseModel):
 		deaths_hist: int | None = None
 		ftime_hist: int | None = None
@@ -142,7 +142,7 @@ class ClanModel(BaseModel):
 		dr_era9_hist: int | None = None
 		dr_era9_sim: int | None = None
 		activity: int
-		clan_activity_by_periods: int    
+		clan_activity_by_periods: int
 	pos: int | None = None
 	_id: int | None = None
 	autoaccept: bool | None = None

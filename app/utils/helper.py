@@ -17,7 +17,7 @@ class Keymod:
 	new_name: str
 	convert: Callable[[Any], Any]
 	default: Any
-	rm: bool 
+	rm: bool
 
 	def __init__(self, key: str, /, *, new_name: str = None, convert: Callable[[Any], Any] = lambda x: x, default: Any = ..., rm: bool = False):
 		self.key = key

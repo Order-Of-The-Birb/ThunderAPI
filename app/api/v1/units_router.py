@@ -22,8 +22,8 @@ router = APIRouter(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def getVehicle(
-	request: Request, 
-	user: ServerBearer, 
+	request: Request,
+	user: ServerBearer,
 	vehicleId: Annotated[str, Path(title="The vehicle's ID", examples=["saab_jas39e", "yak-7k"])]
 ):
 	await vehicle_cache.getVehicle(vehicleId)

@@ -64,7 +64,7 @@ async def get_inventory(user: LoginEntry) -> list[InventoryItem]:
 			session=session
 		)
 		if "result" not in contexts or not contexts["result"].get("success", False):
-			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get contexts") 
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get contexts")
 		for context in contexts["result"]["contexts"]:
 			ctx_data = await Request.send_template(
 				user,

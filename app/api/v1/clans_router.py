@@ -20,7 +20,7 @@ router = APIRouter(
 )
 
 @router.post(
-	"/apply/{clanId}", 
+	"/apply/{clanId}",
 	summary="Sends an application to the squadron, if allowed",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already in a squadron"}
@@ -34,7 +34,7 @@ async def send_application(
 	comment: Annotated[str, Query(description="The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")]
 ) -> bool:
 	response = await Request.send_template(
-		user, 
+		user,
 		"clan_membership_request",
 		remove_keys=("cancelRequest"),
 		_id=clanId,
@@ -43,7 +43,7 @@ async def send_application(
 	return response.get("clanTag") is not None
 
 @router.post(
-	"/cancelApply", 
+	"/cancelApply",
 	summary="Cancels the current squadron application",
 	responses={
 		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}
@@ -56,7 +56,7 @@ async def unsend_application(
 	comment: str = ""
 ) -> bool:
 	response = await Request.send_template(
-		user, 
+		user,
 		"clan_membership_request",
 		remove_keys=("_id"),
 		comments=comment,
@@ -74,13 +74,13 @@ async def leave_squadron(
 	user: TokenBearer
 ) -> bool:
 	response = await Request.send_template(
-		user, 
+		user,
 		"clan_leave"
 	)
 	return response.get("clanTag") is None
 
 @router.get(
-	"/applicants/{clanId}", 
+	"/applicants/{clanId}",
 	summary="Gets the currently applying members"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
@@ -121,7 +121,7 @@ async def accept_applicant(
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
 	return await Request.send_template(
-		user, 
+		user,
 		"clan_accept_membership_request",
 		userId = userId,
 		_id = squadronId,
@@ -142,12 +142,12 @@ async def reject_applicant(
 	user: TokenBearer,
 	userId: gaijinUserId,
 	message: Annotated[str, Query(title="Message to include alongside rejection")] = "",
-): 
+):
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
 	return await Request.send_template(
-		user, 
+		user,
 		"clan_reject_membership_request",
 		userId = userId,
 		_id = squadronId,
@@ -155,8 +155,8 @@ async def reject_applicant(
 	)
 
 @router.post(
-	"/role/{userId}", 
-	summary="Set a member's role", 
+	"/role/{userId}",
+	summary="Set a member's role",
 	description="Requires `Deputy` or `Commander` level in squadron",
 	responses={
 		status.HTTP_200_OK: {"model": SuccessEmptyDict},
@@ -169,10 +169,10 @@ async def change_role(
 	user: TokenBearer,
 	userId: gaijinUserId,
 	role: Annotated[RolesDisplay, Query(title="The role to assign")],
-): 
+):
 	role = Roles[role.name]
 	return await Request.send_template(
-		user, 
+		user,
 		"clan_change_member_role",
 		userid = userId,
 		role = role.value
@@ -191,28 +191,28 @@ async def kick_member(
 	reason: Annotated[str, Form(title="The reason for kicking")] = "",
 ):
 	return await Request.send_template(
-		user, 
+		user,
 		"clan_dismiss_member",
 		userid = userId,
 		comments = reason
 	)
 
 @router.get(
-	"/logs/{clanId}", 
+	"/logs/{clanId}",
 	summary="Gets the squadron logs"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_logs(
 	request: faRequest,
 	user: OptionalAuth,
-	clanId: squadronId, 
+	clanId: squadronId,
 	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
 	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
 ) -> LogsModel:
 	return await getLogs(user, clanId, limit, fromEntry)
 
 @router.get(
-	"/search", 
+	"/search",
 	summary="Search for squadron"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")

@@ -19,7 +19,7 @@ from base64 import b64encode
 from cryptography.fernet import Fernet
 
 from utils.helper import dtToTimestamp, AuthenticationError
-import utils.connection.network as Network 
+import utils.connection.network as Network
 from config import USERS_DB
 
 _logger = getLogger(__name__)
@@ -135,13 +135,13 @@ class UserAuth:
 		requests_count: int = 0 # For token statistics (and to find abuse)
 		sid:sid_entry | None = None
 		__saved:dict[str, str|int|datetime] = field(default_factory=dict) # Saved to file state, used for comparing what to change
-	
+
 		@classmethod
 		async def from_hash(cls, parent:"UserAuth", hash:str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
-				SELECT * 
-				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
+				SELECT *
+				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)})
 				WHERE {dbSchema.tokens.HASH} = ? AND {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')""", (hash,))
 				row = await row.fetchone()
 				if row is None:
@@ -151,8 +151,8 @@ class UserAuth:
 		async def from_email(cls, parent:"UserAuth", email:str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
-				SELECT * 
-				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)}) 
+				SELECT *
+				FROM {dbSchema.tokens.t()} LEFT JOIN {dbSchema.sso_sessions.t()} ON ({dbSchema.tokens.q(dbSchema.tokens.EMAIL)} = {dbSchema.sso_sessions.q(dbSchema.sso_sessions.EMAIL)})
 				WHERE {dbSchema.tokens.EMAIL} = ? AND {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')""", (email,))
 				row = await row.fetchone()
 				if row is None:
@@ -194,10 +194,10 @@ class UserAuth:
 
 			async with Network.operation() as session:
 				async with session.post(
-					"https://auth.gaijinent.com/login_token.php", 
-					data={"token": self.user_token}, 
+					"https://auth.gaijinent.com/login_token.php",
+					data={"token": self.user_token},
 					headers={
-						"User-Agent": "ThunderAPI/1.0", 
+						"User-Agent": "ThunderAPI/1.0",
 						"Content-Type": "application/x-www-form-urlencoded"
 					}
 				) as r:
@@ -219,7 +219,7 @@ class UserAuth:
 		def timeLeft(self) -> timedelta:
 			return self.expires - datetime.now(UTC)
 		def usedWithin(self, minutes:int) -> bool:
-			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
+			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes))
 		async def getSquadronId(self) -> int|None:
 			from utils.connection import Request
 			loginEntry = self.getEntry()
@@ -231,7 +231,7 @@ class UserAuth:
 
 			if userEntry is None:
 				raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-				
+
 			if userEntry.get("clanName") is None:
 				return None
 
@@ -242,7 +242,7 @@ class UserAuth:
 				tagPrefix=userEntry["clanTag"]
 			)
 			if "clan" in squadronData:
-				for member in squadronData["clan"]["members"]: 
+				for member in squadronData["clan"]["members"]:
 					# Extra check, when applying Gaijin already sets `clanName`, before being accepted
 					if int(member["uid"]) == self.uidHint:
 						return int(squadronData["clan"]["_id"])
@@ -259,7 +259,7 @@ class UserAuth:
 		async def _write_values(self):
 			changed:dict[str, int|str] = {}
 			sso_changed:dict[str, str|int] = {}
-			
+
 			for key, value in self.to_json().items():
 				if key == dbSchema.sso_sessions.t():
 					if value is None:
@@ -274,7 +274,7 @@ class UserAuth:
 						else:
 							sso_changed[k] = v
 					continue
-				elif self.__saved[key] == value: 
+				elif self.__saved[key] == value:
 					continue
 				elif isinstance(value, datetime):
 					value = dtToTimestamp(value)
@@ -286,7 +286,7 @@ class UserAuth:
 			async with self._parent._transaction() as cur:
 				if changed:
 					await cur.execute(f"""
-						UPDATE {dbSchema.tokens.t()} 
+						UPDATE {dbSchema.tokens.t()}
 						SET {", ".join([f"{k} = ?" for k in changed.keys()])}
 						WHERE {dbSchema.tokens.HASH} = ?
 					""",
@@ -296,17 +296,17 @@ class UserAuth:
 					))
 				if sso_changed:
 					await cur.execute(f"""
-						UPDATE {dbSchema.sso_sessions.t()} 
+						UPDATE {dbSchema.sso_sessions.t()}
 						SET {", ".join([f"{k} = ?" for k in sso_changed.keys()])}
 						WHERE {dbSchema.sso_sessions.EMAIL} = ?
 					""",
 					(
 						*sso_changed.values(),
 						self.__saved[dbSchema.sso_sessions.EMAIL]
-					))	
+					))
 
 			self.__saved = self.to_json()
-		
+
 		def to_json(self) -> dict[str, str|int|datetime|dict[str, str|datetime]]:
 			t = dbSchema.tokens
 			s = dbSchema.sso_sessions
@@ -327,7 +327,7 @@ class UserAuth:
 				obj[s.t()] = {}
 
 			return obj
-	
+
 	__autorefresh_job:Job = None
 
 	def __init__(self):
@@ -346,7 +346,7 @@ class UserAuth:
 	async def get(self, token:str):
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
-	
+
 	async def login(self, email:str, password:str|None = None) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
 		data = await login(email, password)
@@ -357,25 +357,25 @@ class UserAuth:
 			if await (await cur.execute(f"SELECT 1 FROM {schema.tokens.t()} WHERE {schema.tokens.EMAIL} = ?", (email,))).fetchone() is not None:
 				_logger.debug(f"Overwriting old loginentry for {email}")
 				await cur.execute(f"""
-					UPDATE {schema.tokens.t()} 
-					SET 
-						{schema.tokens.HASH} = ?, 
+					UPDATE {schema.tokens.t()}
+					SET
+						{schema.tokens.HASH} = ?,
 						{schema.tokens.JWT} = ?,
-						{schema.tokens.EXPIRES} = ?, 
-						{schema.tokens.USER_TOKEN} = ?, 
+						{schema.tokens.EXPIRES} = ?,
+						{schema.tokens.USER_TOKEN} = ?,
 						{schema.tokens.UID} = ?,
 						{schema.tokens.LAST_USED} = ?
 					WHERE {schema.tokens.EMAIL} = ?;
-					""", 
+					""",
 					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
 				)
 			else:
 				await cur.execute(f"""
-					INSERT INTO {schema.tokens.t()} 
-					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED}) 
-					VALUES ({', '.join(["?" for i in range(7)])})""", 
+					INSERT INTO {schema.tokens.t()}
+					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED})
+					VALUES ({', '.join(["?" for i in range(7)])})""",
 					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
-				)		
+				)
 		return raw, data["user_id"]
 
 	async def get_sid(self, entry:Entry, password:str|None = None) -> _sidValue | None:
@@ -447,9 +447,9 @@ class UserAuth:
 										"password_hidden": password_hidden.group(1),
 										"code": msg["Message"],
 										"request_id": msg["Request"],
-										"action": "", 
-										"referer": "", 
-										"fingerprint": _MACHINE_ID, 
+										"action": "",
+										"referer": "",
+										"fingerprint": _MACHINE_ID,
 										"app_id": ""
 									},
 									headers={},
@@ -536,14 +536,14 @@ class UserAuth:
 
 			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} <= strftime('%s', 'now')")
 			if operation.rowcount > 0:
-				_logger.info(f"Deleted {operation.rowcount} expired entries")	
-		
+				_logger.info(f"Deleted {operation.rowcount} expired entries")
+
 	def _generate_hash(self) -> tuple[str, str]:
 		raw_token = token_urlsafe(32)
 		return raw_token, sha256(raw_token.encode()).hexdigest()
 	def _hash_token(self, raw_token:str) -> str:
 		return sha256(raw_token.encode()).hexdigest()
-	
+
 	def _enc(self, value:str) -> str:
 		return self.__fernet.encrypt(value.encode()).decode()
 	def _dec(self, value: str) -> str:
@@ -565,7 +565,7 @@ class UserAuth:
 				await cur.close()
 		finally:
 			await con.close()
-	
+
 	async def start(self):
 		global scheduler
 		await self._init_db()
@@ -676,10 +676,10 @@ class ServerAuth:
 
 	async def refresh(self) -> dict[str, Any]:
 		async with Network.post(
-			"https://auth.gaijinent.com/login_token.php", 
-			data={"token": self._TOKEN}, 
+			"https://auth.gaijinent.com/login_token.php",
+			data={"token": self._TOKEN},
 			headers={
-				"User-Agent": "ThunderAPI/1.0", 
+				"User-Agent": "ThunderAPI/1.0",
 				"Content-Type": "application/x-www-form-urlencoded"
 			}
 		) as r:
@@ -716,7 +716,7 @@ async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
 						entry.provided.set()
 					except AuthenticationError:
 						async with session.post(
-							"https://auth.gaijinent.com/login.php", 
+							"https://auth.gaijinent.com/login.php",
 							data={
 								"login": email,
 								"password": entry.password,
@@ -735,7 +735,7 @@ async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
 				else: # UNTESTED PATH
 					data = await Network.handle_response(r)
 					await entry.provided.wait()
-					
+
 					success = True
 	if not success or data.get("Message") == "cancel":
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")

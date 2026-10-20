@@ -1,6 +1,6 @@
 from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
-from fastapi.concurrency import asynccontextmanager 
+from fastapi.concurrency import asynccontextmanager
 from fastapi import HTTPException
 from asyncio import Lock, Event
 from typing import Any, Literal, overload
@@ -14,7 +14,7 @@ __active_ops = 0
 __active_ops_done = Event()
 __active_ops_done.set()
 __lock = Lock()
-	
+
 @asynccontextmanager
 async def post(url:str, **kwargs):
 	async with request("POST", url, **kwargs) as resp:

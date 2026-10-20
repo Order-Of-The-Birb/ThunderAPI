@@ -17,7 +17,7 @@ _logger = _gL(__name__)
 
 async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanId: int | None = None) -> list[ClanLeaderboardModel]:
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_get_leaderboard",
 		count=limit,
 		start=limit*page
@@ -34,7 +34,7 @@ async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanI
 
 	if "clan" not in response:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain leaderboard data from Gaijin")
-	
+
 	clans = response["clan"]
 	if isinstance(clans, dict):
 		clans = [clans,]
@@ -68,7 +68,7 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 	allLogs = user.entry is not None and await user.entry.getSquadronId() == clanId
 
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_get_log",
 		_id = clanId,
 		count = limit
@@ -114,7 +114,7 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 					}
 				})
 			case Actions.info:
-				for i in ["tag", "desc", "region", "status"]: 
+				for i in ["tag", "desc", "region", "status"]:
 					if (_ := item.get(i)):
 						logEntry[i] = _
 			case Actions.create:
@@ -132,12 +132,12 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 
 async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_find_by_prefix",
 		count=limit,
 		start=limit*page
 	)
-	if clanName is None and clanTag is None: 
+	if clanName is None and clanTag is None:
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "You must provide either a clanName or clanTag")
 	if clanName:
 		response.headers["namePrefix"] = clanName
@@ -183,7 +183,7 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 		Keymod("type", rm=True)
 	)
 	data = Keymod.run_all(data, SANITIZE)
-	
+
 	return data
 
 def sanitizeMembers(members:dict|list):
@@ -251,11 +251,11 @@ def sanitizeApplicants(applicants:dict|list|None):
 
 SQB_BRACKET_TIMES = (
 	(
-		time(hour=1, minute=0), 
+		time(hour=1, minute=0),
 		time(hour=7, minute=0)
 	),
 	(
-		time(hour=14, minute=0), 
+		time(hour=14, minute=0),
 		time(hour=22, minute=0)
 	)
 )
@@ -282,7 +282,7 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 
 		post = str(bs.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
 		del bs
-	
+
 		weeks = []
 		for week in post:
 			find = re_search(r"мах (?:BR|БР) ([0-9.]+) \(([0-9.]+)\D+([0-9.]+)\)", week, IGNORECASE)
@@ -303,7 +303,7 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 	async with SQB_BRACKET_CACHE_LOCK:
 		if SQB_BRACKET_CACHE and SQB_BRACKET_CACHE[-1]["end"] >= datetime.now(UTC):
 			return SQB_BRACKET_CACHE
-	
+
 	weeks = await get_brackets()
 
 	async with SQB_BRACKET_CACHE_LOCK:

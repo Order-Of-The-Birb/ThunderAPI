@@ -33,7 +33,7 @@ class Vehicles:
 		DatabasePaths.GAMEFILES.mkdir(mode=0o755, exist_ok=True)
 
 		if not (DatabasePaths.GAMEFILES / ".git").exists():
-			
+
 			_logger.info(f"Set up git repo in {DatabasePaths.GAMEFILES}")
 
 		if (not DatabasePaths.DATABASE.ROOT.exists()):

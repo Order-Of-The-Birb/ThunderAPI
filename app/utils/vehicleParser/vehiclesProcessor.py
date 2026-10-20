@@ -96,7 +96,7 @@ if not (gamefiles / ".git").exists():
 
 	sub_run(
 		"git clone --filter=blob:none --sparse https://github.com/gszabi99/War-Thunder-Datamine.git ./ &&" +
-		f"git sparse-checkout set --no-cone {" ".join(tracked_paths)}", 
+		f"git sparse-checkout set --no-cone {" ".join(tracked_paths)}",
 		check=True,
 		shell=True,
 		cwd=gamefiles
@@ -135,7 +135,7 @@ async def update_gamefiles():
 	WPCOST = await loop.run_in_executor(None, lambda: loads(vehicle_data_loc.WPCOST.read_text()))
 	VEHICLE_DATA = await loop.run_in_executor(None, lambda: loads(vehicle_data_loc.VEHICLE_DATA.read_text()))
 	LOC_META = await loop.run_in_executor(None, lambda: loads(vehicle_data_loc.LOC_META.read_text()))
-	
+
 	UNIT_LOC = await loop.run_in_executor(None, lambda: read_csv(vehicle_data_loc.VEHICLE_LOC, delimiter=';', encoding='utf-8'))
 	UNIT_LOC.set_index("<ID|readonly|noverify>", inplace=True)
 
@@ -144,7 +144,7 @@ async def update_gamefiles():
 
 	MOD_LOC = await loop.run_in_executor(None, lambda: read_csv(vehicle_data_loc.MODIFICATION_LOC, delimiter=";", encoding="utf-8"))
 	MOD_LOC.set_index("<ID|readonly|noverify>", inplace=True)
-	
+
 #endregion
 
 def getMultipleKeys(obj:dict, *keys:str, default:Any = None, raise_on_missing:bool = False):
@@ -222,7 +222,7 @@ class Sensor:
 		angleHalfSens: float
 		sideLobesSensitivity: float
 
-		def to_json(self): 
+		def to_json(self):
 			return asdict(self)
 	@dataclass(slots=True)
 	class _transiversEntry:
@@ -287,7 +287,7 @@ class Sensor:
 							data["antenna"]["elevation"]["sideLobesSensitivity"]
 						),
 					}
-			
+
 			return cls(
 				_type,
 				data.get("sideLobesAttenuation"),
@@ -301,7 +301,7 @@ class Sensor:
 				antenna,
 				data.get("visibilityType")
 			)
-		def to_json(self): 
+		def to_json(self):
 			obj = asdict(self)
 			for key, value in obj.items():
 				if isinstance(value, Sensor.Antenna):
@@ -344,7 +344,7 @@ class Sensor:
 					data["maxValue"],
 					data.get("width")
 				)
-			def to_json(self): 
+			def to_json(self):
 				return asdict(self)
 		@dataclass(frozen=True, slots=True)
 		class _dopplerSpeed:
@@ -368,7 +368,7 @@ class Sensor:
 					data["signalWidthMin"],
 					data["width"]
 				)
-			def to_json(self): 
+			def to_json(self):
 				return asdict(self)
 		type: str
 		groundClutter: bool
@@ -641,7 +641,7 @@ class Weapon:
 			loop = get_running_loop()
 			weapon_blk = await loop.run_in_executor(None, lambda: loads(weapon.read_text()))
 			_weapon_data_cache[weapon] = weapon_blk
-		
+
 		self.name = ".".join(weapon.name.split(".")[:-1])
 		if (self.name == "dummy_weapon"):
 			return
@@ -657,7 +657,7 @@ class Weapon:
 		is_booster: bool = weapon_blk.get(BOOSTER_NAME) or BOOSTER_TYPE in lowercase_keys or weapon_blk.get(BOOSTER_TYPE)
 		is_container: bool = weapon_blk.get(CONTAINER_NAME) or CONTAINER_TYPE in lowercase_keys or weapon_blk.get(CONTAINER_TYPE)
 		is_extfueltank: bool = weapon_blk.get(EXTFUELTANK_NAME) or EXTFUELTANK_TYPE in lowercase_keys or weapon_blk.get(EXTFUELTANK_TYPE)
-		
+
 		valid = weapon_type is not None or is_rocket or is_torpedo or is_cannon or is_bomb or is_booster or is_container or is_extfueltank
 		if not valid:
 			_logger.error(f"Weapon {self.name}'s type is missing\n\n{weapon}\n\tType: {weapon_type}")
@@ -692,15 +692,15 @@ class Weapon:
 		for k in data.keys():
 			raw_ammo = None
 			key_value = data.get(k)
-			
+
 			lowercase_keys = [i.lower() for i in data.keys()]
 
 			if isinstance(key_value, dict) or isinstance(key_value, list) and k.lower() == key:
 				raw_ammo = key_value
 			elif isinstance(key_value, dict) and key in lowercase_keys:
 				raw_ammo = key_value.get(key)
-			
-			if not raw_ammo: 
+
+			if not raw_ammo:
 				continue
 
 			raw_ammo = raw_ammo if isinstance(raw_ammo, list) else [raw_ammo,]
@@ -790,7 +790,7 @@ class Vehicle:
 					"weapon": Vehicle._weapon.from_json(k, full_weapon_data[k]),
 					"count": v
 				}
-			
+
 			return cls(
 				key,
 				data.get("weaponDamage"),
@@ -880,7 +880,7 @@ class Vehicle:
 		def to_json(self):
 			return asdict(self)
 	computer:_computer
-	
+
 	@dataclass(frozen=True, slots=True)
 	class _nightvision:
 		@dataclass(frozen=True, slots=True)
@@ -1048,7 +1048,7 @@ class Vehicle:
 	techtree_image: Path
 
 	def __init__(
-		self, 
+		self,
 		vehicle_paths:VehiclePaths,
 		data:dict[str, Any]
 	):
@@ -1192,14 +1192,14 @@ class Vehicle:
 		tmp:dict[str, list[dict[str, Any]]] = data.get("nightVision", {})
 		for k, v in tmp.items():
 			if "ir" in k.lower():
-				tmp[k]["generation"] = IR_VISION_GENERATIONS.get(tuple(v["resolution"]), "Unknown") 
+				tmp[k]["generation"] = IR_VISION_GENERATIONS.get(tuple(v["resolution"]), "Unknown")
 			elif "thermal" in k.lower():
-				tmp[k]["generation"] = THERMAL_VISION_GENERATIONS.get(tuple(v["resolution"]), "Unknown") 
+				tmp[k]["generation"] = THERMAL_VISION_GENERATIONS.get(tuple(v["resolution"]), "Unknown")
 			elif "nightvisiondmpart" in k.lower():
 				pass
 			else:
 				raise KeyError(f"Type of night vision '{k}' not found")
-		
+
 		self.night_vision = self._nightvision(
 			self._nightvision.entry(
 				tuple(tmp["sightThermal"]["resolution"]),
@@ -1273,12 +1273,12 @@ class Vehicle:
 			"stats": self.vehicle_stats,
 			"default_presets": tuple([i.to_json() for i in self.default_presets]) if self.default_presets else None,
 			"pylon_configurations": tuple([i.to_json() for i in self.pylon_configurations]) if self.pylon_configurations else None,
-			"localizations": langs, 
+			"localizations": langs,
 			"sensors": self.sensors
 		}
 		return obj
 
-class UpdateAvailableError(Exception): 
+class UpdateAvailableError(Exception):
 	"""An exception class for when a git update is available"""
 	def __init__(self, *args):
 		super().__init__(*args)
@@ -1306,7 +1306,7 @@ if __name__ == '__main__':
 	from logging import DEBUG, basicConfig
 	from asyncio import new_event_loop
 	basicConfig(
-		level=DEBUG, 
+		level=DEBUG,
 		format="%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s"
 	)
 	loop = new_event_loop()
@@ -1321,5 +1321,5 @@ if __name__ == '__main__':
 	results = [i.to_json() for i in result]
 	end_time = perf_counter()
 	_logger.debug(f"JSON conversion took {end_time-start_time} seconds to convert {len(result)} entries")
-		
+
 	pass

@@ -18,7 +18,7 @@ fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start
 	time(hour=21, minute=30, tzinfo=UTC) # End
 )
-excludeFastWeekdays = (5,6) # Zero-indexed number of weekday 
+excludeFastWeekdays = (5,6) # Zero-indexed number of weekday
 fastCheck = 5*60 # Every 5 mins
 slowCheck = 30*60 # Every 30 mins
 
@@ -37,7 +37,7 @@ class NewsEntry:
 	images:list['Image'] # Attached images
 	tags:list[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
 	platforms:list[str] # Affected platforms
-	project:str # Game (100% of the time War Thunder with different version numbers) 
+	project:str # Game (100% of the time War Thunder with different version numbers)
 	type:Literal["news", "changelog"] # Article Type
 	created:datetime # Article Creation Time
 	importance:ImportanceLevel = ImportanceLevel.REGULAR
@@ -59,7 +59,7 @@ class NewsEntry:
 	def from_json(cls, data:dict[str, Any]):
 		self = cls(
 			id = int(data['id']),
-			anons = data['anons'], 
+			anons = data['anons'],
 			title = data['title'],
 			link = data['link'],
 			pinned = data.get('pinned', False),
@@ -82,26 +82,26 @@ class NewsEntry:
 			title = self.title.lower()
 			if (
 					(
-						"Video" in self.tags and 
+						"Video" in self.tags and
 						(
-							"trailer" in title or 
+							"trailer" in title or
 							"teaser" in title
-						) 
-					) or 
+						)
+					) or
 					(
 						("Shop" in self.tags or "Event" in self.tags) and
 						(
 							(
 								(
-									any(i in title for i in ["winter", "summer", "may", "holiday"]) or 
+									any(i in title for i in ["winter", "summer", "may", "holiday"]) or
 									("war thunder" in title and "birthday" in title)
 								) and
-								any(i in title for i in ["sale", "discount", "celebrate"])  
+								any(i in title for i in ["sale", "discount", "celebrate"])
 							) or
 							"black friday" in title
 						)
 					) or (
-						re_search("Meet the “[A-z0-9 ]+” Major Update!", title, IGNORECASE) is not None and self.pinned 
+						re_search("Meet the “[A-z0-9 ]+” Major Update!", title, IGNORECASE) is not None and self.pinned
 					)
 				):
 				return self.ImportanceLevel.MAJOR
@@ -183,7 +183,7 @@ class NewsManager:
 				raise
 			except Exception:
 				self.__logger.exception("An exception occurred during changelog fetching")
-			
+
 			await sleep(self.__calcDelay())
 
 	async def fetch(self) -> list[NewsEntry]:
@@ -280,7 +280,7 @@ class NewsManager:
 	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> None|NewsEntry:
 		"""Returns `None` if no new major update changelog has been posted"""
 		# i[0] is the pinned major update changelog
-		if not changelogs: 
+		if not changelogs:
 			return None
 		majorChLog = changelogs[0]
 		if majorChLog.id != self.lastMajorChLog:
@@ -295,7 +295,7 @@ class NewsManager:
 		changelogs = changelogs[1:]
 
 		for i, item in enumerate(changelogs):
-			if item.id == self.lastChangelog: 
+			if item.id == self.lastChangelog:
 				await self._writeID(changelogs[0], self._IDTYPE.CHANGELOG)
 				return changelogs[:i]
 
@@ -309,7 +309,7 @@ class NewsManager:
 			return []
 
 		for i, item in enumerate(news):
-			if item.id == self.lastNews: 
+			if item.id == self.lastNews:
 				await self._writeID(news[0], self._IDTYPE.NEWS)
 				return news[:i]
 

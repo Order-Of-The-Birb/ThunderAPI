@@ -21,7 +21,7 @@ class Decompress(dict):
 		payload = decompressed or data
 		unpacked = run_process(
 			[str(WT_EXT_CLI), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
-			input=payload, 
+			input=payload,
 			capture_output=True,
 			timeout=60
 		)
