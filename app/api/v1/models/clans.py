@@ -1,6 +1,7 @@
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
 from typing import Literal
+from datetime import datetime
 from ..backends.shared import IpString, IntString
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
@@ -173,3 +174,8 @@ class ClanSearchResultModel(BaseModel):
 	desc: str
 	slogan: str
 	region: str
+
+class SQBTimeBracket(BaseModel):
+	_from: datetime
+	_to: datetime
+	br: float

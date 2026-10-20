@@ -5,9 +5,9 @@ from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRe
 from utils.connection import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel
+from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel, SQBTimeBracket
 from api.v1.models.base import SuccessEmptyDict
-from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs
+from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs, get_sqb_brackets, current_sqb_br
 
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
@@ -260,25 +260,28 @@ async def get_clan_leaderboard_position(
 	return r[0]
 
 @router.get(
-	"/sqb"
+	"/sqb",
+	description="Data obtained from https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446, if this data is outdated here, it is probably outdated there",
+	responses={
+		200:{"model": SQBTimeBracket}
+	}
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def get_sqb_brackets(
+async def get_brackets(
 	request: faRequest,
 	user: ServerBearer
 ):
-	pass
-
+	return await get_sqb_brackets()
 
 @router.get(
 	"/sqb/current"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def get_sqb_current_br(
+async def get_current_br(
 	request: faRequest,
 	user: ServerBearer
 ):
-	pass
+	return await current_sqb_br()
 
 @router.get(
 	"/{clanId}",

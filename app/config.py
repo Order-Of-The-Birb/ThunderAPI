@@ -16,6 +16,7 @@ class _usersDB:
 USERS_DB = _usersDB()
 VEHICLES = DATA_DIR / "vehicles"
 NEWS_JSON = DATA_DIR / "news.json"
+BRACKETS_JSON = DATA_DIR / "sqb_brackets.json"
 
 class _geoLitePaths:
 	DB = DATA_DIR / "GeoLite2-City.mmdb"
