@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Query, Request as faRequest, status
 from fastapi.responses import JSONResponse
 from urllib.parse import unquote
 
-from utils.connection.http import Request
+from utils.connection import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.users import TerseReturnModel, getUserDirectModel, PlayerRank, SelfUserDataModel

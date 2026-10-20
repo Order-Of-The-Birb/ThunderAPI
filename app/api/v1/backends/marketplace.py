@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from typing import Any
 from dataclasses import dataclass, asdict
 
-from utils.connection.http import Request
+from utils.connection import Request
 from utils.auth import LoginEntry
 import utils.connection.network as Network
 from api.v1.backends.shared import IntString

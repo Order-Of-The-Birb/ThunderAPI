@@ -1,4 +1,4 @@
-from utils.connection.http import Request
+from utils.connection import Request
 from utils.auth import LoginEntry
 from api.v1.models.users import TerseReturnModel
 

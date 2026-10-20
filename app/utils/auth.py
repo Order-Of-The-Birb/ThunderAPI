@@ -221,7 +221,7 @@ class UserAuth:
 		def usedWithin(self, minutes:int) -> bool:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes)) 
 		async def getSquadronId(self) -> int|None:
-			from utils.connection.http import Request
+			from utils.connection import Request
 			loginEntry = self.getEntry()
 			userEntry = (await Request.send_template(
 				loginEntry,
