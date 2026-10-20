@@ -12,7 +12,6 @@ from utils.geo import lookup_city, lookup_utc_offset
 from utils.helper import Keymod
 from api.v1.models.clans import ClanModel, Roles, Platforms, Actions, ClanLeaderboardModel, ClanSearchResultModel
 import utils.connection.network as Network
-from config import BRACKETS_JSON
 
 _logger = _gL(__name__)
 
