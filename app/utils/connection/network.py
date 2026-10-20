@@ -32,7 +32,6 @@ async def request(method:str, url:str, **kwargs):
 			resp.raise_for_status()
 			yield resp
 
-
 @asynccontextmanager
 async def operation():
 	session = await _enter_op()
@@ -103,3 +102,4 @@ async def _exit_op():
 		if __active_ops <= 0:
 			__active_ops = 0
 			__active_ops_done.set()
+
