@@ -1,3 +1,4 @@
+from asyncio import Lock
 from logging import getLogger as _gL
 from fastapi import HTTPException, status
 from typing import Any
@@ -260,36 +261,44 @@ SQB_BRACKET_TIMES = (
 	)
 )
 SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] = None
+SQB_BRACKET_CACHE_LOCK = Lock()
 
-async def get_sqb_brackets() -> list[dict[str, datetime|float]]:
+async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
+	async def get_brackets():
+		async with Network.get("https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446", headers={
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 OPR/117.0.0.0"
+		}) as resp:
+			resp.raise_for_status()
+			response = await resp.text()
+		post = str(BeautifulSoup(response, 'html.parser').find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+	
+		rn = datetime.now(UTC)
+		weeks = []
+		for week in post:
+			find = re_search(r"мах (?:BR|БР) ([0-9.]+) \(([0-9.]+)\D+([0-9.]+)\)", week, IGNORECASE)
+			if not find:
+				_logger.warning("regex could not find bracket data")
+				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not retrieve SQB brackets")
+			br = float(find.group(1))
+			start_time = datetime.strptime(f"{find.group(2)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[0][0].hour, minute=0, second=0, tzinfo=UTC)
+			end_time = datetime.strptime(f"{find.group(3)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[1][1].hour, minute=0, second=0, tzinfo=UTC)
+			weeks.append({
+				"start": start_time,
+				"end": end_time,
+				"br": br
+			})
+		return tuple(weeks)
+
 	global SQB_BRACKET_CACHE
-	if SQB_BRACKET_CACHE:
-		if SQB_BRACKET_CACHE[-1]["end"] < datetime.now(UTC):
-			_logger.info("SQB Bracket cache expired, clearing")
-			SQB_BRACKET_CACHE = ()
-		else:
+	async with SQB_BRACKET_CACHE_LOCK:
+		if SQB_BRACKET_CACHE and SQB_BRACKET_CACHE[-1]["end"] >= datetime.now(UTC):
 			return SQB_BRACKET_CACHE
-	async with Network.get("https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446", headers={
-		"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 OPR/117.0.0.0"
-	}) as resp:
-		resp.raise_for_status()
-		response = await resp.text()
-	post = str(BeautifulSoup(response, 'html.parser').find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+	
+	weeks = await get_brackets()
 
-	rn = datetime.now(UTC)
-	weeks = []
-	for week in post:
-		find = re_search(r"мах (?:BR|БР) ([0-9.]+) \(([0-9.]+)\D+([0-9.]+)\)", week, IGNORECASE)
-		br = float(find.group(1))
-		start_time = datetime.strptime(f"{find.group(2)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[0][0].hour, minute=0, second=0, tzinfo=UTC)
-		end_time = datetime.strptime(f"{find.group(3)}.{rn.year}", "%d.%m.%Y").replace(hour=SQB_BRACKET_TIMES[1][1].hour, minute=0, second=0, tzinfo=UTC)
-		weeks.append({
-			"start": start_time,
-			"end": end_time,
-			"br": br
-		})
-	SQB_BRACKET_CACHE = tuple(weeks)
-	return weeks
+	async with SQB_BRACKET_CACHE_LOCK:
+		SQB_BRACKET_CACHE = weeks
+	return SQB_BRACKET_CACHE
 
 async def current_sqb_br() -> dict[str, datetime|float]:
 	weeks = await get_sqb_brackets()
@@ -297,3 +306,4 @@ async def current_sqb_br() -> dict[str, datetime|float]:
 	for week in weeks:
 		if week["start"] < rn < week["end"]:
 			return week
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find current bracket data")
