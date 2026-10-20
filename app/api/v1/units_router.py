@@ -28,4 +28,3 @@ async def getVehicle(
 ):
 	await vehicle_cache.getVehicle(vehicleId)
 	pass
-

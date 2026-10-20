@@ -99,4 +99,3 @@ class ReplayParser:
 		except JSONDecodeError:
 			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason")
 		return self
-
