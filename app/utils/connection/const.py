@@ -18,7 +18,6 @@ class ServerPool(IntEnum):
 	#endregion
 	VIEW_VEHICLE_PROXY = 10
 	WALLET = 11
-	MATCHING = 12
 
 class AuthLevel(IntEnum):
 	SERVER = 0			# public — always use the server account
@@ -111,9 +110,6 @@ class Actions(Enum):
 	GetAssetClassInfo = ActionInfo(auto(), ServerPool.MARKET_ASSET, AuthLevel.SERVER)
 	market_view_item = ActionInfo(auto(), ServerPool.VIEW_VEHICLE_PROXY, AuthLevel.USER)
 	GetBalance = ActionInfo(auto(), ServerPool.WALLET, AuthLevel.USER)
-	#endregion
-	#region Matching
-
 	#endregion
 
 class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
