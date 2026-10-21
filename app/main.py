@@ -141,8 +141,25 @@ app.add_exception_handler(
 	)[1]
 )
 #endregion
+
+class CloudflareClientIPMiddleware:
+	"""Rewrite the client address from Cloudflare's CF-Connecting-IP header."""
+
+	def __init__(self, app):
+		self.app = app
+
+	async def __call__(self, scope, receive, send):
+		if scope["type"] in ("http", "websocket"):
+			for name, value in scope.get("headers", []):
+				if name == b"cf-connecting-ip":
+					client = scope.get("client")
+					scope["client"] = (value.decode("latin1").strip(), client[1] if client else 0)
+					break
+		await self.app(scope, receive, send)
+
 app.include_router(router)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(CloudflareClientIPMiddleware)
 
 #region Modify OpenAPI schema
 @dataclass(slots=True)
