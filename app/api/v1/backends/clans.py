@@ -97,12 +97,12 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 		}
 		if item.get("uId") is not None and not (action == Actions.rem and item.get("uid") is not None and item["uId"] == item["uid"]):
 			logEntry["admin"] = {
-				"_id": item["uId"],
+				"id": item["uId"],
 				"nickname": item["uN"]
 			}
 		if item.get("uid") is not None:
 			logEntry["affected"] = {
-				"_id": item["uid"],
+				"id": item["uid"],
 				"nickname": item["nick"],
 			}
 		match action:
@@ -120,9 +120,16 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 			case Actions.create:
 				logEntry["info"] = {}
 				for i in ["type", "name", "tag", "slogan", "desc", "region", "announcement"]:
-					logEntry["info"][i] = item[i]
+					if (_ := item.get(i)):
+						logEntry["info"][i] = _
 			case Actions.reject_candidate:
 				logEntry["comment"] = item["comments"]
+			case Actions.add:
+				logEntry["role"] = item["role"]
+			case (Actions.rem):
+				pass # Used for filtering
+			case _:
+				_logger.warning(f"No setup configured for action {action}")
 		logs.append(logEntry)
 
 	return {
