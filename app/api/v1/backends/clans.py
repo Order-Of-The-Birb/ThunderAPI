@@ -1,18 +1,23 @@
+from asyncio import Lock
 from logging import getLogger as _gL
 from fastapi import HTTPException, status
 from typing import Any
+from datetime import datetime, UTC, time
+from bs4 import BeautifulSoup
+from re import search as re_search, IGNORECASE
 
-from tools import Request
-from utils.auth import UserAuth
+from utils.connection import Request
+from utils.auth import LoginEntry
 from utils.geo import lookup_city, lookup_utc_offset
 from utils.helper import Keymod
 from api.v1.models.clans import ClanModel, Roles, Platforms, Actions, ClanLeaderboardModel, ClanSearchResultModel
+import utils.connection.network as Network
 
 _logger = _gL(__name__)
 
-async def getLeaderboard(user: UserAuth.Entry, limit: int = 20, page: int = 0, clanId: int | None = None) -> list[ClanLeaderboardModel]:
+async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanId: int | None = None) -> list[ClanLeaderboardModel]:
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_get_leaderboard",
 		count=limit,
 		start=limit*page
@@ -29,7 +34,7 @@ async def getLeaderboard(user: UserAuth.Entry, limit: int = 20, page: int = 0, c
 
 	if "clan" not in response:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain leaderboard data from Gaijin")
-	
+
 	clans = response["clan"]
 	if isinstance(clans, dict):
 		clans = [clans,]
@@ -59,11 +64,11 @@ async def getLeaderboard(user: UserAuth.Entry, limit: int = 20, page: int = 0, c
 
 	return clans
 
-async def getLogs(user: UserAuth.Entry, clanId: int, limit: int = 10, fromEntry: str | None = None):
-	allLogs = await user.getSquadronId() == clanId
+async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str | None = None):
+	allLogs = user.entry is not None and await user.entry.getSquadronId() == clanId
 
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_get_log",
 		_id = clanId,
 		count = limit
@@ -109,7 +114,7 @@ async def getLogs(user: UserAuth.Entry, clanId: int, limit: int = 10, fromEntry:
 					}
 				})
 			case Actions.info:
-				for i in ["tag", "desc", "region", "status"]: 
+				for i in ["tag", "desc", "region", "status"]:
 					if (_ := item.get(i)):
 						logEntry[i] = _
 			case Actions.create:
@@ -125,14 +130,14 @@ async def getLogs(user: UserAuth.Entry, clanId: int, limit: int = 10, fromEntry:
 		"logs": logs
 	}
 
-async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
+async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
 	response = await Request.from_template(
-		user, 
+		user,
 		"clan_find_by_prefix",
 		count=limit,
 		start=limit*page
 	)
-	if clanName is None and clanTag is None: 
+	if clanName is None and clanTag is None:
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "You must provide either a clanName or clanTag")
 	if clanName:
 		response.headers["namePrefix"] = clanName
@@ -159,7 +164,7 @@ async def searchClan(user: UserAuth.Entry, clanName: str | None = None, clanTag:
 
 	return response["clan"]
 
-async def getClan(user: UserAuth.Entry, clanId: int) -> ClanModel:
+async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	data = await Request.send_template(
 		user,
 		"clan_get",
@@ -168,12 +173,87 @@ async def getClan(user: UserAuth.Entry, clanId: int) -> ClanModel:
 
 	SANITIZE = (
 		Keymod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
-		Keymod("members", convert=lambda x: sanitizeMembers(x))
+		Keymod("members", convert=lambda x: sanitizeMembers(x)),
+		Keymod("transactions", rm=True),
+		Keymod("namel", rm=True),
+		Keymod("regionl", rm=True),
+		Keymod("tagl", rm=True),
+		Keymod("currentTagRegalia", rm=True),
+		Keymod("interlockid", rm=True),
+		Keymod("type", rm=True)
 	)
-	for SAN in SANITIZE:
-		data = SAN.run(data)
-	
+	data = Keymod.run_all(data, SANITIZE)
+
 	return data
+
+SQB_BRACKET_TIMES = (
+	(
+		time(hour=1, minute=0, tzinfo=UTC),
+		time(hour=7, minute=0, tzinfo=UTC)
+	),
+	(
+		time(hour=14, minute=0, tzinfo=UTC),
+		time(hour=22, minute=0, tzinfo=UTC)
+	)
+)
+SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] | None = None
+SQB_BRACKET_CACHE_LOCK = Lock()
+
+async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
+	async def get_brackets():
+		async with Network.get("https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446", headers={
+			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 OPR/117.0.0.0"
+		}) as resp:
+			resp.raise_for_status()
+			response = await resp.text()
+
+		bs = BeautifulSoup(response, 'html.parser')
+		title = bs.find("div", class_="title-wrapper").find("h1").find("a", class_="fancy-title")
+		year = re_search(r"\([0-9\. ]+ - ([0-9]+\.[0-9]+\.[0-9]+)\)", title.text, IGNORECASE)
+		if not year:
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not fetch forum post title")
+		end_date = datetime.strptime(year.group(1), "%d.%m.%Y").date()
+
+		if end_date < datetime.now(UTC).date():
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Forum post data is outdated. Please try again later.")
+
+		post = str(bs.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+		del bs
+
+		weeks = []
+		for week in post:
+			find = re_search(r"мах (?:BR|БР) ([0-9.]+) \(([0-9.]+)\D+([0-9.]+)\)", week, IGNORECASE)
+			if not find:
+				_logger.warning("regex could not find bracket data")
+				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not retrieve SQB brackets")
+			br = float(find.group(1))
+			start_time = datetime.combine(datetime.strptime(f"{find.group(2)}.{end_date.year}", "%d.%m.%Y").date(), SQB_BRACKET_TIMES[0][0], UTC)
+			end_time = datetime.combine(datetime.strptime(f"{find.group(3)}.{end_date.year}", "%d.%m.%Y").date(), SQB_BRACKET_TIMES[1][1], UTC)
+			weeks.append({
+				"start": start_time,
+				"end": end_time,
+				"br": br
+			})
+		return tuple(weeks)
+
+	global SQB_BRACKET_CACHE
+	async with SQB_BRACKET_CACHE_LOCK:
+		if SQB_BRACKET_CACHE and SQB_BRACKET_CACHE[-1]["end"] >= datetime.now(UTC):
+			return SQB_BRACKET_CACHE
+
+	weeks = await get_brackets()
+
+	async with SQB_BRACKET_CACHE_LOCK:
+		SQB_BRACKET_CACHE = weeks
+	return SQB_BRACKET_CACHE
+
+async def current_sqb_br() -> dict[str, datetime|float]:
+	weeks = await get_sqb_brackets()
+	rn = datetime.now(UTC)
+	for week in weeks:
+		if week["start"] < rn < week["end"]:
+			return week
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find current bracket data")
 
 def sanitizeMembers(members:dict|list):
 	if members is None:
@@ -197,13 +277,9 @@ def sanitizeMembers(members:dict|list):
 		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
 		Keymod("date", new_name="joined_at")
 	)
-	def sanitize(member: dict[str, Any]):
-		for SAN in SANITIZATION:
-			member = SAN.run(member)
-		return member
 
 	for i, member in enumerate(members):
-		members[i] = sanitize(member)
+		members[i] = Keymod.run_all(member, SANITIZATION)
 
 	return members
 
@@ -232,12 +308,8 @@ def sanitizeApplicants(applicants:dict|list|None):
 		Keymod("date", new_name="timestamp"),
 		Keymod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
 	)
-	def sanitize(applicant:dict[str, Any]):
-		for SAN in SANITIZATION:
-			applicant = SAN.run(applicant)
-		return applicant
 
 	for i, applicant in enumerate(applicants):
-		applicants[i] = sanitize(applicant)
+		applicants[i] = Keymod.run_all(applicant, SANITIZATION)
 
 	return applicants

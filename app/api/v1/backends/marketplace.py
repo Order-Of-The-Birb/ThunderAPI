@@ -2,12 +2,12 @@ from fastapi import HTTPException, status
 from typing import Any
 from dataclasses import dataclass, asdict
 
-from tools import Request
-from utils.auth import UserAuth
-from utils import networkManager
-from api.v1.shared import IntString
+from utils.connection import Request
+from utils.auth import LoginEntry
+import utils.connection.network as Network
+from api.v1.backends.shared import IntString
 
-async def get_asset_class(user: UserAuth.Entry, hash:str) -> list[dict[str, str|IntString]]:
+async def get_asset_class(user: LoginEntry, hash:str) -> list[dict[str, str|IntString]]:
 	return await Request.send_template(
 		user,
 		"cln_market_get_asset_class",
@@ -55,16 +55,16 @@ class InventoryItem:
 		)
 	def to_json(self):
 		return asdict(self)
-async def get_inventory(user: UserAuth.Entry) -> list[InventoryItem]:
+async def get_inventory(user: LoginEntry) -> list[InventoryItem]:
 	items:list[InventoryItem] = []
-	async with networkManager.operation() as session:
+	async with Network.operation() as session:
 		contexts = await Request.send_template(
 			user,
 			"GetContexts",
 			session=session
 		)
 		if "result" not in contexts or not contexts["result"].get("success", False):
-			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get contexts") 
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get contexts")
 		for context in contexts["result"]["contexts"]:
 			ctx_data = await Request.send_template(
 				user,
@@ -92,7 +92,7 @@ async def get_inventory(user: UserAuth.Entry) -> list[InventoryItem]:
 					items.append(InventoryItem.from_json(item_data["result"]["asset"], item["class"][0], int(item["id"]), context["id"]))
 	return items
 
-async def item_in_inventory(user: UserAuth.Entry, item_hash:str) -> InventoryItem|None:
+async def item_in_inventory(user: LoginEntry, item_hash:str) -> InventoryItem|None:
 	inventory = await get_inventory(user)
 	for item in inventory:
 		if item.hash == item_hash:

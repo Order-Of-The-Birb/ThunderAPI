@@ -1,7 +1,0 @@
-{
-    "headers": {
-        "token": "<replace>",
-        "action":"ano_get_public_userstat",
-        "userId": "<replace>"
-    }
-}

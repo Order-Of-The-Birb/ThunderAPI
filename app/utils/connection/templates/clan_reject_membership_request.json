@@ -1,0 +1,12 @@
+{
+    "headers": {
+        "Content-Type": "application/octet-stream",
+        "action":"ano_clan_reject_membership_request",
+        "userId": "<replace>",
+        "token": "<replace>"
+    },
+    "body": {
+        "_id": "<replace>",
+        "comments": "<replace>"
+    }
+}

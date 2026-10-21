@@ -1,0 +1,12 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action":"cln_get_pair_stat",
+        "appid": "1067",
+        "currencyid": "gjn",
+        "market_name": "<replace>"
+    }
+}

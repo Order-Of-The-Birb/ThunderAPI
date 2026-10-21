@@ -1,6 +1,6 @@
 from typing import Literal
 from pydantic import BaseModel, Field
-from ..shared import IntString, IpString
+from ..backends.shared import IntString, IpString
 
 class SearchModel(BaseModel):
 	class ReplayEntry(BaseModel):

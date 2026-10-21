@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
-from ..shared import IntString
+from ..backends.shared import IntString
 from enum import Enum
 from bisect import bisect_right
 from .clans import PLATFORM_NAMES
@@ -73,7 +73,7 @@ class getUserDirectModel(BaseModel):
 				air_kills: int
 				ground_kills: int
 				naval_kills: int
-				respawns: int            
+				respawns: int
 			missionsComplete: int
 			victories: int
 			fighter:vehicleModel
@@ -92,7 +92,7 @@ class getUserDirectModel(BaseModel):
 			naval_ferry_barge: vehicleModel
 			helicopter: vehicleModel
 			cruiser: vehicleModel
-			human: vehicleModel   
+			human: vehicleModel
 		single_played: dict[GAMEMODES, summaryGameModeModel]
 		pvp_played: dict[GAMEMODES, summaryGameModeModel]
 		skirmish_played: dict[GAMEMODES, summaryGameModeModel]
@@ -116,7 +116,7 @@ class getUserDirectModel(BaseModel):
 	shcType: str
 	penaltyStatus: str
 	era: dict[
-		COUNTRIES, 
+		COUNTRIES,
 		dict[
 			Literal[
 				"Aircraft",
@@ -141,7 +141,7 @@ class getUserDirectModel(BaseModel):
 class TerseReturnModel(BaseModel):
 	#region Showcase Models
 	class Showcase_FavMode_Model(BaseModel): # Favorite Mode
-		class ModeStatsModel(BaseModel): 
+		class ModeStatsModel(BaseModel):
 			each_player_session: int
 			each_player_victories: int
 			flyouts: int
@@ -150,7 +150,7 @@ class TerseReturnModel(BaseModel):
 			score: int
 		mode: GAMEMODES
 		modeValue: ModeStatsModel = Field(description="Key value is the value set for `mode`")
-	class Showcase_BH_Model(BaseModel): # Battle-Hardened 
+	class Showcase_BH_Model(BaseModel): # Battle-Hardened
 		class ModeStatsModel(BaseModel):
 			average_score: float
 			avg_rel_position: float
@@ -163,7 +163,7 @@ class TerseReturnModel(BaseModel):
 	class Showcase_FavUnit_Model(BaseModel): # Favorite vehicle
 		difficulty: GAMEMODES
 		vehicle: str = Field(
-			description="Internal name of the vehicle", 
+			description="Internal name of the vehicle",
 			examples=["saab_jas39e", "germ_leopard_2pl", "tiger_had_spain"]
 		)
 	class Showcase_NukeDrop_Model(BaseModel): # Atomic Ace
@@ -172,13 +172,13 @@ class TerseReturnModel(BaseModel):
 		peacemaker__counter: int = Field(description="Number of nuke carriers killed")
 	class Showcase_unitCollector_Model(BaseModel): # Vehicle collector
 		units: list[str] = Field(
-			description="List of internal names of the vehicles showcased", 
+			description="List of internal names of the vehicles showcased",
 			examples=[
-				["ussr_object_279", "ussr_pt_76_57", "douglas_a_1h"], 
+				["ussr_object_279", "ussr_pt_76_57", "douglas_a_1h"],
 				["germ_panther_II","germ_pzkpfw_VI_ausf_b_tiger_IIh_kwk46","germ_flakpanzer_V_Coelian"]
 				])
 		counts: dict[COUNTRIES, int] = Field(description="Number of vehicles collected per country")
-	class Showcase_AceOfSpades_Model(BaseModel): # Ace of spades 
+	class Showcase_AceOfSpades_Model(BaseModel): # Ace of spades
 		class AcedUnitsModel(BaseModel):
 			filteredTotal: int
 			Aircraft: dict[SIMPLE_COUNTRIES, int]
@@ -187,10 +187,10 @@ class TerseReturnModel(BaseModel):
 			Ship: dict[SIMPLE_COUNTRIES, int]
 			Tank: dict[SIMPLE_COUNTRIES, int]
 		aced_units: AcedUnitsModel
-	class Showcase_Medalist_Model(BaseModel): # Medalist 
+	class Showcase_Medalist_Model(BaseModel): # Medalist
 		medals: list[str]
 		total_medals: int
-	class Showcase_Achievement_Model(BaseModel): # Achievement Hunter 
+	class Showcase_Achievement_Model(BaseModel): # Achievement Hunter
 		achievements: list[str]
 		total_steam_achievements: int
 	#endregion
@@ -237,7 +237,7 @@ class SelfUserDataModel(BaseModel):
 			platform: SquadronPlatformModel
 			activity: int
 			sqb_activity: float
-			
+
 		tag: str
 		id: int
 		name: str

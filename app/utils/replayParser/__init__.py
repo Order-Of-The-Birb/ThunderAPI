@@ -1,6 +1,6 @@
 from logging import getLogger
 from utils.replayParser.parser import ReplayParser
-from utils import networkManager
+import utils.connection.network as Network
 from fastapi import HTTPException, status
 from asyncio import sleep
 
@@ -26,7 +26,7 @@ class Replay(dict):
 
 		#region wrpl download
 		async def get_data():
-			async with networkManager.operation() as session:
+			async with Network.operation() as session:
 				wrpl_num = 0
 				wait_time = 1
 				while True:
@@ -68,7 +68,7 @@ class Replay(dict):
 		#endregion
 		#region Parse gaijin JSON to proper JSON
 		resultsData = await get_data()
-		
+
 		self.update({
 			"status": "OK",
 			"matchId": resultsData.header.sessionIdHex,
@@ -129,7 +129,7 @@ class Replay(dict):
 					if key == "__array": continue
 					add_obj["lineup"]["vehicles"][value["name"]] = {
 						"rank": value["rank"],
-						"battlerating": round(value["mrank"] / 3, 1) 
+						"battlerating": round(value["mrank"] / 3, 1)
 					}
 				try:
 					add_obj["lineup"]["maxBr"] = round(lineupData["mrank"] / 3, 1)

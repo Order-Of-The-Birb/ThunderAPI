@@ -1,7 +1,8 @@
 from enum import Enum, IntEnum
 from pydantic import BaseModel, Field
 from typing import Literal
-from ..shared import IpString, IntString
+from datetime import datetime
+from ..backends.shared import IpString, IntString
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):
@@ -60,15 +61,12 @@ class LogsModel(BaseModel):
 	lastLog: str
 	logs: list[ClanLogs]
 	class ClanLogs(BaseModel):
-		class _affected(BaseModel):
+		class _userEntry(BaseModel):
 			_id: int
 			nickname: str
 		class _action(BaseModel):
 			value: int
 			detail: str
-		class _admin(BaseModel):
-			_id: int
-			nickname: str
 
 		class _roleChange(BaseModel):
 			old: str | None = Field(default=None, description="Previous role. Only present for role-change log entries.")
@@ -76,10 +74,10 @@ class LogsModel(BaseModel):
 
 
 		timestamp: int
-		affected: _affected | None = Field(default=None)
+		affected: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
 		action: _action
-		admin: _admin | None = Field(default=None)
-		roleChange: _roleChange | None = Field(default=None)
+		admin: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
+		roleChange: _roleChange | None = Field(default=None, exclude_if=lambda x: x is None)
 
 class ClanLeaderboardModel(BaseModel):
 	class ClanStatsModel(BaseModel):
@@ -105,7 +103,7 @@ class ClanModel(BaseModel):
 		seasonEndTimestamp: int | None = None
 		numInYear: int | None = None
 		regaliaTags: str | None = None
-	
+
 	class astatModel(BaseModel):
 		deaths_hist: int | None = None
 		ftime_hist: int | None = None
@@ -144,31 +142,21 @@ class ClanModel(BaseModel):
 		dr_era9_hist: int | None = None
 		dr_era9_sim: int | None = None
 		activity: int
-		clan_activity_by_periods: int    
+		clan_activity_by_periods: int
 	pos: int | None = None
-	_id: IntString | None = None
-	announcement: str | None = None
+	_id: int | None = None
 	autoaccept: bool | None = None
 	cdate: int | None = None
-	changed_by_uid: IntString | None = None
+	changed_by_uid: int | None = None
 	changed_time: int | None = None
-	creator_uid: IntString | None = None
-	currentTagRegalia: str | None = None
+	creator_uid: int | None = None
 	desc: str | None = None
-	interlockid: int | None = None
-	lastPaidTag: str | None = None
 	members_cnt: int | None = None
 	name: str | None = None
-	namel: str | None = None
 	region: str | None = None
-	region_last_updated: int | None = None
-	regionl: str | None = None
 	slogan: str | None = None
 	status: str | None = None
 	tag: str | None = None
-	tagl: str | None = None
-	transactions: list[str] | None = None
-	type: str | None = None
 	clanSeasonRatingRewards: ClanSeasonRatingRewardsModel | dict | None = None
 	members: list[MemberModel] | None = None
 	membership_req: dict | None = None
@@ -187,3 +175,13 @@ class ClanSearchResultModel(BaseModel):
 	desc: str
 	slogan: str
 	region: str
+
+class SQBTimeBracket(BaseModel):
+	start: datetime
+	end: datetime
+	br: float
+
+class CurrentSQBBracket(BaseModel):
+	bracket: SQBTimeBracket
+	start: datetime | None = None
+	end: datetime | None = None

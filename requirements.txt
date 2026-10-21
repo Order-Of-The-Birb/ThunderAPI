@@ -6,9 +6,9 @@ slowapi
 fastapi==0.136.1
 uvicorn
 apscheduler
-requests
 python-multipart
 PyGithub
+bs4
 
 # Data processing
 lz4

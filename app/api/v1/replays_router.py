@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Request as faRequest, Query, status
 
 from utils.replayParser import Replay
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.backends.replay import search_replay, ReplayType, ReplayMode, ReplayTechType
 from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel
 
@@ -30,11 +30,11 @@ async def search_replays(
 	request: faRequest,
 	user: TokenBearer,
 	uid: Annotated[
-		int, 
+		int,
 		Query(title="The UID of the user to search replays for")
 	] = None,
 	nickname: Annotated[
-		str, 
+		str,
 		Query(title="The nickname of the user to search replays for")
 	] = None,
 	gameType: Annotated[
@@ -61,7 +61,7 @@ async def search_replays(
 		)
 	] = None,
 	limit: Annotated[
-		int, 
+		int,
 		Query(
 			title="The maximum number of replays to return",
 			description="Must be between 1 and 100",
@@ -70,7 +70,7 @@ async def search_replays(
 		)
 	] = 25,
 	page: Annotated[
-		int, 
+		int,
 		Query(
 			title="The page of results to return",
 			description="Must be 0 or greater",
@@ -81,7 +81,7 @@ async def search_replays(
 	return await search_replay(user, uid, nickname, gameType, techType, mode, limit, page)
 
 @router.get(
-	"/{replayId}", 
+	"/{replayId}",
 	summary="Gets data from a specified replay",
 	responses={
 		status.HTTP_200_OK: {"model": DataModel},
@@ -91,9 +91,9 @@ async def search_replays(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay(
 	request: faRequest,
-	user: TokenBearer,
+	user: ServerBearer,
 	replayId: Annotated[
-		str, 
+		str,
 		Path(
 			title="The replay's ID to get",
 			pattern=r"^[0-9a-fA-F]{1,16}$",

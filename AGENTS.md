@@ -3,27 +3,32 @@ This repository contains a python application using FastAPI. This project acts a
 
 ## Testing  
 Manual testing can be done through the Swagger UI interface found on `/` or `/docs`  
-The templates in `templates/` can NOT be used directly in curl requests, they are in a proprietary format  
+The templates in `app/utils/connection/http/templates/` (and `app/utils/connection/tcp/templates/`) can NOT be used directly in curl requests, they are in a proprietary format  
 
 ## Structure  
 The repository has the following directories at its root:  
-- `api` - The FastAPI routers  
-- `manual_extract` - A set of tools only used for development purposes, regular users will never trigger any code within this directory  
-- `templates` - HTTP request templates, including a handler for fetching  
-- `tools` - A set of tools used for getting and converting Gaijin Entertainment's responses into `json` format  
-- `utils` - A set of utilities used in the code, like:  
-	- `geo.py` - Geolocation utility  
-	- `network.py` - Network connection manager utility  
-	- `auth.py` - Database and authentication management utility  
-	- `news.py` - News parsing  
-	- `replayParser/` - Replay parsing  
-	- `vehicleParser/` - Vehicle data parsing  
+- `app` - The application source code:  
+	- `api` - The FastAPI routers (`v1`, `backends/`, `models/`)  
+	- `utils` - A set of utilities used in the code, like:  
+		- `connection/` - Network + BLK conversion (`network.py`, `blk_utils.py`, `const.py`, `http/`, `tcp/`, `default_network_cfg.json`)  
+		- `geo.py` - Geolocation utility  
+		- `auth.py` - Database and authentication management utility  
+		- `news.py` - News parsing  
+		- `helper.py` - Shared helpers  
+		- `websocket.py` - WebSocket handling  
+		- `replayParser/` - Replay parsing  
+		- `vehicleParser/` - Vehicle data parsing  
+	- `main.py` - Main entry point of the code  
+	- `config.py` - Configuration / path constants  
+- `tools` - External binaries (`wt_ext_cli`, `binBlk`) used for BLK conversion  
+- `dev_tools` - Development-only tooling, regular users will never trigger any code within this directory  
+- `data` - Runtime data (logs, users.db, news.json, GeoLite2 DB, vehicle cache)  
 The root directory also includes the following files:  
 - `gaijin_api_endpoints.md` - Documentation on Gaijin Entertainment's internal endpoints, their usage and response  
-- `main.py` - Main entry point of the code  
+- `app/main.py` - Main entry point of the code  
 - `requirements.txt` - PyPI package requirements for the server  
-- `run` / `run.bat` - Bash/Batch file for running the server  
-- `setup` / `setup.bat` - Bash/Batch file for setting up the .venv  
+- `Dockerfile` - Docker image definition  
+- `compose.yml` - Docker Compose definition (also referenced by `systemd.service`)  
 - `.example.env` - Example .env file, that can be copied. Includes the following variables:  
 	- `PORT` - The port to run on  
 	- `HOST` - The IP to be listening on  
@@ -36,13 +41,13 @@ The root directory also includes the following files:
 	- `LOG_LEVEL` - The log level of the logger. For hosting `WARNING` is fine, as it still shows issues that have to be handled  
 - `LICENSE` - The license the repository falls under  
 - `README.md` - The README of the repository, contains some extra context  
-- `swagger_ui_modify.css` / `swagger_ui_modify.js` - Content used to modify the Swagger UI interface, to support websockets  
+- `app/swagger_ui_modify.css` / `app/swagger_ui_modify.js` - Content used to modify the Swagger UI interface, to support websockets  
 The following directories/files appear only after running the server at least once:  
 - `.env` - The .env file used by the code  
-- `logs/` - Logs directory  
-- `utils/users.db` - Authentication database  
-- `utils/news.json` - Last sent news storage  
-- `utils/GeoLite2-City.*` - Geolocation database  
+- `data/logs/` - Logs directory  
+- `data/users.db` - Authentication database  
+- `data/news.json` - Last sent news storage  
+- `data/GeoLite2-City.*` - Geolocation database  
 
 ## External tools  
 This project uses the following external binaries:  
@@ -64,20 +69,20 @@ This project uses the following external binaries:
 ## File conventions  
 - Files use `tabs` for indentation, not spaces  
 - Importing is generally done with `from ... import ...`, to reduce the extra entries in IntelliSense  
-- Rate limiting via `api.shared.limiter`  
+- Rate limiting via `app.api.shared.limiter`  
 - Use the module-level `logger` for logging  
-- In `utils/vehicleParser/`, trailing `pass` statements are intentional debug breakpoint anchors — do not remove them  
+- In `app/utils/vehicleParser/`, trailing `pass` statements are intentional debug breakpoint anchors — do not remove them  
 
 ## Sensitive data  
 Sensitive data, like session tokens and emails are stored, see `README.md#privacy-policy`  
 
 ## Running the server  
-- `./setup` — creates `.venv` (defaults to `python3.14`)  
-- `./run` — starts the server at `http://127.0.0.1:8001`; API docs at `/docs`  
-- `main.py` auto-copies `.example.env` => `.env` on first start  
+- Copy `.example.env` to `.env` (`cp ./.example.env ./.env`) and edit as needed  
+- `docker compose up -d` — builds and starts the server; API docs at `/` and `/docs`  
+- Or run directly: `python app/main.py`  
 
 ## Architecture  
-Request flow: `api/v1` router => `api/v1/backends/` => `tools/blk_utils.py` (BLK <=>JSON) => Gaijin backend  
-- `api/v1/backends/` — per-domain backend logic (clans, general, marketplace, replay, users)  
-- `api/v1/models/` — Pydantic response/request models  
-- `tools/blk_utils.py` — BLK fetch/conversion (depends on `wt_ext_cli` / `binBlk`)  
+Request flow: `app/api/v1` router => `app/api/v1/backends/` => `app/utils/connection/blk_utils.py` (BLK <=> JSON) => Gaijin backend  
+- `app/api/v1/backends/` — per-domain backend logic (clans, general, marketplace, replay, users)  
+- `app/api/v1/models/` — Pydantic response/request models  
+- `app/utils/connection/blk_utils.py` — BLK fetch/conversion (depends on `wt_ext_cli` / `binBlk`)  

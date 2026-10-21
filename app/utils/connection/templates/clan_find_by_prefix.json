@@ -1,0 +1,10 @@
+{
+    "headers": {
+        "token": "<replace>",
+        "action":"cln_clan_find_by_prefix",
+        "namePrefix": "<replace>",
+        "tagPrefix": "<replace>",
+        "start": 0,
+        "count": 20
+    }
+}

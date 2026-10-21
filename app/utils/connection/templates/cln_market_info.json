@@ -1,0 +1,9 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "cln_market_info"
+    }
+}

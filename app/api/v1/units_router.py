@@ -4,7 +4,7 @@ from fastapi import APIRouter, Path, Request, status
 
 from utils import vehicle_cache
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 #from api.models.units import # Currently no models have been implemented
 
 router = APIRouter(
@@ -22,10 +22,9 @@ router = APIRouter(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def getVehicle(
-	request: Request, 
-	user: TokenBearer, 
+	request: Request,
+	user: ServerBearer,
 	vehicleId: Annotated[str, Path(title="The vehicle's ID", examples=["saab_jas39e", "yak-7k"])]
 ):
 	await vehicle_cache.getVehicle(vehicleId)
 	pass
-

@@ -1,0 +1,14 @@
+{
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    "body": {
+        "token": "<replace>",
+        "action": "cln_market_search",
+        "appid_filter": "1067",
+        "options": "any_sell_orders;any_buy_orders;include_marketpairs",
+        "text": "",
+        "count": "<replace>",
+        "skip": "<replace>"
+    }
+}

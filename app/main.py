@@ -16,10 +16,13 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, asdict
 from json import loads
 
-from utils import users_cache, networkManager, newsManager
+from utils import users_auth, newsManager
+from utils.auth import scheduler, ServerAuth
+import utils.connection.network as Network
+import utils
 from utils.geo import update_db
-from tools import _populate_serverlist
-from tools.blk_utils import Decompress
+from utils.connection import _populate_serverlist
+from utils.connection.blk_utils import Decompress
 from api import router
 from api.shared import limiter
 from config import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT
@@ -61,23 +64,23 @@ tags_metadata = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-	await users_cache.start()
-	await networkManager.start()
+	await users_auth.start()
+	await Network.start()
+	utils.server_auth = await ServerAuth.start()
 
-
-	await users_cache._refresh() # Clean up old entries on startup
+	await users_auth._refresh() # Clean up old entries on startup
 
 	#region Gaijin servers config init
 	content = {}
 	try:
-		async with networkManager.get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=5) as _resp:
-			temp = await networkManager.handle_response(_resp, False)
+		async with Network.get("https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk", timeout=5) as _resp:
+			temp = await Network.handle_response(_resp, False)
 			content = Decompress(temp)["production"]
 	except Exception:
 		logger.warning("Failed to fetch server from first server, trying secondary server")
 		try:
-			async with networkManager.get("https://public-configs.warthunder.com/production/network.blk", timeout=5) as _resp:
-				temp = await networkManager.handle_response(_resp, False)
+			async with Network.get("https://public-configs.warthunder.com/production/network.blk", timeout=5) as _resp:
+				temp = await Network.handle_response(_resp, False)
 				content = Decompress(temp)["production"]
 		except Exception:
 			pass
@@ -104,8 +107,10 @@ async def lifespan(app: FastAPI):
 			await geolocation_task
 		except (asyncio.CancelledError, RuntimeError):
 			pass
-		await users_cache.close()
-		await networkManager.close()
+
+		scheduler.shutdown()
+		await users_auth.close()
+		await Network.close()
 
 
 debug = int(getenv("DEBUG_MODE", "0")) == 1
@@ -129,9 +134,9 @@ app = FastAPI(
 #region Rate Limiter
 app.state.limiter = limiter
 app.add_exception_handler(
-	RateLimitExceeded, 
+	RateLimitExceeded,
 	lambda request, exc: (
-		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"), 
+		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"),
 		JSONResponse({"detail": "Rate limit exceeded"}, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
 	)[1]
 )

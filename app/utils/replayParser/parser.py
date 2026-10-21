@@ -3,7 +3,7 @@ from fastapi import status
 from fastapi.exceptions import HTTPException
 from json import JSONDecodeError
 from typing import Any
-from tools import Decompress
+from utils.connection.blk_utils import Decompress
 from enum import IntEnum, Enum, auto
 
 @dataclass
@@ -53,7 +53,7 @@ class _ReplayHeader:
 	battleType: str
 	environment: str
 	visibility: str
-	rezOffset: int 
+	rezOffset: int
 	diff: _Difficulty
 	sessionType: int
 	sessionIdHex: int
@@ -99,4 +99,3 @@ class ReplayParser:
 		except JSONDecodeError:
 			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason")
 		return self
-

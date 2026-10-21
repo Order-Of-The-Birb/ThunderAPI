@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from ..shared import IntString
+from ..backends.shared import IntString
 
 class SellModel(BaseModel):
 	item: IntString

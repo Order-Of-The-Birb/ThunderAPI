@@ -3,12 +3,12 @@ from typing_extensions import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
-from hashlib import md5
 
-from utils import users_cache
+from utils import users_auth
+from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 from api.shared import limiter
-from api.v1.shared import TokenBearer
+from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.auth import Login, LoginToken
 
 router = APIRouter(
@@ -17,8 +17,8 @@ router = APIRouter(
 )
 
 @router.post(
-	"/login", 
-	summary="Get a token to use in other endpoints", 
+	"/login",
+	summary="Get a token to use in other endpoints",
 	description="You can use this token for the endpoints. If given user has 2FA enabled, they must provide the 2FA code along with their credentials through either `Gaijin pass` or the `/v1/answer-2fa` endpoint. If you generated a token that hasn't expired yet, the endpoint will just give back the cached token.",
 	responses={
 		status.HTTP_200_OK: {"model": Login.LoginResponse},
@@ -33,7 +33,7 @@ async def login_post(
 	email: Annotated[EmailStr, Form()],
 	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"})]
 ):
-	token, uidHint = await users_cache.login(email, password)
+	token, uidHint = await users_auth.login(email, password)
 
 	return JSONResponse({
 		"status": "OK",
@@ -42,7 +42,7 @@ async def login_post(
 	}, status_code=status.HTTP_200_OK)
 
 @router.post(
-	"/refresh-token", 
+	"/refresh-token",
 	summary="Refresh your token so it stays alive for longer. This is essentially a 'No op', just to keep the token active.",
 	description="If you are cached it will refresh the token. The game generally refreshes the token every 30 minutes. Returns an UNIX timestamp of the new token expiry",
 	responses={
@@ -53,12 +53,12 @@ async def login_post(
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_token(
-	request: Request, 
+	request: Request,
 	user: TokenBearer
 ):
-	await user.refresh()
+	await user.entry.refresh()
 	return {
-		"expires": dtToTimestamp(user.expires),
+		"expires": dtToTimestamp(user.entry.expires),
 		"status": "OK"
 	}
 
@@ -73,33 +73,13 @@ async def answer_2fa(
 	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title="The 2FA code")]
 ):
-	if email not in users_cache._pending_2fa:
+	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	if users_cache._pending_2fa[email].password_hash == md5(password.encode()).hexdigest():
-		users_cache._pending_2fa[email].code = code
+	if _PENDING_2FA[email].check_password(password):
+		_PENDING_2FA[email].code = code
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
-
-"""@router.post(
-	"/get-sid",
-	summary="Gets an 'identifier_sid' value, used for replay searching. Value is not displayed, but will be used in the requests that require it. Has to be refreshed every 14 days",
-	responses={
-		status.HTTP_200_OK: {},
-		status.HTTP_400_BAD_REQUEST: {"description": "Generic fetch failure"},
-		status.HTTP_404_NOT_FOUND: {"description": "User not found in database"}
-	}
-)""" # Removed until get_sid() is fixed
-@limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
-async def get_sid(
-	request: Request,
-	user: TokenBearer,
-	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"}, description="Must be given, as we do not store passwords")]
-):
-	await users_cache.get_sid(user, password)
-	if user.sid == None:
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain sid value")
-	return JSONResponse({"status": "success"}, status.HTTP_200_OK)
 
 @router.delete(
 	"/remove",
@@ -110,6 +90,6 @@ async def remove_login(
 	request: Request,
 	user: TokenBearer
 ):
-	if (await users_cache.remove_entry(user)):
+	if (await users_auth.remove_entry(user)):
 		return JSONResponse({"success": True})
 	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")

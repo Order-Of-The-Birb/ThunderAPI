@@ -29,7 +29,7 @@ LOGS_DIR = DATA_DIR / "logs"
 SWAGGER_JS = Path(__file__).parent / "swagger_ui_modify.js"
 SWAGGER_CSS = Path(__file__).parent / "swagger_ui_modify.css"
 
-DEFAULT_NETWORK_CFG = Path(__file__).parent / "tools" / "default_network_cfg.json"
+DEFAULT_NETWORK_CFG = Path(__file__).parent / "utils" / "connection" / "default_network_cfg.json"
 
 WT_EXT_CLI = TOOL_DIR / "wt_ext_cli"
 BINBLK = TOOL_DIR / "binBlk"

@@ -1,6 +1,7 @@
 from datetime import datetime
 from fastapi import HTTPException
 from typing import Any, Callable
+from collections.abc import Iterable
 
 def dtToTimestamp(dt:datetime) -> int:
 	return int(dt.timestamp())
@@ -16,7 +17,7 @@ class Keymod:
 	new_name: str
 	convert: Callable[[Any], Any]
 	default: Any
-	rm: bool 
+	rm: bool
 
 	def __init__(self, key: str, /, *, new_name: str = None, convert: Callable[[Any], Any] = lambda x: x, default: Any = ..., rm: bool = False):
 		self.key = key
@@ -36,7 +37,15 @@ class Keymod:
 			if self.default is not ... and not self.rm:
 				obj[self.new_name] = self.convert(self.default)
 			return obj
-		new_val = self.convert(obj.pop(self.key, self.default))
+
+		new_val = self.convert(obj.pop(self.key))
+
 		if not self.rm:
 			obj[self.new_name] = new_val
+		return obj
+
+	@staticmethod
+	def run_all(obj:dict[str, Any], changes:Iterable[Keymod]):
+		for change in changes:
+			obj = change.run(obj)
 		return obj

@@ -1,0 +1,7 @@
+{
+    "host": "https://login.gaijin.net/proxy/api/matching/notifyClient",
+    "method": "OPTIONS",
+    "headers": {
+        "action": "market_view_item"
+    }
+}

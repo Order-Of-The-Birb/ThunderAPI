@@ -3,7 +3,7 @@ ThunderAPI is an API that interfaces with Gaijin's backend used by War Thunder, 
 It handles the authentication and token refreshing automatically, so the user only has to worry about a single ThunderAPI token.  
 > [!IMPORTANT]  
 > Due to unused token cleanup, tokens are cleared after 24 hours of inactivity, so tokens have to be used at least once per day, to be kept active.  
-> This can be done by calling any endpoint or the dedicated `/v1/refresh-token` endpoint.  
+> This can be done by calling any endpoint requiring authentication, or by using the dedicated `/v1/refresh-token` endpoint.  
 > Refreshing is handled internally, so your existing ThunderAPI token remains valid afterward.  
 
 The API also handles the conversion from Gaijin's compressed binary `BLK` format into usable JSON.  
@@ -18,14 +18,14 @@ The Thunderinsights source code was used as a reference for some endpoints in th
 
 This API uses a different design philosophy from `Thunderinsights`: each user authenticates using their own Gaijin account. This allows the API to support functionality that the original project could not, including squadron management, marketplace access, and replay searching.  
 
-Automatically generated API documentation is available at `/docs` (by default, `http://127.0.0.1:8001/docs`).  
+Automatically generated API documentation is available at `/` (by default, `http://127.0.0.1:8001/`).  
 
 ## Authentication  
-Almost all endpoints outside of the `Authentication` category require an `Authorization: Bearer` header to be sent alongside the request, using a valid token obtained from `/v1/login`.  
+A lot of the endpoints outside of the `Authentication` category require an `Authorization: Bearer` header to be sent alongside the request, using a valid token obtained from `/v1/login`.  
 Example:  
 ```bash  
 curl -X GET \  
-	'http://127.0.0.1:8001/v1/clans/1061551/applicants' \  
+	'http://127.0.0.1:8001/v1/clans/logs/1061551' \  
 	-H 'accept: application/json' \  
 	-H 'Authorization: Bearer YOUR_THUNDERAPI_TOKEN'  
 ```  
@@ -34,7 +34,7 @@ Currently, two-step authentication has only been tested using Gaijin Pass.
 If you use other forms of 2FA, logging in might not work properly.  
 
 ## Hosting  
-Feel free to host this for yourself, if you feel up to the task. Otherwise the API can also be used through `[PLACEHOLDER]`.  
+Feel free to host this for yourself, if you feel up to the task. Otherwise the API can also be used through `thunderapi.mahoyoshino.hu` (please cache your results, instead of hammering the server).  
 Setup instructions can be found in the [Self-hosting](#self-hosting) section.  
 
 ## Features  
@@ -59,7 +59,7 @@ ThunderAPI stores some security-sensitive account data, including Gaijin session
 > Third-party ThunderAPI instances may therefore run modified code and should only be used if you trust their operator.  
 
 Your password, however, is never stored. It is used temporarily for operations that require it and is immediately discarded afterward.  
-As a result, operations that require an `identity_sid`, for example, require the user to re-enter their account password.  
+As a result, certain operations may require the user to re-enter their account password.  
 
 The following data is stored about the user:  
 - A hash of the randomly generated authentication token  
@@ -70,7 +70,7 @@ The following data is stored about the user:
 - Request count (for statistics and for monitoring abuse)  
 - Last used time (used for automatic refreshing of the user's token)  
 - Creation timestamp (the time of creation of the user's entry)  
-  
+
 The official ThunderAPI instance does not sell or share your personal data with third parties.  
 
 ## Self-hosting  
