@@ -33,14 +33,28 @@ class Platforms(Enum):
 	XBOX = 12
 
 class ApplicantModel(BaseModel):
-	uid: IntString
+	uid: int
 	nickname: str
 	timestamp: int
 	comment: str
 	class GeolocationDataModel(BaseModel):
+		offset: float
 		country: str
-		timezone: int
-	geodata:GeolocationDataModel = Field(default=None)
+		city: str
+	geo:GeolocationDataModel = Field(default=None)
+
+class MemberModel(BaseModel):
+	class enumModel(BaseModel):
+		name: str
+		value: int
+	uid: int
+	nickname: str
+	rank: enumModel
+	platform: enumModel | None = None
+	max_unit_rank: int | None = None
+	accepted_by: int | None = None
+	accepted_by_nick: str | None = None
+	joined_at: int
 
 class LogsModel(BaseModel):
 	lastLog: str
@@ -62,10 +76,26 @@ class LogsModel(BaseModel):
 
 
 		timestamp: int
-		affected: _affected
+		affected: _affected | None = Field(default=None)
 		action: _action
-		admin: _admin
+		admin: _admin | None = Field(default=None)
 		roleChange: _roleChange | None = Field(default=None)
+
+class ClanLeaderboardModel(BaseModel):
+	class ClanStatsModel(BaseModel):
+		rating: int
+		flight_time: float
+		air_kills: int
+		ground_kills: int
+		battles: int
+		wins: int
+		deaths: int
+		activity: int
+	id: int
+	pos: int
+	stats: ClanStatsModel
+	name: str
+	tag: str
 
 class ClanModel(BaseModel):
 	class ClanSeasonRatingRewardsModel(BaseModel):
@@ -75,15 +105,7 @@ class ClanModel(BaseModel):
 		seasonEndTimestamp: int | None = None
 		numInYear: int | None = None
 		regaliaTags: str | None = None
-	class MemberModel(BaseModel):
-		uid: IntString
-		nick: str
-		role: int
-		platform: int | None = None
-		max_unit_rank: int | None = None
-		initiator: IntString | None = None
-		initiator_nick: str | None = None
-		date: int
+	
 	class astatModel(BaseModel):
 		deaths_hist: int | None = None
 		ftime_hist: int | None = None
@@ -148,13 +170,20 @@ class ClanModel(BaseModel):
 	transactions: list[str] | None = None
 	type: str | None = None
 	clanSeasonRatingRewards: ClanSeasonRatingRewardsModel | dict | None = None
-	members: list[MemberModel] | MemberModel | None = None
+	members: list[MemberModel] | None = None
 	membership_req: dict | None = None
 	astat: astatModel | None = None
 	clanRewardRatingPerUser_60: dict | None = None
+	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
 
 	class Config:
 		extra = "allow"
-class ClanPositionModel(BaseModel):
-	pos: int
-	rating: int
+
+class ClanSearchResultModel(BaseModel):
+	id: int
+	name: str
+	tag: str
+	members: list[MemberModel]
+	desc: str
+	slogan: str
+	region: str
