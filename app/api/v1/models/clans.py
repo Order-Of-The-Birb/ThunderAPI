@@ -180,3 +180,8 @@ class SQBTimeBracket(BaseModel):
 	start: datetime
 	end: datetime
 	br: float
+
+class CurrentSQBBracket(BaseModel):
+	bracket: SQBTimeBracket
+	start: datetime | None = None
+	end: datetime | None = None

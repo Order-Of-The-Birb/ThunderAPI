@@ -1,13 +1,14 @@
 from os import getenv
 from typing_extensions import Annotated
 from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRequest, status
+from datetime import datetime, UTC
 
 from utils.connection import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel, SQBTimeBracket
+from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel, SQBTimeBracket, CurrentSQBBracket
 from api.v1.models.base import SuccessEmptyDict
-from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs, get_sqb_brackets, current_sqb_br
+from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs, get_sqb_brackets, current_sqb_br, SQB_BRACKET_TIMES
 
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
@@ -209,69 +210,7 @@ async def get_clan_logs(
 	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
 	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
 ) -> LogsModel:
-	allLogs = await user.getSquadronId() == clanId
-	response = await Request.from_template(
-		user,
-		"clan_get_log",
-		_id = clanId,
-		count = limit
-	)
-	if (allLogs):
-		response.body.pop("events")
-	if fromEntry:
-		response.body["last"] = fromEntry
-
-	response = await response.send()
-
-	logs:list[dict[str, int|str]] = []
-	for item in response["log"]:
-		item:dict[str, int|str]
-		try:
-			action = Actions[item["ev"]]
-		except KeyError:
-			_logger.warning(f"Unhandled log type '{item["ev"]}' found")
-			continue
-		logEntry = {
-			"timestamp": item["time"],
-			"action": {
-				"value": action.value[0],
-				"detail": action.value[1]
-			}
-		}
-		if item.get("uId") is not None and not (action == Actions.rem and item.get("uid") is not None and item["uId"] == item["uid"]):
-			logEntry["admin"] = {
-				"_id": item["uId"],
-				"nickname": item["uN"]
-			}
-		if item.get("uid") is not None:
-			logEntry["affected"] = {
-				"_id": item["uid"],
-				"nickname": item["nick"],
-			}
-		match action:
-			case Actions.role:
-				logEntry.update({
-					"roleChange": {
-						"old": item["old"],
-						"new": item["new"]
-					}
-				})
-			case Actions.info:
-				for i in ["tag", "desc", "region", "status"]:
-					if (_ := item.get(i)):
-						logEntry[i] = _
-			case Actions.create:
-				logEntry["info"] = {}
-				for i in ["type", "name", "tag", "slogan", "desc", "region", "announcement"]:
-					logEntry["info"][i] = item[i]
-			case Actions.reject_candidate:
-				logEntry["comment"] = item["comments"]
-		logs.append(logEntry)
-
-	return JSONResponse({
-		"lastLog": response["lastMark"],
-		"logs": logs
-	})
+	return await getLogs(user, clanId, limit, fromEntry)
 
 @router.get("/search", summary="Search for squadron")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
@@ -332,15 +271,29 @@ async def get_brackets(
 
 @router.get(
 	"/sqb/current",
-	summary="Returns the current SQB/SRB battle rating bracket",
+	summary="Returns the current SQB/SRB bracket, and if one is open, also returns it's start and end time",
 	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_current_br(
 	request: faRequest,
 	user: ServerBearer
-) -> SQBTimeBracket:
-	return await current_sqb_br()
+) -> CurrentSQBBracket:
+	bracket = await current_sqb_br()
+
+	rn = datetime.now(UTC)
+	for start, end in SQB_BRACKET_TIMES:
+		start_dt = datetime.combine(rn.date(), start, UTC)
+		end_dt = datetime.combine(rn.date(), end, UTC)
+		if start_dt <= rn <= end_dt:
+			return {
+				"bracket": bracket,
+				"start": start_dt,
+				"end": end_dt
+			}
+	return {
+		"bracket": bracket
+	}
 
 @router.get(
 	"/{clanId}",

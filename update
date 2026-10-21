@@ -4,4 +4,4 @@ git pull
 
 /usr/bin/docker compose down
 /usr/bin/docker compose build
-/usr/bin/docker compose up
+/usr/bin/docker compose up -d

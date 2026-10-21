@@ -81,26 +81,6 @@ async def answer_2fa(
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
 
-"""@router.post(
-	"/get-sid",
-	summary="Gets an 'identifier_sid' value, used for replay searching. Value is not displayed, but will be used in the requests that require it. Has to be refreshed every 14 days",
-	responses={
-		status.HTTP_200_OK: {},
-		status.HTTP_400_BAD_REQUEST: {"description": "Generic fetch failure"},
-		status.HTTP_404_NOT_FOUND: {"description": "User not found in database"}
-	}
-)""" # Removed until get_sid() is fixed
-@limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
-async def get_sid(
-	request: Request,
-	user: TokenBearer,
-	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"}, description="Must be given, as we do not store passwords")]
-):
-	await users_auth.get_sid(user, password)
-	if user.sid == None:
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not obtain sid value")
-	return JSONResponse({"status": "success"}, status.HTTP_200_OK)
-
 @router.delete(
 	"/remove",
 	summary="Removes your login entry from our system"

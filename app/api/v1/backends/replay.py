@@ -1,7 +1,5 @@
 from fastapi import HTTPException, status
 from enum import StrEnum, Enum
-from datetime import datetime, UTC
-from utils.connection import Request
 from utils.auth import LoginEntry
 
 class ReplayType(StrEnum):
@@ -31,30 +29,4 @@ async def search_replay(
 	limit: int = 25,
 	page: int = 0
 ):
-	if user.entry.sid is not None and user.entry.sid.exp < datetime.now(UTC):
-		raise HTTPException(status.HTTP_428_PRECONDITION_REQUIRED, "Identity SID expired. Please re-login to get a new one.")
-	elif user.entry.sid is None:
-		raise HTTPException(status.HTTP_428_PRECONDITION_REQUIRED, "Identity SID not found. Please generate one using the `/v1/get-sid` endpoint")
-	response = await Request.from_template(user, "replays_search")
-	response.body["limit"] = limit
-	response.body["page"] = page
-	if uid is not None:
-		response.body["findUserType"] = "ID"
-		response.body["findUserValue"] = str(uid)
-	elif nickname is not None:
-		response.body["findUserType"] = "USERNAME"
-		response.body["findUserValue"] = nickname
-	else:
-		response.body["findUserType"] = "USERNAME"
-		response.body["findUserValue"] = ""
-
-	response.body["gameType"] = gameType.value
-	response.body["techType"] = techType.value
-	if mode is not None:
-		response.body["gameMode"] = [m.value for m in mode]
-
-	response.headers["cookie"] = f"identity_sid={user.entry.sid.sid};identity_id={user.uidHint}"
-
-	resp = await response.send()
-
-	return resp
+	raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "This code is disabled") # TODO: Create new code for replay searching

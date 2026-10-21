@@ -58,6 +58,7 @@ class Authentication:
 				user = user.getEntry()
 				await Authentication._track_usage(user)
 				return user
+			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
 		return await Authentication.get_server_auth()
 
 

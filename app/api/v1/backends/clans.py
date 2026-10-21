@@ -188,15 +188,15 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 
 SQB_BRACKET_TIMES = (
 	(
-		time(hour=1, minute=0),
-		time(hour=7, minute=0)
+		time(hour=1, minute=0, tzinfo=UTC),
+		time(hour=7, minute=0, tzinfo=UTC)
 	),
 	(
-		time(hour=14, minute=0),
-		time(hour=22, minute=0)
+		time(hour=14, minute=0, tzinfo=UTC),
+		time(hour=22, minute=0, tzinfo=UTC)
 	)
 )
-SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] = None
+SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] | None = None
 SQB_BRACKET_CACHE_LOCK = Lock()
 
 async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:

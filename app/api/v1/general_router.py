@@ -37,4 +37,5 @@ async def get_news(request: Request, user: ServerBearer) -> list[NewsEntry]:
 	name="News stream"
 )
 async def news_ws(websocket: WebSocket):
-	await newsManager.websocket_mgr.connect(websocket)
+	async for msg in newsManager.websocket_mgr.connect(websocket):
+		pass # Ignore all messages
