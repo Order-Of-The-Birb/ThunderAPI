@@ -209,12 +209,71 @@ async def get_clan_logs(
 	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
 	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
 ) -> LogsModel:
-	return await getLogs(user, clanId, limit, fromEntry)
+	allLogs = await user.getSquadronId() == clanId
+	response = await Request.from_template(
+		user,
+		"clan_get_log",
+		_id = clanId,
+		count = limit
+	)
+	if (allLogs):
+		response.body.pop("events")
+	if fromEntry:
+		response.body["last"] = fromEntry
 
-@router.get(
-	"/search",
-	summary="Search for squadron"
-)
+	response = await response.send()
+
+	logs:list[dict[str, int|str]] = []
+	for item in response["log"]:
+		item:dict[str, int|str]
+		try:
+			action = Actions[item["ev"]]
+		except KeyError:
+			_logger.warning(f"Unhandled log type '{item["ev"]}' found")
+			continue
+		logEntry = {
+			"timestamp": item["time"],
+			"action": {
+				"value": action.value[0],
+				"detail": action.value[1]
+			}
+		}
+		if item.get("uId") is not None and not (action == Actions.rem and item.get("uid") is not None and item["uId"] == item["uid"]):
+			logEntry["admin"] = {
+				"_id": item["uId"],
+				"nickname": item["uN"]
+			}
+		if item.get("uid") is not None:
+			logEntry["affected"] = {
+				"_id": item["uid"],
+				"nickname": item["nick"],
+			}
+		match action:
+			case Actions.role:
+				logEntry.update({
+					"roleChange": {
+						"old": item["old"],
+						"new": item["new"]
+					}
+				})
+			case Actions.info:
+				for i in ["tag", "desc", "region", "status"]:
+					if (_ := item.get(i)):
+						logEntry[i] = _
+			case Actions.create:
+				logEntry["info"] = {}
+				for i in ["type", "name", "tag", "slogan", "desc", "region", "announcement"]:
+					logEntry["info"][i] = item[i]
+			case Actions.reject_candidate:
+				logEntry["comment"] = item["comments"]
+		logs.append(logEntry)
+
+	return JSONResponse({
+		"lastLog": response["lastMark"],
+		"logs": logs
+	})
+
+@router.get("/search", summary="Search for squadron")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,

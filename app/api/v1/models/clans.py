@@ -161,6 +161,7 @@ class ClanModel(BaseModel):
 	members: list[MemberModel] | None = None
 	membership_req: dict | None = None
 	astat: astatModel | None = None
+	clanRewardRatingPerUser_60: dict | None = None
 	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
 
 	class Config:

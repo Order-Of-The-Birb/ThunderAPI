@@ -186,69 +186,6 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 
 	return data
 
-def sanitizeMembers(members:dict|list):
-	if members is None:
-		return []
-
-	if isinstance(members, dict):
-		members = [members,]
-
-	SANITIZE = (
-		Keymod("uid", convert=lambda x: int(x)),
-		Keymod("nick", new_name="nickname"),
-		Keymod("role", new_name="rank", convert=lambda x: {
-			"name": Roles(x).name,
-			"value": x
-		}),
-		Keymod("platform", convert=lambda x: {
-			"name": Platforms(x).name,
-			"value": x
-		}, default=Platforms.PC.value),
-		Keymod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
-		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
-		Keymod("date", new_name="joined_at")
-	)
-
-	for i, member in enumerate(members):
-		members[i] = Keymod.run_all(member, SANITIZE)
-
-	return members
-
-def sanitizeApplicants(applicants:dict|list|None):
-	if applicants is None:
-		return []
-
-	if isinstance(applicants, dict):
-		applicants = [applicants,]
-
-	def _ip_to_geo(x: str) -> dict[str, Any] | None:
-		geo = lookup_city(x)
-		if geo is None:
-			return
-
-		return {
-			"offset": lookup_utc_offset(geo.location.time_zone),
-			"city": geo.city.name,
-			"country": geo.country.iso_code
-		}
-
-	SANITIZATION = (
-		Keymod("uid", convert=lambda x: int(x)),
-		Keymod("nick", new_name="nickname"),
-		Keymod("comments", new_name="comment", default=""),
-		Keymod("date", new_name="timestamp"),
-		Keymod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
-	)
-	def sanitize(applicant:dict[str, Any]):
-		for SAN in SANITIZATION:
-			applicant = SAN.run(applicant)
-		return applicant
-
-	for i, applicant in enumerate(applicants):
-		applicants[i] = sanitize(applicant)
-
-	return applicants
-
 SQB_BRACKET_TIMES = (
 	(
 		time(hour=1, minute=0),
@@ -317,3 +254,62 @@ async def current_sqb_br() -> dict[str, datetime|float]:
 		if week["start"] < rn < week["end"]:
 			return week
 	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find current bracket data")
+
+def sanitizeMembers(members:dict|list):
+	if members is None:
+		return []
+
+	if isinstance(members, dict):
+		members = [members,]
+
+	SANITIZATION = (
+		Keymod("uid", convert=lambda x: int(x)),
+		Keymod("nick", new_name="nickname"),
+		Keymod("role", new_name="rank", convert=lambda x: {
+			"name": Roles(x).name,
+			"value": x
+		}),
+		Keymod("platform", convert=lambda x: {
+			"name": Platforms(x).name,
+			"value": x
+		}, default=Platforms.PC.value),
+		Keymod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
+		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
+		Keymod("date", new_name="joined_at")
+	)
+
+	for i, member in enumerate(members):
+		members[i] = Keymod.run_all(member, SANITIZATION)
+
+	return members
+
+def sanitizeApplicants(applicants:dict|list|None):
+	if applicants is None:
+		return []
+
+	if isinstance(applicants, dict):
+		applicants = [applicants,]
+
+	def _ip_to_geo(x: str) -> dict[str, Any] | None:
+		geo = lookup_city(x)
+		if geo is None:
+			return
+
+		return {
+			"offset": lookup_utc_offset(geo.location.time_zone),
+			"city": geo.city.name,
+			"country": geo.country.iso_code
+		}
+
+	SANITIZATION = (
+		Keymod("uid", convert=lambda x: int(x)),
+		Keymod("nick", new_name="nickname"),
+		Keymod("comments", new_name="comment", default=""),
+		Keymod("date", new_name="timestamp"),
+		Keymod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
+	)
+
+	for i, applicant in enumerate(applicants):
+		applicants[i] = Keymod.run_all(applicant, SANITIZATION)
+
+	return applicants

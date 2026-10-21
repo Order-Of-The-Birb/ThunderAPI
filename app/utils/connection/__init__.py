@@ -23,8 +23,7 @@ def _populate_serverlist(data: dict[str, Any]):
 	userstat_proxies = data["userstat"]["servers"]["url"]
 	contacts_proxies = data["contacts"]["servers"]["url"]
 	ugc_servers = data["ugc_settings"]["ugcServerUrl"]
-	matching_servers = data["matching"]["server"]
-	if any(len(i) == 0 for i in [char_servers, inv_proxies, userstat_proxies, contacts_proxies, ugc_servers, matching_servers]):
+	if any(len(i) == 0 for i in [char_servers, inv_proxies, userstat_proxies, contacts_proxies, ugc_servers]):
 		raise RuntimeError("Server URL lists did not get populated properly")
 
 	SERVER_URLS = {
@@ -37,8 +36,7 @@ def _populate_serverlist(data: dict[str, Any]):
 		ServerPool.MARKET_WEB: "https://market-proxy.gaijin.net/web",
 		ServerPool.MARKET_CHAR: "https://market-proxy.gaijin.net/char",
 		ServerPool.MARKET: "https://market-proxy.gaijin.net/market",
-		ServerPool.MARKET_ASSET: "https://market-proxy.gaijin.net/assetAPI",
-		ServerPool.MATCHING: matching_servers
+		ServerPool.MARKET_ASSET: "https://market-proxy.gaijin.net/assetAPI"
 	}
 
 def get_server(action: Actions) -> str:
