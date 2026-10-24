@@ -9,7 +9,7 @@ from re import search as re_search, IGNORECASE
 from utils.connection import Request
 from utils.auth import LoginEntry
 from utils.geo import lookup_city, lookup_utc_offset
-from utils.helper import Keymod
+from utils.helper import dictUtil
 from api.v1.models.clans import ClanModel, Roles, Platforms, Actions, ClanLeaderboardModel, ClanSearchResultModel
 import utils.connection.network as Network
 
@@ -172,17 +172,17 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	)
 
 	SANITIZE = (
-		Keymod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
-		Keymod("members", convert=lambda x: sanitizeMembers(x)),
-		Keymod("transactions", rm=True),
-		Keymod("namel", rm=True),
-		Keymod("regionl", rm=True),
-		Keymod("tagl", rm=True),
-		Keymod("currentTagRegalia", rm=True),
-		Keymod("interlockid", rm=True),
-		Keymod("type", rm=True)
+		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
+		dictUtil.KeyMod("members", convert=lambda x: sanitizeMembers(x)),
+		dictUtil.KeyRem("transactions"),
+		dictUtil.KeyRem("namel"),
+		dictUtil.KeyRem("regionl"),
+		dictUtil.KeyRem("tagl"),
+		dictUtil.KeyRem("currentTagRegalia"),
+		dictUtil.KeyRem("interlockid"),
+		dictUtil.KeyRem("type")
 	)
-	data = Keymod.run_all(data, SANITIZE)
+	data = dictUtil.run_all(data, SANITIZE)
 
 	return data
 
@@ -263,23 +263,23 @@ def sanitizeMembers(members:dict|list):
 		members = [members,]
 
 	SANITIZATION = (
-		Keymod("uid", convert=lambda x: int(x)),
-		Keymod("nick", new_name="nickname"),
-		Keymod("role", new_name="rank", convert=lambda x: {
+		dictUtil.KeyMod("uid", convert=lambda x: int(x)),
+		dictUtil.KeyMod("nick", new_name="nickname"),
+		dictUtil.KeyMod("role", new_name="rank", convert=lambda x: {
 			"name": Roles(x).name,
 			"value": x
 		}),
-		Keymod("platform", convert=lambda x: {
+		dictUtil.KeyMod("platform", convert=lambda x: {
 			"name": Platforms(x).name,
 			"value": x
 		}, default=Platforms.PC.value),
-		Keymod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
-		Keymod("initiator_nick", new_name="accepted_by_nick", default=None),
-		Keymod("date", new_name="joined_at")
+		dictUtil.KeyMod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
+		dictUtil.KeyMod("initiator_nick", new_name="accepted_by_nick", default=None),
+		dictUtil.KeyMod("date", new_name="joined_at")
 	)
 
 	for i, member in enumerate(members):
-		members[i] = Keymod.run_all(member, SANITIZATION)
+		members[i] = dictUtil.run_all(member, SANITIZATION)
 
 	return members
 
@@ -302,14 +302,14 @@ def sanitizeApplicants(applicants:dict|list|None):
 		}
 
 	SANITIZATION = (
-		Keymod("uid", convert=lambda x: int(x)),
-		Keymod("nick", new_name="nickname"),
-		Keymod("comments", new_name="comment", default=""),
-		Keymod("date", new_name="timestamp"),
-		Keymod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
+		dictUtil.KeyMod("uid", convert=lambda x: int(x)),
+		dictUtil.KeyMod("nick", new_name="nickname"),
+		dictUtil.KeyMod("comments", new_name="comment", default=""),
+		dictUtil.KeyMod("date", new_name="timestamp"),
+		dictUtil.KeyMod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
 	)
 
 	for i, applicant in enumerate(applicants):
-		applicants[i] = Keymod.run_all(applicant, SANITIZATION)
+		applicants[i] = dictUtil.run_all(applicant, SANITIZATION)
 
 	return applicants

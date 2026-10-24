@@ -5,6 +5,7 @@ from ..backends.shared import IntString
 from enum import Enum
 from bisect import bisect_right
 from .clans import PLATFORM_NAMES
+from datetime import datetime, date
 
 COUNTRIES = Literal[
 	"country_usa",
@@ -28,6 +29,7 @@ SIMPLE_COUNTRIES = Literal[
 	"italy",
 	"france",
 	"sweden",
+	"israel"
 ]
 GAMEMODES = Literal[
 	"arcade",
@@ -65,7 +67,7 @@ VEHICLE_TYPES = Literal[
 	"human"
 ]
 
-class getUserDirectModel(BaseModel):
+class getUserDirect:
 	class summaryModel(BaseModel):
 		class summaryGameModeModel(BaseModel):
 			class vehicleModel(BaseModel):
@@ -101,110 +103,65 @@ class getUserDirectModel(BaseModel):
 		builder_played: dict[GAMEMODES, summaryGameModeModel]
 		other_played: dict[GAMEMODES, summaryGameModeModel]
 
-	nick: str
-	lastDay: int
-	registerDay: int
-	userid: IntString
-	exp: int
-	expConverted: int
-	numEliteUnits: int
-	title: str
-	icon: int
-	iconName: str
-	frame: str
-	background: str
-	shcType: str
-	penaltyStatus: str
-	era: dict[
-		COUNTRIES,
-		dict[
-			Literal[
-				"Aircraft",
-				"Tank",
-				"Ship",
-				"Helicopter",
-				"Boat",
-				"Human"
-			], int
-		]]
-	unitsPerCountry: dict[COUNTRIES, dict[Literal["numUnits", "numEliteUnits"], int]]
-	aircrafts: dict[COUNTRIES, dict[str, int]]
-	slots: dict[COUNTRIES, dict[str, int]]
-	summary: summaryModel
-	unlocks: dict[str, dict[Literal["type"], Literal["achievement", "challenge"]]]
-	closedUnlocks: dict
-	titles: dict
-	userstat: dict
-	classinessAwards: dict
-	leaderboard: dict[str, dict[str, dict]]
+	class statisticsModel(BaseModel):
+		class unitStatModel(BaseModel):
+			victories: int = 0
+			deaths: int = 0
+			defeats: int = 0
+			air_kills: int = 0
+			ground_kills: int = 0
+			naval_kills: int = 0
+			respawns: int = 0
+			total_sl: int = 0
+			total_rp: int = 0
+
+		arcade: dict[str, unitStatModel] = {}
+		historical: dict[str, unitStatModel] = {}
+		simulator: dict[str, unitStatModel] = {}
+
+	class countriesModel(BaseModel):
+		class maxRanksModel(BaseModel):
+			Aircraft: int
+			Tank: int
+			Ship: int
+			Helicopter: int
+			Boat: int
+			Human: int
+		max_ranks: maxRanksModel
+		numUnits: int = 0
+		numEliteUnits: int = 0
+		current_lineup: tuple[str, ...] = tuple()
+		units: tuple[str, ...] = tuple()
+
+	class metaModel(BaseModel):
+		class _clanDataModel(BaseModel):
+			name: str
+			tag: str
+			type: int
+			role: int
+			id: int
+
+		class _playerLevelModel(BaseModel):
+			title: str
+			level: int
+
+		nick: str
+		last_login: date
+		registered_at: datetime
+		id: int
+		level: _playerLevelModel
+		clan: _clanDataModel
+		numEliteUnits: int
+		penaltyStatus: str
+	#summary: _summaryModel
+	#statistics: _statisticsModel
+	#countries: dict[SIMPLE_COUNTRIES, _countriesModel]
 
 class TerseReturnModel(BaseModel):
-	#region Showcase Models
-	class Showcase_FavMode_Model(BaseModel): # Favorite Mode
-		class ModeStatsModel(BaseModel):
-			each_player_session: int
-			each_player_victories: int
-			flyouts: int
-			kills_ai: int
-			kills_player_or_bot: int
-			score: int
-		mode: GAMEMODES
-		modeValue: ModeStatsModel = Field(description="Key value is the value set for `mode`")
-	class Showcase_BH_Model(BaseModel): # Battle-Hardened
-		class ModeStatsModel(BaseModel):
-			average_score: float
-			avg_rel_position: float
-			each_player_session: int
-			each_player_victories: int
-			efficiency_vs_ai: float
-			efficiency_vs_players: float
-		h_mode: GAMEMODES
-		h_modeValue: ModeStatsModel = Field(description="Key value is the value set for `h_mode`")
-	class Showcase_FavUnit_Model(BaseModel): # Favorite vehicle
-		difficulty: GAMEMODES
-		vehicle: str = Field(
-			description="Internal name of the vehicle",
-			examples=["saab_jas39e", "germ_leopard_2pl", "tiger_had_spain"]
-		)
-	class Showcase_NukeDrop_Model(BaseModel): # Atomic Ace
-		atomic_ace__counter: int = Field(description="Number of times the user has dropped a nuke")
-	class Showcase_NukeKill_Model(BaseModel): # Peacemaker
-		peacemaker__counter: int = Field(description="Number of nuke carriers killed")
-	class Showcase_unitCollector_Model(BaseModel): # Vehicle collector
-		units: list[str] = Field(
-			description="List of internal names of the vehicles showcased",
-			examples=[
-				["ussr_object_279", "ussr_pt_76_57", "douglas_a_1h"],
-				["germ_panther_II","germ_pzkpfw_VI_ausf_b_tiger_IIh_kwk46","germ_flakpanzer_V_Coelian"]
-				])
-		counts: dict[COUNTRIES, int] = Field(description="Number of vehicles collected per country")
-	class Showcase_AceOfSpades_Model(BaseModel): # Ace of spades
-		class AcedUnitsModel(BaseModel):
-			filteredTotal: int
-			Aircraft: dict[SIMPLE_COUNTRIES, int]
-			Boat: dict[SIMPLE_COUNTRIES, int]
-			Helicopter: dict[SIMPLE_COUNTRIES, int]
-			Ship: dict[SIMPLE_COUNTRIES, int]
-			Tank: dict[SIMPLE_COUNTRIES, int]
-		aced_units: AcedUnitsModel
-	class Showcase_Medalist_Model(BaseModel): # Medalist
-		medals: list[str]
-		total_medals: int
-	class Showcase_Achievement_Model(BaseModel): # Achievement Hunter
-		achievements: list[str]
-		total_steam_achievements: int
-	#endregion
-
-	background: str
 	clanName: str = Field(description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""])
 	clanTag: str = Field(description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"])
-	frame: str
 	nick: str
-	pilotIcon: str
-	pilotId: int
-	shcType: str
-	title: str
-	showcase: Showcase_FavMode_Model | Showcase_BH_Model | Showcase_FavUnit_Model | Showcase_NukeDrop_Model | Showcase_NukeKill_Model | Showcase_unitCollector_Model | Showcase_AceOfSpades_Model | Showcase_Medalist_Model | Showcase_Achievement_Model
+
 
 class SelfUserDataModel(BaseModel):
 	class LevelModel(BaseModel):
