@@ -7,7 +7,7 @@ The templates in `src/utils/connection/http/templates/` (and `src/utils/connecti
 
 ## Structure
 The repository has the following directories at its root:
-- `app` - The application source code:
+- `src` - The application source code:
 	- `api` - The FastAPI routers (`v1`, `backends/`, `models/`)
 	- `utils` - A set of utilities used in the code, like:
 		- `connection/` - Network + BLK conversion (`network.py`, `blk_utils.py`, `const.py`, `http/`, `tcp/`, `default_network_cfg.json`)
@@ -69,7 +69,7 @@ This project uses the following external binaries:
 ## File conventions
 - Files use `tabs` for indentation, not spaces
 - Importing is generally done with `from ... import ...`, to reduce the extra entries in IntelliSense
-- Rate limiting via `app.api.shared.limiter`
+- Rate limiting via `src.api.shared.limiter`
 - Use the module-level `logger` for logging
 - In `src/utils/vehicleParser/`, trailing `pass` statements are intentional debug breakpoint anchors — do not remove them
 
