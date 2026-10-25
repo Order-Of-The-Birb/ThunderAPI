@@ -34,7 +34,7 @@ SIMPLE_COUNTRIES = Literal[
 GAMEMODES = Literal[
 	"arcade",
 	"realistic",
-	"hardcore"
+	"simulator"
 ]
 SPECIFIC_GAMEMODES = Literal[
 	"air_arcade",
@@ -121,12 +121,12 @@ class getUserDirect:
 
 	class countriesModel(BaseModel):
 		class maxRanksModel(BaseModel):
-			Aircraft: int
-			Tank: int
-			Ship: int
-			Helicopter: int
-			Boat: int
-			Human: int
+			Aircraft: int = -1
+			Tank: int = -1
+			Ship: int = -1
+			Helicopter: int = -1
+			Boat: int = -1
+			Human: int = -1
 		max_ranks: maxRanksModel
 		numUnits: int = 0
 		numEliteUnits: int = 0
@@ -160,7 +160,7 @@ class getUserDirect:
 class TerseReturnModel(BaseModel):
 	clanName: str = Field(description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""])
 	clanTag: str = Field(description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"])
-	nick: str
+	username: str
 
 
 class SelfUserDataModel(BaseModel):

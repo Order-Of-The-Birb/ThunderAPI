@@ -1,6 +1,7 @@
+from inspect import isawaitable
 from datetime import datetime
 from fastapi import HTTPException
-from typing import Any, Callable
+from typing import Any, Callable, Coroutine
 from collections.abc import Iterable
 
 def dtToTimestamp(dt:datetime) -> int:
@@ -14,27 +15,32 @@ class AuthenticationError(HTTPException):
 
 class dictUtil:
 	class KeyRem:
-		key: str
+		keys: tuple[str, ...]
 
-		def __init__(self, key: str, /):
-			self.key = key
+		def __init__(self, *keys: str):
+			self.keys = tuple(keys)
 
-		def run(self, obj: dict[str, Any]):
-			obj.pop(self.key, None)
+		async def run(self, obj: dict[str, Any]):
+			for key in self.keys:
+				obj.pop(key, None)
 			return obj
 
 	class KeyAdd:
 		key: str
-		value: Any
+		value: Any | Callable[[dict[str, Any]], Any]
 
-		def __init__(self, key: str, value: Any, /):
+		def __init__(self, key: str, value: Any | Callable[[dict[str, Any]], Any], /):
 			self.key = key
 			self.value = value
 
-		def run(self, obj: dict[str, Any]):
+		def _resolve(self) -> Any:
+			return self.value() if callable(self.value) else self.value
+
+		async def run(self, obj: dict[str, Any]):
 			if self.key in obj:
 				raise KeyError(f"Key '{self.key}' already in object")
-			obj[self.key] = self.value
+
+			obj[self.key] = dictUtil._await_maybe(self.value)
 			return obj
 
 	class KeyMod:
@@ -52,7 +58,7 @@ class dictUtil:
 			self.convert = convert
 			self.default = default
 
-		def run(self, obj: dict[str, Any]):
+		async def run(self, obj: dict[str, Any]):
 			if self.key not in obj:
 				if self.default is not ...:
 					obj[self.new_name] = self.convert(self.default)
@@ -64,7 +70,16 @@ class dictUtil:
 			return obj
 
 	@staticmethod
-	def run_all(obj: dict[str, Any], changes:Iterable[KeyMod|KeyRem|KeyAdd]):
+	async def run_all(obj: dict[str, Any], changes:Iterable[KeyMod|KeyRem|KeyAdd|None]):
 		for change in changes:
-			obj = change.run(obj)
+			if change is None:
+				continue
+			tmp = await change.run(obj)
+
 		return obj
+
+	@staticmethod
+	async def _await_maybe(value):
+		if isawaitable(value):
+			return await value
+		return value

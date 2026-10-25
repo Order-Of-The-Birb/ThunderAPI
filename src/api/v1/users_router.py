@@ -8,7 +8,7 @@ from utils.helper import dictUtil
 from utils.connection import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.users import TerseReturnModel, getUserDirect, SelfUserDataModel
+from api.v1.models.users import TerseReturnModel, getUserDirect, SelfUserDataModel, SIMPLE_COUNTRIES
 from api.v1.backends.users import get_terse, get_user, get_self
 
 router = APIRouter(
@@ -31,7 +31,7 @@ async def get_users_terse_info(
 		min_length=1,
 		max_length=50)
 	],
-) -> dict[str, TerseReturnModel]:
+) -> dict[int, TerseReturnModel]:
 	"""Get terse information about users by their IDs."""
 	return await get_terse(user, *id)
 
@@ -62,15 +62,13 @@ async def get_user_direct_meta(
 ) -> getUserDirect.metaModel:
 	data = await get_user(user, userid)
 	SANITIZE = (
-		dictUtil.KeyRem("summary"),
-		dictUtil.KeyRem("statistics"),
-		dictUtil.KeyRem("countries")
+		dictUtil.KeyRem("summary", "statistics", "countries")
 	)
 	return dictUtil.run_all(data, SANITIZE)
 
 @router.get(
 	"/{userid}/stats",
-	summary="Gets statistics about a user"
+	summary="Gets per-vehicle statistics about a user"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct_stats(
@@ -89,13 +87,13 @@ async def get_user_direct_countries(
 	request: faRequest,
 	user: ServerBearer,
 	userid: Annotated[int, Path(title="The ID of the user to get information about", description="The ID of the user to get information about", gt=0)],
-) -> getUserDirect.countriesModel:
+) -> dict[SIMPLE_COUNTRIES, getUserDirect.countriesModel]:
 	return (await get_user(user, userid))["countries"]
 
 
 @router.get(
 	"/{userid}/summary",
-	summary="Gets a summary of a user's statistics per-mode"
+	summary="Gets a summary of a user's statistics per-difficulty and per-vehicle type"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct_summary(
