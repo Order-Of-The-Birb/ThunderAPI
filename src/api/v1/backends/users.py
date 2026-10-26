@@ -93,7 +93,7 @@ async def get_user(user:LoginEntry, userid: int):
 		}
 
 	level = PlayerRank.get_level(data["exp"])
-	data["level"] = {
+	data["rank"] = {
 		"title": PlayerRank.from_level(level).name,
 		"level": level
 	}

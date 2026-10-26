@@ -149,7 +149,7 @@ class getUserDirect:
 		last_login: date
 		registered_at: datetime
 		id: int
-		level: _playerLevelModel
+		rank: _playerLevelModel
 		clan: _clanDataModel | None = Field(default=None, exclude_if=lambda x: x is None)
 		numEliteUnits: int
 		penaltyStatus: str

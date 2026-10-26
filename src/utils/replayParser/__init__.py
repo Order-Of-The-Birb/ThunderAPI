@@ -1,8 +1,9 @@
+from asyncio import sleep
 from logging import getLogger
 from utils.replayParser.parser import ReplayParser
 import utils.connection.network as Network
 from fastapi import HTTPException, status
-from asyncio import sleep
+import utils.cache as Cache
 
 _logger = getLogger(__name__)
 
@@ -10,9 +11,6 @@ difficultyDict = {
 	0: "Arcade",
 	5: "Realistic",
 	10: "Simulator"
-}
-sessionTypeDict = {
-	0: "SQB"
 }
 
 class Replay(dict):
@@ -23,6 +21,10 @@ class Replay(dict):
 		self = cls()
 		if isinstance(replay_id, str): replay_id = int(replay_id, 16) # Forces lowercase hex
 		replay_id = f"{replay_id:016x}"
+
+		cache = await self.get_cached(replay_id)
+		if cache is not None:
+			return cache
 
 		#region wrpl download
 		async def get_data():
@@ -76,12 +78,9 @@ class Replay(dict):
 				"version": resultsData.header.version,
 				"map": resultsData.header.level,
 				"mapSettings": resultsData.header.levelSettings,
-				"type": resultsData.header.battleType,
+				"mapType": resultsData.header.battleType,
 				"difficulty": difficultyDict.get(resultsData.header.diff.difficulty, "Unknown"),
-				"sessionType": resultsData.header.sessionType,
-				"timeLimit": resultsData.header.timeLimit * 60,
-				"scoreLimit": resultsData.header.scoreLimit,
-				"battleClass": resultsData.header.battleClass
+				"battleType": resultsData.header.battleClass
 			},
 			"results": {
 				"team1": {},
@@ -137,4 +136,12 @@ class Replay(dict):
 					add_obj["lineup"]["maxBr"] = max(i["battlerating"] for i in add_obj["lineup"]["vehicles"].values())
 			self["results"][f"team{user["team"]}"][user["name"]] = add_obj
 		# endregion
+		await Cache.CACHES["replay"].add(replay_id, self)
 		return self
+
+	@staticmethod
+	async def get_cached(replay_id: int|str) -> Replay | None:
+		if isinstance(replay_id, str): replay_id = int(replay_id, 16) # Forces lowercase hex
+		replay_id = f"{replay_id:016x}"
+		entry = await Cache.CACHES["replay"].get(replay_id)
+		return entry.obj if entry is not None else None

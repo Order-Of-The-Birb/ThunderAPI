@@ -64,10 +64,15 @@ class dictUtil:
 		async def run(self, obj: dict[str, Any]):
 			if self.key not in obj:
 				if self.default is not ...:
-					obj[self.new_name] = self.convert(self.default)
+					val = self.convert(self.default)
+					if isawaitable(val):
+						val = await val
+					obj[self.new_name] = val
 				return obj
 
 			new_val = self.convert(obj.pop(self.key))
+			if isawaitable(new_val):
+				new_val = await new_val
 
 			obj[self.new_name] = new_val
 			return obj

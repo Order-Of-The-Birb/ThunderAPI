@@ -20,6 +20,7 @@ from utils import users_auth, newsManager
 from utils.auth import scheduler, ServerAuth
 import utils.connection.network as Network
 import utils
+import utils.cache as Cache
 from utils.geo import update_db
 from utils.connection import _populate_serverlist
 from utils.connection.blk_utils import Decompress
@@ -91,22 +92,17 @@ async def lifespan(app: FastAPI):
 	del content
 	#endregion
 
-	newsManager.task = asyncio.create_task(newsManager.mainloop())
-	geolocation_task = asyncio.create_task(update_db())
+	Cache.LONG_RUNNING = (
+		asyncio.create_task(newsManager.mainloop()),
+		asyncio.create_task(update_db())
+	)
+
+	await Cache.start()
 
 	try:
 		yield
 	finally:
-		newsManager.task.cancel()
-		geolocation_task.cancel()
-		try:
-			await newsManager.task
-		except asyncio.CancelledError:
-			pass
-		try:
-			await geolocation_task
-		except (asyncio.CancelledError, RuntimeError):
-			pass
+		await Cache.stop()
 
 		scheduler.shutdown()
 		await users_auth.close()

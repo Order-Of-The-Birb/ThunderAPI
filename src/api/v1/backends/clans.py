@@ -156,7 +156,7 @@ async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str
 			"id": int(clan["_id"]),
 			"name": clan["name"],
 			"tag": clan["tag"],
-			"members": sanitizeMembers(clan["members"]),
+			"members": await sanitizeMembers(clan["members"]),
 			"desc": clan["desc"],
 			"slogan": clan["slogan"],
 			"region": clan["region"]
@@ -172,8 +172,8 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	)
 
 	SANITIZE = (
-		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: (await sanitizeApplicants(x) for _ in '_').__anext__()),
-		dictUtil.KeyMod("members", convert=lambda x: (await sanitizeMembers(x) for _ in '_').__anext__()),
+		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
+		dictUtil.KeyMod("members", convert=lambda x: sanitizeMembers(x)),
 		dictUtil.KeyRem(
 			"transactions",
 			"namel",
@@ -204,14 +204,25 @@ SQB_BRACKET_CACHE_LOCK = Lock()
 async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 	async def get_brackets():
 		async with Network.get("https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446", headers={
-			"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 OPR/117.0.0.0"
+			"User-Agent": "Thunderapi/1.0"
 		}) as resp:
 			resp.raise_for_status()
 			response = await resp.text()
 
-		bs = BeautifulSoup(response, 'html.parser')
-		title = bs.find("div", class_="title-wrapper").find("h1").find("a", class_="fancy-title")
-		year = re_search(r"\([0-9\. ]+ - ([0-9]+\.[0-9]+\.[0-9]+)\)", title.text, IGNORECASE)
+		document = BeautifulSoup(response, 'lxml')
+
+		post = document.select_one("div.topic-body.crawler-post")
+		meta = post.select_one("span.crawler-post-infos>meta[itemprop='dateModified']")
+		if not meta:
+			raise RuntimeError()
+
+		body = post.select("div.post>p")
+		if len(body) < 2:
+			raise RuntimeError()
+
+
+		title = document.find("meta", itemprop="headline").get("content")
+		year = re_search(r"\([0-9\. ]+ - ([0-9]+\.[0-9]+\.[0-9]+)\)", title, IGNORECASE)
 		if not year:
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not fetch forum post title")
 		end_date = datetime.strptime(year.group(1), "%d.%m.%Y").date()
@@ -219,8 +230,8 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 		if end_date < datetime.now(UTC).date():
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Forum post data is outdated. Please try again later.")
 
-		post = str(bs.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
-		del bs
+		post = str(document.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+		del document
 
 		weeks = []
 		for week in post:

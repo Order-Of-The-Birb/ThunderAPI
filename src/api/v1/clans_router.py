@@ -94,7 +94,6 @@ async def get_applicants(
 	applicants = clanData.get("applicants")
 	if applicants is None:
 		return []
-
 	return applicants
 @router.post(
 	"/accept/{userId}",
@@ -266,7 +265,7 @@ async def get_clan_leaderboard_position(
 async def get_brackets(
 	request: faRequest,
 	user: ServerBearer
-) -> tuple[SQBTimeBracket]:
+) -> tuple[SQBTimeBracket, ...]:
 	return await get_sqb_brackets()
 
 @router.get(

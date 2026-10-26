@@ -3,11 +3,11 @@ from typing_extensions import Annotated
 from fastapi import APIRouter, Path, Request as faRequest, Query, status
 
 from utils.replayParser import Replay
+from utils.helper import dictUtil
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.backends.replay import search_replay, ReplayType, ReplayMode, ReplayTechType
-from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel
-
+from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel, ResultsModel, MatchModel
 
 router = APIRouter(
 	prefix="/replay",
@@ -102,3 +102,49 @@ async def get_replay(
 	],
 ):
 	return await Replay.get(replayId)
+
+@router.get(
+	"/{replayId}/teams",
+	summary="Gets results from a specified replay",
+	responses={
+		status.HTTP_200_OK: {"model": ResultsModel},
+		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
+		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
+	})
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
+async def get_replay(
+	request: faRequest,
+	user: ServerBearer,
+	replayId: Annotated[
+		str,
+		Path(
+			title="The replay's ID to get",
+			pattern=r"^[0-9a-fA-F]{1,16}$",
+			description="Must be given in HEX format"
+		),
+	]
+):
+	return await Replay.get(replayId)["results"]
+
+@router.get(
+	"/{replayId}/match",
+	summary="Gets match data from a specified replay",
+	responses={
+		status.HTTP_200_OK: {"model": ResultsModel},
+		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
+		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
+	})
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
+async def get_replay(
+	request: faRequest,
+	user: ServerBearer,
+	replayId: Annotated[
+		str,
+		Path(
+			title="The replay's ID to get",
+			pattern=r"^[0-9a-fA-F]{1,16}$",
+			description="Must be given in HEX format"
+		),
+	]
+):
+	return await Replay.get(replayId)["match"]
