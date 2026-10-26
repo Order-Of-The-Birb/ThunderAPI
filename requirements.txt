@@ -8,11 +8,11 @@ uvicorn
 apscheduler
 python-multipart
 PyGithub
-bs4
 
 # Data processing
 lz4
 bs4
+lxml
 pandas
 pydantic[email]
 cryptography
