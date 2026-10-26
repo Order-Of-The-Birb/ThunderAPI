@@ -28,19 +28,22 @@ class dictUtil:
 	class KeyAdd:
 		key: str
 		value: Any | Callable[[dict[str, Any]], Any]
+		force: bool
 
-		def __init__(self, key: str, value: Any | Callable[[dict[str, Any]], Any], /):
+		def __init__(self, key: str, value: Any | Callable[[dict[str, Any]], Any], /, *, force:bool = False):
 			self.key = key
 			self.value = value
-
-		def _resolve(self) -> Any:
-			return self.value() if callable(self.value) else self.value
+			self.force = force
 
 		async def run(self, obj: dict[str, Any]):
-			if self.key in obj:
+			if self.key in obj and not self.force:
 				raise KeyError(f"Key '{self.key}' already in object")
 
-			obj[self.key] = dictUtil._await_maybe(self.value)
+			val = self.value(obj) if callable(self.value) else self.value
+			if isawaitable(val):
+				val = await val
+
+			obj[self.key] = val
 			return obj
 
 	class KeyMod:
@@ -75,6 +78,8 @@ class dictUtil:
 			if change is None:
 				continue
 			tmp = await change.run(obj)
+			if tmp:
+				obj = tmp
 
 		return obj
 

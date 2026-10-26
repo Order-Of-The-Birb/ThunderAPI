@@ -25,83 +25,15 @@ async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnM
 		),
 		dictUtil.KeyMod("nick", new_name="username")
 	)
-	for k in data:
-		data[int(k)] = dictUtil.run_all(data.pop(k), SANITIZE)
+	for k in dict(data):
+		data[int(k)] = await dictUtil.run_all(data.pop(k), SANITIZE)
 
 	return data
 
 async def get_self(user:LoginEntry):
-	data = {}
-	userData = await Request.send_template(
-		user,
-		"get_public_userstat",
-		userId = user.uidHint
-	)
-	def create_level(obj):
-		_ = PlayerRank.get_level(obj["exp"])
-		return {
-			"name": PlayerRank.from_level(_).label,
-			"rank": _
-		}
-	def create_unitsdata(obj:dict[str, Any]):
-		data = {}
-		for k in userData["era"]:
-			data.setdefault(k, {})
-			data[k]["max_rank"] = userData["era"][k]
-		for k in userData["unitsPerCountry"]:
-			data.setdefault(k, {})
-			data[k]["collection"] = {
-				"overall": userData["unitsPerCountry"][k]["numUnits"],
-				"aced": userData["unitsPerCountry"][k]["numEliteUnits"]
-			}
-		return data
-	async def create_clan(obj:dict[str, Any]):
-		data = {
-			"tag": obj["clanTag"],
-			"id": int(obj["clanId"]),
-			"name": obj["clanName"],
-			"type": obj["clanType"]
-		}
-		data["user"] = {}
-		clanData = await getClan(user, data["id"])
-		for cuser in clanData["members"]:
-			if cuser["uid"] != str(user.uidHint):
-				continue
+	userData = await get_user(user, user.uidHint)
 
-			role = Roles(cuser["role"])
-			platform = Platforms(cuser["platform"])
-			data["user"] = {
-				"initiator": int(cuser["initiator"]) if isinstance(cuser["initiator"], str) else None,
-				"join_timestamp": cuser["date"],
-				"role": {
-					"name": RolesDisplay[role.name].value,
-					"value": role.value
-				},
-				"platform": {
-					"name": platform.name,
-					"value": platform.value
-				}
-			}
-			break
-
-		data["user"]["activity"] = clanData.get("activity", {}).get(str(user.uidHint), {}).get("total", 0)
-		data["user"]["sqb_activity"] = clanData.get("member_ratings", {}).get(str(user.uidHint), {}).get("dr_era5_hist", 0.0)
-		return data
-
-
-	SANITIZE = (
-		dictUtil.KeyMod("userid", convert=lambda x: int(x)),
-		dictUtil.KeyMod("nick", new_name="username"),
-		dictUtil.KeyMod("lastDay", new_name="last_login_date", convert=lambda x: datetime.fromtimestamp(x, UTC).date()),
-		dictUtil.KeyMod("registerDay", new_name="registered_at", convert=lambda x: datetime.fromtimestamp(x, UTC)),
-		dictUtil.KeyMod("acedVehicles", new_name="numEliteUnits"),
-		dictUtil.KeyAdd("unitsData", create_unitsdata),
-		dictUtil.KeyAdd("level", create_level),
-		dictUtil.KeyAdd("squadron", create_clan) if "clanId" in userData else None,
-		dictUtil.KeyRem("exp", "era", "unitsPerCountry")
-	)
-
-	return dictUtil.run_all(userData, SANITIZE)
+	return await dictUtil.KeyRem("summary", "statistics", "countries").run(userData)
 
 async def get_user(user:LoginEntry, userid: int):
 	data = await Request.send_template(
@@ -115,7 +47,7 @@ async def get_user(user:LoginEntry, userid: int):
 		dictUtil.KeyMod("lastDay", new_name="last_login", convert=lambda x: datetime.fromtimestamp(x, UTC).date()),
 		dictUtil.KeyMod("registerDay", new_name="registered_at", convert=lambda x: datetime.fromtimestamp(x, UTC)),
 		dictUtil.KeyRem(
-			"shcType"
+			"shcType",
 			"background",
 			"frame",
 			"icon",
@@ -151,13 +83,15 @@ async def get_user(user:LoginEntry, userid: int):
 	data["countries"] = new_countries_data
 	del new_countries_data
 
-	data["clan"] = {
-		"tag": data["clanTag"],
-		"name": data["clanName"],
-		"type": data["clanType"],
-		"role": data["clanMemberRole"],
-		"id": int(data["clanId"])
-	}
+	if "clanTag" in data: # User is a squadron member
+		data["clan"] = {
+			"tag": data["clanTag"],
+			"name": data["clanName"],
+			"type": data["clanType"],
+			"role": data["clanMemberRole"],
+			"id": int(data["clanId"])
+		}
+
 	level = PlayerRank.get_level(data["exp"])
 	data["level"] = {
 		"title": PlayerRank.from_level(level).name,
@@ -173,17 +107,17 @@ async def get_user(user:LoginEntry, userid: int):
 		dictUtil.KeyMod("online_exp_total", new_name="total_rp")
 	)
 
-	data["userstat"] = dictUtil.KeyRem("new").run(data["userstat"])
+	data["userstat"] = await dictUtil.KeyRem("new").run(data["userstat"])
 	for mode in data["userstat"]:
 		m_data: dict[str, dict[str, int]] = data["userstat"][mode].pop("total")
 		for vehicle, v_data in m_data.items():
-			m_data[vehicle] = dictUtil.run_all(v_data, VEHICLE_SANITIZE)
+			m_data[vehicle] = await dictUtil.run_all(v_data, VEHICLE_SANITIZE)
 		data["userstat"][mode] = m_data
-		data["userstat"] = dictUtil.KeyMod("simulation", new_name="simulator").run(data["userstat"])
+		data["userstat"] = await dictUtil.KeyMod("simulation", new_name="simulator").run(data["userstat"])
 	for mode in data["summary"]:
-		data["summary"][mode] = dictUtil.KeyMod("hardcore", new_name="simulator").run(data["summary"][mode])
+		data["summary"][mode] = await dictUtil.KeyMod("hardcore", new_name="simulator").run(data["summary"][mode])
 
-	data = dictUtil.run_all(data, SANITIZE)
+	data = await dictUtil.run_all(data, SANITIZE)
 
 	return data
 

@@ -8,7 +8,7 @@ from utils.helper import dictUtil
 from utils.connection import Request
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.users import TerseReturnModel, getUserDirect, SelfUserDataModel, SIMPLE_COUNTRIES
+from api.v1.models.users import TerseReturnModel, getUserDirect, SIMPLE_COUNTRIES
 from api.v1.backends.users import get_terse, get_user, get_self
 
 router = APIRouter(
@@ -39,9 +39,9 @@ async def get_users_terse_info(
 	"/self",
 	summary="Get metadata about the logged in user",
 	responses={
-		200: {"model": SelfUserDataModel}
+		200: {"model": getUserDirect.metaModel}
 	},
-	response_model=SelfUserDataModel
+	response_model=getUserDirect.metaModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_self_meta(
@@ -62,9 +62,9 @@ async def get_user_direct_meta(
 ) -> getUserDirect.metaModel:
 	data = await get_user(user, userid)
 	SANITIZE = (
-		dictUtil.KeyRem("summary", "statistics", "countries")
+		dictUtil.KeyRem("summary", "statistics", "countries"),
 	)
-	return dictUtil.run_all(data, SANITIZE)
+	return await dictUtil.run_all(data, SANITIZE)
 
 @router.get(
 	"/{userid}/stats",

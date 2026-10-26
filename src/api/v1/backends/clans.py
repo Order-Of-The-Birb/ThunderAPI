@@ -172,8 +172,8 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	)
 
 	SANITIZE = (
-		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
-		dictUtil.KeyMod("members", convert=lambda x: sanitizeMembers(x)),
+		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: (await sanitizeApplicants(x) for _ in '_').__anext__()),
+		dictUtil.KeyMod("members", convert=lambda x: (await sanitizeMembers(x) for _ in '_').__anext__()),
 		dictUtil.KeyRem(
 			"transactions",
 			"namel",
@@ -184,7 +184,7 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 			"type"
 		),
 	)
-	data = dictUtil.run_all(data, SANITIZE)
+	data = await dictUtil.run_all(data, SANITIZE)
 
 	return data
 
@@ -257,7 +257,7 @@ async def current_sqb_br() -> dict[str, datetime|float]:
 			return week
 	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find current bracket data")
 
-def sanitizeMembers(members:dict|list):
+async def sanitizeMembers(members:dict|list):
 	if members is None:
 		return []
 
@@ -281,11 +281,11 @@ def sanitizeMembers(members:dict|list):
 	)
 
 	for i, member in enumerate(members):
-		members[i] = dictUtil.run_all(member, SANITIZATION)
+		members[i] = await dictUtil.run_all(member, SANITIZATION)
 
 	return members
 
-def sanitizeApplicants(applicants:dict|list|None):
+async def sanitizeApplicants(applicants:dict|list|None):
 	if applicants is None:
 		return []
 
@@ -312,6 +312,6 @@ def sanitizeApplicants(applicants:dict|list|None):
 	)
 
 	for i, applicant in enumerate(applicants):
-		applicants[i] = dictUtil.run_all(applicant, SANITIZATION)
+		applicants[i] = await dictUtil.run_all(applicant, SANITIZATION)
 
 	return applicants

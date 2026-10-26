@@ -150,7 +150,7 @@ class getUserDirect:
 		registered_at: datetime
 		id: int
 		level: _playerLevelModel
-		clan: _clanDataModel
+		clan: _clanDataModel | None = Field(default=None, exclude_if=lambda x: x is None)
 		numEliteUnits: int
 		penaltyStatus: str
 	#summary: _summaryModel
@@ -161,55 +161,6 @@ class TerseReturnModel(BaseModel):
 	clanName: str = Field(description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""])
 	clanTag: str = Field(description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"])
 	username: str
-
-
-class SelfUserDataModel(BaseModel):
-	class LevelModel(BaseModel):
-		name: Literal["Rookie", "Lieutenant", "Captain", "Major", "Colonel", "Commander", "Commodore", "General", "Marshal"]
-		rank: int
-	class UnitsDataModel(BaseModel):
-		class maxRankModel(BaseModel):
-			Aircraft: int = -1
-			Tank: int = -1
-			Ship: int = -1
-			Helicopter: int = -1
-			Boat: int = -1
-			Human: int = -1
-		class collectionModel(BaseModel):
-			overall: int = 0
-			aced: int = 0
-		max_rank: maxRankModel = Field(default_factory=maxRankModel)
-		collection: collectionModel = Field(default_factory=collectionModel)
-	class SquadronModel(BaseModel):
-		class SquadronUserModel(BaseModel):
-			class SquadronRoleModel(BaseModel):
-				name: Literal["Private", "Sergeant", "Officer", "Deputy", "Commander"]
-				value: int
-			class SquadronPlatformModel(BaseModel):
-				name: PLATFORM_NAMES
-				value: int
-			initiator: int | None = None
-			join_timestamp: int
-			role: SquadronRoleModel
-			platform: SquadronPlatformModel
-			activity: int
-			sqb_activity: float
-
-		tag: str
-		id: int
-		name: str
-		type: int
-		user: SquadronUserModel
-
-	nick: str
-	userid: int
-	penaltyStatus: str
-	registerDay: int
-	lastDay: int
-	level: LevelModel
-	acedVehicles: int
-	unitsData: dict[COUNTRIES, UnitsDataModel]
-	squadron: Optional[SquadronModel] = None
 
 USER_RANK: tuple[int] = (
 	0, 500, 1800, 5000, 11600, 23500, 42700, 71700, 113200, 170100,
