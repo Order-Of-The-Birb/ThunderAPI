@@ -124,7 +124,7 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 	}
 	CLAN_CANDIDATE_TIMEOUT = {
 		"code": status.HTTP_400_BAD_REQUEST,
-		"detail":"You are already a candidate for this clan"
+		"detail":"You are already an applicant for this clan"
 	}
 	CLAN_YOU_HAVE_NO_RIGHT = {
 		"code": status.HTTP_403_FORBIDDEN,
@@ -153,6 +153,10 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 	OBSOLETE_USER_PROFILE = {
 		"code": status.HTTP_501_NOT_IMPLEMENTED,
 		"detail": "Non-converted obsolete profile"
+	}
+	USERS_LIST_REQUIRED = {
+		"code": status.HTTP_500_INTERNAL_SERVER_ERROR,
+		"detail": "Unknown error, remove the spaces from the queried name"
 	}
 	@staticmethod
 	def parse(response: bytes) -> None:
