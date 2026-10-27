@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, Any, Coroutine
+from typing import Callable, Any, Coroutine, Awaitable
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import datetime, UTC, timedelta
@@ -38,18 +38,33 @@ class Cache[T]:
 		async with self.LOCK:
 			self.queue.clear()
 
+	def _find(self, key: str) -> Entry | None:
+		for entry in self.queue:
+			if entry.key == key:
+				return entry
+		return None
+
 	async def get(self, key: str) -> Entry | None:
 		await self.cleanup()
 		async with self.LOCK:
-			for entry in self.queue:
-				if entry.key == key:
-					return entry
-		return None
+			return self._find(key)
 
+	async def get_or_compute(self, key: str, factory: Callable[[], Awaitable[T]]) -> T:
+		entry = await self.get(key)
+		if entry is not None:
+			return entry.obj
+		async with self.LOCK:
+			entry = self._find(key)
+			if entry is not None:
+				return entry.obj
+			value = await factory()
+			self.queue.append(self.Entry(key, value))
+			return value
 
 LONG_RUNNING: tuple[asyncio.Task] = () # Set in main.py
 CACHES: dict[str, Cache] = {
-	"replay": Cache()
+	"replay": Cache(),
+	"news": Cache()
 }
 
 runtime_task: asyncio.Task = None
@@ -69,6 +84,8 @@ async def start():
 
 			await asyncio.sleep(15*60)
 	runtime_task = asyncio.create_task(inner_loop())
+def get(key: str):
+	return CACHES.get(key)
 async def stop():
 	global runtime_task, LONG_RUNNING
 	for task in LONG_RUNNING:

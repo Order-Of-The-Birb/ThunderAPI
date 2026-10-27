@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup, Tag
 from utils.helper import dtToTimestamp
 from utils.connection.websocket import WebsocketManager
 import utils.connection.network as Network
+import utils.cache as Cache
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start
@@ -165,7 +166,6 @@ class NewsEntry:
 
 _changelog_maintenance: bool = False
 _news_endpoint_down: bool = False
-_cache_lifetime: timedelta = timedelta(minutes=15)
 class NewsManager:
 	@dataclass(slots=True)
 	class LastSentIDs:
@@ -181,15 +181,10 @@ class NewsManager:
 	task:asyncio.Task
 	websocket_mgr: WebsocketManager
 
-	__CACHED_RETURN: tuple[NewsEntry] | None = None
-	__CACHE_EXPIRE: datetime | None = None
-	__CACHE_LOCK: asyncio.Lock
-
 	def __init__(self):
 		self.__logger = getLogger(__name__)
 		self.websocket_mgr = WebsocketManager()
 		self._sentIDs = self.LastSentIDs()
-		self.__CACHE_LOCK = asyncio.Lock()
 
 		self.__logger.debug("NewsAPI initialized")
 
@@ -228,7 +223,7 @@ class NewsManager:
 			latest_forum = [] if isinstance(latest_forum, BaseException) else latest_forum
 
 			if latest_news or latest_changelogs or latest_major_chlog or latest_forum:
-				await self.clear_cache()
+				await Cache.get("news").clear()
 
 			try:
 				if latest_news:
@@ -273,44 +268,37 @@ class NewsManager:
 
 	async def fetch(self) -> list[NewsEntry]:
 		"""Merges news and changelogs into one list"""
-		cache = await self.check_cache()
-		if cache is not None:
-			return list(cache)
+		cache = Cache.get("news")
+		if cache is None:
+			raise RuntimeError("Could not retrieve cache")
 
-		async with self.__CACHE_LOCK:
-			# Re-check: another task may have filled the cache while we waited
-			if self.__CACHE_EXPIRE is not None and self.__CACHE_EXPIRE >= datetime.now(UTC):
-				return list(self.__CACHED_RETURN)
+		return list(await cache.get_or_compute("news", self._compute_news))
 
-			all_news, all_changelogs, planned_changes = await asyncio.gather(
-				self.fetchNews(),
-				self.fetchChangelogs(),
-				self.fetchForum(),
-			)
+	async def _compute_news(self) -> list[NewsEntry]:
+		all_news, all_changelogs, planned_changes = await asyncio.gather(
+			self.fetchNews(),
+			self.fetchChangelogs(),
+			self.fetchForum(),
+		)
 
-			pinned: list[NewsEntry] = []
-			unpinned: list[NewsEntry] = []
-			for news in all_news:
-				if news.pinned:
-					pinned.append(news)
-				else:
-					unpinned.append(news)
-			for changelog in all_changelogs:
-				if changelog.pinned:
-					pinned.append(changelog)
-				else:
-					unpinned.append(changelog)
-			if planned_changes is not None:
-				unpinned.append(planned_changes)
+		pinned: list[NewsEntry] = []
+		unpinned: list[NewsEntry] = []
+		for news in all_news:
+			if news.pinned:
+				pinned.append(news)
+			else:
+				unpinned.append(news)
+		for changelog in all_changelogs:
+			if changelog.pinned:
+				pinned.append(changelog)
+			else:
+				unpinned.append(changelog)
+		if planned_changes is not None:
+			unpinned.append(planned_changes)
 
-			pinned.sort(key=lambda x: x.created, reverse=True)
-			unpinned.sort(key=lambda x: x.created, reverse=True)
-			combined = pinned + unpinned
-
-			self.__CACHED_RETURN = tuple(combined)
-			self.__CACHE_EXPIRE = datetime.now(UTC) + _cache_lifetime
-
-		return combined
+		pinned.sort(key=lambda x: x.created, reverse=True)
+		unpinned.sort(key=lambda x: x.created, reverse=True)
+		return pinned + unpinned
 
 	#region News
 	async def fetchNews(self) -> list[NewsEntry]:
@@ -494,25 +482,6 @@ class NewsManager:
 		self._sentIDs.PLANNED_BR_CHANGES = ids[0]
 		return entries
 	#endregion
-
-	#region Cache
-	async def clear_cache(self):
-		async with self.__CACHE_LOCK:
-			self.__CACHE_EXPIRE = None
-			self.__CACHED_RETURN = None
-	async def check_cache(self) -> tuple[NewsEntry] | None:
-		async with self.__CACHE_LOCK:
-			now = datetime.now(UTC)
-			if self.__CACHE_EXPIRE is None:
-				return None
-
-			if self.__CACHE_EXPIRE < now:
-				self.__CACHE_EXPIRE = None
-				self.__CACHED_RETURN = None
-				return None
-			return self.__CACHED_RETURN
-	#endregion
-
 
 	def __calcDelay(self) -> int:
 		rn = datetime.now(UTC)
