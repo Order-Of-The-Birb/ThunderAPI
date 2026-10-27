@@ -1,15 +1,34 @@
+from datetime import UTC, datetime
 from os import getenv
+
+from fastapi import APIRouter, Form, HTTPException, Path, Query, status
+from fastapi import Request as faRequest
 from typing_extensions import Annotated
-from fastapi import APIRouter, Path, Query, Form, HTTPException, Request as faRequest, status
-from datetime import datetime, UTC
 
-from utils.connection import Request
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.clans import LogsModel, ClanModel, Roles, ApplicantModel, RolesDisplay, ClanLeaderboardModel, ClanSearchResultModel, SQBTimeBracket, CurrentSQBBracket
+from api.v1.backends.clans import (
+	SQB_BRACKET_TIMES,
+	current_sqb_br,
+	get_sqb_brackets,
+	getClan,
+	getLeaderboard,
+	getLogs,
+	searchClan,
+)
+from api.v1.backends.shared import OptionalAuth, ServerBearer, TokenBearer
 from api.v1.models.base import SuccessEmptyDict
-from api.v1.backends.clans import getClan, searchClan, getLeaderboard, getLogs, get_sqb_brackets, current_sqb_br, SQB_BRACKET_TIMES
-
+from api.v1.models.clans import (
+	ApplicantModel,
+	ClanLeaderboardModel,
+	ClanModel,
+	ClanSearchResultModel,
+	CurrentSQBBracket,
+	LogsModel,
+	Roles,
+	RolesDisplay,
+	SQBTimeBracket,
+)
+from utils.connection import Request
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
 gaijinUserId = Annotated[int, Path(title="The user's ID", gt=0)]

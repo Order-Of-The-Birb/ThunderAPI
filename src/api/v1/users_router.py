@@ -1,15 +1,17 @@
 from os import getenv
-from typing_extensions import Annotated
-from fastapi import APIRouter, Path, Query, Request as faRequest, status
-from fastapi.responses import JSONResponse
 from urllib.parse import unquote
 
-from utils.helper import dictUtil
-from utils.connection import Request
+from fastapi import APIRouter, Path, Query, status
+from fastapi import Request as faRequest
+from fastapi.responses import JSONResponse
+from typing_extensions import Annotated
+
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.users import TerseReturnModel, getUserDirect, SIMPLE_COUNTRIES
-from api.v1.backends.users import get_terse, get_user, get_self
+from api.v1.backends.shared import ServerBearer, TokenBearer
+from api.v1.backends.users import get_self, get_terse, get_user
+from api.v1.models.users import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
+from utils.connection import Request
+from utils.helper import dictUtil
 
 router = APIRouter(
 	prefix="/users",

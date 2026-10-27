@@ -1,17 +1,19 @@
 from asyncio import Lock
+from datetime import UTC, datetime, time
 from logging import getLogger as _gL
-from fastapi import HTTPException, status
+from re import IGNORECASE
+from re import search as re_search
 from typing import Any
-from datetime import datetime, UTC, time
-from bs4 import BeautifulSoup
-from re import search as re_search, IGNORECASE
 
-from utils.connection import Request
+from bs4 import BeautifulSoup
+from fastapi import HTTPException, status
+
+import utils.connection.network as Network
+from api.v1.models.clans import Actions, ClanLeaderboardModel, ClanModel, ClanSearchResultModel, Platforms, Roles
 from utils.auth import LoginEntry
+from utils.connection import Request
 from utils.geo import lookup_city, lookup_utc_offset
 from utils.helper import dictUtil
-from api.v1.models.clans import ClanModel, Roles, Platforms, Actions, ClanLeaderboardModel, ClanSearchResultModel
-import utils.connection.network as Network
 
 _logger = _gL(__name__)
 

@@ -5,7 +5,8 @@ from .clans_router import router as clanRouter
 from .general_router import router as generalRouter
 from .marketplace_router import router as tradeRouter
 from .replays_router import router as replayRouter
-from .units_router import router as unitRouter
+
+#from .units_router import router as unitRouter
 from .users_router import router as userRouter
 
 router = APIRouter(

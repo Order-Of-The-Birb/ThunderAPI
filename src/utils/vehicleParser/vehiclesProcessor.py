@@ -1,18 +1,22 @@
 from asyncio import get_running_loop
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from logging import getLogger
-from typing import Literal, Any
 from pathlib import Path
-from orjson import loads
-from dataclasses import dataclass, asdict
 from re import compile
-from packaging.version import Version
-from subprocess import run as sub_run, PIPE
-from datetime import datetime, UTC
+from subprocess import PIPE
+from subprocess import run as sub_run
 from time import perf_counter
-from pandas import read_csv, DataFrame
-from .constants import *
+from typing import Any, Literal
+
+from orjson import loads
+from packaging.version import Version
+from pandas import DataFrame, read_csv
+
 import utils.connection.network as Network
 from config import VEHICLES
+
+from .constants import *
 
 _logger = getLogger(__name__)
 
@@ -1072,7 +1076,7 @@ class Vehicle:
 	async def from_id(cls, vehicle_id:str):
 		await update_gamefiles()
 		paths = get_vehicle_paths(vehicle_id)
-		if paths == None:
+		if paths is None:
 			raise LookupError(f"Could not find vehicle '{vehicle_id}'")
 		loop = get_running_loop()
 		data:dict[str, Any] = await loop.run_in_executor(None, lambda: loads(paths.vehicleData.read_text()))
@@ -1303,8 +1307,8 @@ async def processVehicles(*vehicle_ids:str) -> tuple[Vehicle]:
 	return tuple(vehicle_entries)
 
 if __name__ == '__main__':
-	from logging import DEBUG, basicConfig
 	from asyncio import new_event_loop
+	from logging import DEBUG, basicConfig
 	basicConfig(
 		level=DEBUG,
 		format="%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s"

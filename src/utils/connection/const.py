@@ -1,7 +1,9 @@
-from enum import IntEnum, Enum, auto
-from typing import NamedTuple
+from enum import Enum, IntEnum, auto
 from re import search as re_search
+from typing import NamedTuple
+
 from fastapi import HTTPException, status
+
 
 class ServerPool(IntEnum):
 	CHAR = 0
@@ -159,12 +161,13 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 
 		try:
 			match = re_search(r"!ERROR:(.*)", code.upper())
-			if match is None: return
+			if match is None:
+				return
 
 			err = GaijinErrorCodes[ match.group(1).strip() ]
 			raise HTTPException(
 				status_code=err.value["code"],
 				detail=err.value["detail"]
 			)
-		except KeyError:
-			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=code)
+		except KeyError as e:
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=code) from e

@@ -1,8 +1,10 @@
-from fastapi import HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from datetime import UTC, datetime
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import Field, StringConstraints
 from typing_extensions import Annotated
-from pydantic import StringConstraints, Field
-from datetime import datetime, UTC
+
 import utils
 from utils import users_auth
 from utils.auth import LoginEntry
@@ -30,7 +32,7 @@ class Authentication:
 			await user.entry._write_values()
 
 	@staticmethod
-	async def get_auth(credentials: HTTPAuthorizationCredentials = Depends(security)):
+	async def get_auth(credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]):
 		user = await users_auth.get(credentials.credentials)
 		if not user:
 			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
@@ -50,7 +52,7 @@ class Authentication:
 
 	@staticmethod
 	async def get_optional_auth(
-		credentials: HTTPAuthorizationCredentials | None = Depends(optional_security),
+		credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],
 	) -> LoginEntry:
 		if credentials is not None:
 			user = await users_auth.get(credentials.credentials)

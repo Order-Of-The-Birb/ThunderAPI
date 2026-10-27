@@ -1,14 +1,14 @@
 from os import getenv
-from typing_extensions import Annotated
 from typing import Literal
-from fastapi import APIRouter, Query, Request, WebSocket, status
 
+from fastapi import APIRouter, Query, Request, WebSocket, status
+from typing_extensions import Annotated
+
+from api.shared import limiter
+from api.v1.backends.general import getLatestGameVer
+from api.v1.backends.shared import IpString, ServerBearer
 from utils import newsManager
 from utils.news import NewsEntry
-from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, IpString
-from api.v1.backends.general import getLatestGameVer
-
 
 router = APIRouter(
 	tags=["general"],
@@ -37,5 +37,5 @@ async def get_news(request: Request, user: ServerBearer) -> list[NewsEntry]:
 	name="News stream"
 )
 async def news_ws(websocket: WebSocket):
-	async for msg in newsManager.websocket_mgr.connect(websocket):
+	async for _msg in newsManager.websocket_mgr.connect(websocket):
 		pass # Ignore all messages

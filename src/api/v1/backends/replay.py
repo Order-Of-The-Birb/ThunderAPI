@@ -1,6 +1,9 @@
+from enum import Enum, StrEnum
+
 from fastapi import HTTPException, status
-from enum import StrEnum, Enum
+
 from utils.auth import LoginEntry
+
 
 class ReplayType(StrEnum):
 	RANDOM_BATTLE = "randomBattle"

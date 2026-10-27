@@ -1,16 +1,17 @@
 from os import getenv
-from typing_extensions import Annotated
+
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from pydantic import EmailStr
+from typing_extensions import Annotated
 
+from api.shared import limiter
+from api.v1.backends.shared import TokenBearer
+from api.v1.models.auth import Login, LoginToken
+from api.v1.models.base import GenericEmptyResponse
 from utils import users_auth
 from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
-from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.models.auth import Login, LoginToken
-from api.v1.models.base import GenericEmptyResponse
 
 router = APIRouter(
 	tags=["authentication"],

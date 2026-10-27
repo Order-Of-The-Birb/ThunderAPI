@@ -1,6 +1,6 @@
+from copy import deepcopy
 from json import load as _load
 from pathlib import Path
-from copy import deepcopy
 
 __ROOT = Path(__file__).parent
 

@@ -1,15 +1,16 @@
 """Library code for geolocation"""
-from os import replace as file_replace
-from asyncio import to_thread
-from geoip2.database import Reader
-from geoip2.models import City
-from geoip2.errors import AddressNotFoundError
-from asyncio import sleep
-from github import Github
-from datetime import datetime, UTC
-from zoneinfo import ZoneInfo
-from threading import Lock
+from asyncio import sleep, to_thread
+from datetime import UTC, datetime
 from logging import getLogger
+from os import replace as file_replace
+from threading import Lock
+from zoneinfo import ZoneInfo
+
+from geoip2.database import Reader
+from geoip2.errors import AddressNotFoundError
+from geoip2.models import City
+from github import Github
+
 from config import GEOLITE
 
 _logger = getLogger(__name__)
@@ -41,7 +42,7 @@ async def update_db():
         try:
             _github_repo = await to_thread(lambda: Github().get_repo("P3TERX/GeoLite.mmdb"))
         except Exception:
-            _logger.error(f"Failed to get GeoLite repository, retrying in 1 minute")
+            _logger.error("Failed to get GeoLite repository, retrying in 1 minute")
             await sleep(60)
 
     while True:
@@ -53,7 +54,7 @@ async def update_db():
                 for asset in latest.assets:
                     if asset.name != "GeoLite2-City.mmdb":
                         continue
-                    await to_thread(lambda: asset.download_asset(GEOLITE.TMP))
+                    await to_thread(asset.download_asset, GEOLITE.TMP)
                     with _lock:
                         file_replace(GEOLITE.TMP, GEOLITE.DB)
                         GEOLITE.HASH.write_text(str(latest.id))

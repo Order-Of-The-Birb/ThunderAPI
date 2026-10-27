@@ -1,16 +1,19 @@
-import re, asyncio
-from logging import getLogger, Logger
-from aiohttp.client_exceptions import ClientResponseError
-from datetime import datetime, time, UTC, timedelta
+import asyncio
+import re
 from asyncio import sleep
-from typing import Literal, Any
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime, time
 from enum import IntEnum
+from logging import Logger, getLogger
+from typing import Any, Literal
+
+from aiohttp.client_exceptions import ClientResponseError
 from bs4 import BeautifulSoup, Tag
-from utils.helper import dtToTimestamp
-from utils.connection.websocket import WebsocketManager
-import utils.connection.network as Network
+
 import utils.cache as Cache
+import utils.connection.network as Network
+from utils.connection.websocket import WebsocketManager
+from utils.helper import dtToTimestamp
 
 fasterUpdate = (
 	time(hour=11, minute=0, tzinfo=UTC), # Start
@@ -60,7 +63,7 @@ class NewsEntry:
 		while title.strip()[0] == "[":
 			tag = re.search(r"\[([A-z]+)\]", title, re.IGNORECASE)
 			if tag is not None:
-				title = re.sub(r"\[([A-z]+)\]", "", title, 1, re.IGNORECASE)
+				title = re.sub(r"\[([A-z]+)\]", "", title, count=1, flags=re.IGNORECASE)
 				tags.add(tag.group(1))
 			else:
 				raise RuntimeError(f"Somehow the first character is still '[' in \"{title}\", with no tags left")

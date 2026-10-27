@@ -1,9 +1,9 @@
-from utils.auth import UserAuth, AuthenticationError, ServerAuth
+from utils.auth import AuthenticationError as AuthenticationError
+from utils.auth import ServerAuth, UserAuth
+from utils.news import NewsManager
+from utils.vehicleParser import Vehicles
+
 users_auth = UserAuth()
 server_auth: ServerAuth | None = None # Start is deferred to app lifetime
-
-from utils.vehicleParser import Vehicles
 vehicle_cache = Vehicles()
-
-from utils.news import NewsManager
 newsManager = NewsManager()

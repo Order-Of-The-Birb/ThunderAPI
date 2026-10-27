@@ -1,32 +1,33 @@
-import logging, asyncio
-
-logger = logging.getLogger()
-
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+from dataclasses import asdict, dataclass
+from json import loads
 from logging.handlers import TimedRotatingFileHandler
+from os import getenv, path
+
 from fastapi import FastAPI, status
-from fastapi.openapi.utils import get_openapi
 from fastapi.openapi.docs import get_swagger_ui_html
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.openapi.utils import get_openapi
+from fastapi.responses import HTMLResponse, JSONResponse
+from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from uvicorn import run as uvicorn_run
-from os import getenv, path
-from contextlib import asynccontextmanager
-from dataclasses import dataclass, asdict
-from json import loads
 
-from utils import users_auth, newsManager
-from utils.auth import scheduler, ServerAuth
-import utils.connection.network as Network
 import utils
 import utils.cache as Cache
-from utils.geo import update_db
-from utils.connection import _populate_serverlist
-from utils.connection.blk_utils import Decompress
+import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import SWAGGER_CSS, SWAGGER_JS, DEFAULT_NETWORK_CFG, LOGS_DIR, HOST, PORT
+from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS
+from utils import newsManager, users_auth
+from utils.auth import ServerAuth, scheduler
+from utils.connection import _populate_serverlist
+from utils.connection.blk_utils import Decompress
+from utils.geo import update_db
+
+logger = logging.getLogger()
 
 logging.getLogger("aiosqlite").setLevel(logging.WARNING)
 logging.getLogger("asyncio").setLevel(logging.WARNING)
@@ -86,7 +87,7 @@ async def lifespan(app: FastAPI):
 		except Exception:
 			pass
 	if not content:
-		logger.warning(f"Failed to fetch server list, using default server list")
+		logger.warning("Failed to fetch server list, using default server list")
 		content = loads(DEFAULT_NETWORK_CFG.read_text())
 	_populate_serverlist(content)
 	del content
@@ -185,8 +186,8 @@ def custom_openapi():
 		tags=app.openapi_tags,
 	)
 
-	for path in openapi_schema["paths"].values():
-		for method in path.values():
+	for ep_path in openapi_schema["paths"].values():
+		for method in ep_path.values():
 			method["responses"].pop("422", None)
 
 	for route in app.routes:
@@ -243,7 +244,7 @@ def main():
 		return path.join(dirname, f"{date}.log")
 	handler = TimedRotatingFileHandler(LOGS_DIR / "latest.log", when="midnight", interval=1, utc=True, backupCount=5)
 	handler.suffix = "%Y-%m-%d"
-	formatter = logging.Formatter(f"%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+	formatter = logging.Formatter("%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 	handler.setFormatter(formatter)
 	handler.namer = log_namer
 	logger.addHandler(handler)

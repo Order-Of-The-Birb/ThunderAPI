@@ -1,12 +1,15 @@
+from asyncio import Event, Lock
+from json import loads
+from typing import Any, Literal, overload
+
 from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
-from fastapi.concurrency import asynccontextmanager
 from fastapi import HTTPException
-from asyncio import Lock, Event
-from typing import Any, Literal, overload
-from json import loads
+from fastapi.concurrency import asynccontextmanager
 
-class NetworkError(HTTPException): pass
+
+class NetworkError(HTTPException):
+	pass
 
 __session: ClientSession | None = None
 __closing = False

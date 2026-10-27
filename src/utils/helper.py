@@ -1,8 +1,10 @@
-from inspect import isawaitable
-from datetime import datetime
-from fastapi import HTTPException
-from typing import Any, Callable, Coroutine
 from collections.abc import Iterable
+from datetime import datetime
+from inspect import isawaitable
+from typing import Any, Callable
+
+from fastapi import HTTPException
+
 
 def dtToTimestamp(dt:datetime) -> int:
 	return int(dt.timestamp())

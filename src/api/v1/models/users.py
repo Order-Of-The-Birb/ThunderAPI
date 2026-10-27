@@ -1,11 +1,11 @@
 from __future__ import annotations
-from typing import Literal, Optional
-from pydantic import BaseModel, Field
-from ..backends.shared import IntString
-from enum import Enum
+
 from bisect import bisect_right
-from .clans import PLATFORM_NAMES
-from datetime import datetime, date
+from datetime import date, datetime
+from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 COUNTRIES = Literal[
 	"country_usa",

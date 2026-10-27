@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from logging import getLogger
 from pathlib import Path
-from utils.vehicleParser.vehiclesProcessor import Vehicle, Weapon, Sensor
+
 from config import VEHICLES
+from utils.vehicleParser.vehiclesProcessor import Sensor, Vehicle, Weapon
 
 _logger = getLogger(__name__)
 

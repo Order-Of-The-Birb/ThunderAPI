@@ -1,16 +1,15 @@
 from os import getenv
-from typing_extensions import Annotated
-from random import randint
-from datetime import datetime, UTC
-from fastapi import APIRouter, Query, Path, Request as faRequest, HTTPException, status
 
-from utils.connection import Request
-from utils.helper import dtToTimestampMs
+from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import Request as faRequest
+from typing_extensions import Annotated
+
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.backends.marketplace import Order, InventoryItem, Item
-from api.v1.models.marketplace import Models
+from api.v1.backends.marketplace import InventoryItem, Item, Order
+from api.v1.backends.shared import ServerBearer, TokenBearer
 from api.v1.models.base import GenericEmptyResponse
+from api.v1.models.marketplace import Models
+from utils.connection import Request
 
 router = APIRouter(
 	prefix="/market",

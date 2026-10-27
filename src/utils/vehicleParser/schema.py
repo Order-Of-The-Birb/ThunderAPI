@@ -1,6 +1,7 @@
 from enum import StrEnum
 from typing import ClassVar
 
+
 class _tableColumns(StrEnum):
 	__table__: ClassVar[str]
 

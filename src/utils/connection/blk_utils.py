@@ -1,12 +1,16 @@
 import struct
 from asyncio import to_thread
-from logging import getLogger
+from bz2 import compress as bzcompress
+from bz2 import decompress as bzdecompress
 from enum import IntEnum
-from subprocess import run as run_process
 from json import loads
-from lz4.block import compress as lz4compress, decompress as lz4decompress
-from bz2 import compress as bzcompress, decompress as bzdecompress
-from config import WT_EXT_CLI, BINBLK
+from logging import getLogger
+from subprocess import run as run_process
+
+from lz4.block import compress as lz4compress
+from lz4.block import decompress as lz4decompress
+
+from config import BINBLK, WT_EXT_CLI
 
 _logger = getLogger(__name__)
 
@@ -68,7 +72,7 @@ class Decompress(dict):
 		try:
 			return bzdecompress(data[offset:])
 		except Exception as e:
-			raise ValueError(f"BZip2 decompression failed: {e}")
+			raise ValueError(f"BZip2 decompression failed: {e}") from e
 
 	def as_dict(self):
 		return dict(self)

@@ -1,9 +1,9 @@
 import asyncio
-from typing import Callable, Any, Coroutine, Awaitable
 from collections import deque
 from dataclasses import dataclass, field
-from datetime import datetime, UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from logging import getLogger
+from typing import Any, Awaitable, Callable, Coroutine
 
 _logger = getLogger(__name__)
 

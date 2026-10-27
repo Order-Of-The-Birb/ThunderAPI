@@ -1,11 +1,10 @@
-from datetime import datetime, UTC
-from typing import Any
-from utils.connection import Request
+from datetime import UTC, datetime
+
+from api.v1.models.users import PlayerRank, TerseReturnModel
 from utils.auth import LoginEntry
+from utils.connection import Request
 from utils.helper import dictUtil
-from api.v1.backends.clans import getClan, Platforms
-from api.v1.models.clans import RolesDisplay, Roles
-from api.v1.models.users import TerseReturnModel, PlayerRank
+
 
 async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnModel]:
 	data = await Request.send_template(

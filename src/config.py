@@ -1,7 +1,6 @@
 from os import getenv
 from pathlib import Path
 
-
 __DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
 
 DATA_DIR = Path("/data/") if not __DEBUG_MODE else Path(__file__).parent.parent / "data"

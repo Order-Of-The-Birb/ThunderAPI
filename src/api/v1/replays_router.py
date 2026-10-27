@@ -1,13 +1,14 @@
 from os import getenv
-from typing_extensions import Annotated
-from fastapi import APIRouter, Path, Request as faRequest, Query, status
 
-from utils.replayParser import Replay
-from utils.helper import dictUtil
+from fastapi import APIRouter, Path, Query, status
+from fastapi import Request as faRequest
+from typing_extensions import Annotated
+
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.backends.replay import search_replay, ReplayType, ReplayMode, ReplayTechType
-from api.v1.models.replay import SearchModel, DataModel, ReplayNotFoundModel, ResultsModel, MatchModel
+from api.v1.backends.replay import ReplayMode, ReplayTechType, ReplayType, search_replay
+from api.v1.backends.shared import ServerBearer, TokenBearer
+from api.v1.models.replay import DataModel, ReplayNotFoundModel, ResultsModel
+from utils.replayParser import Replay
 
 router = APIRouter(
 	prefix="/replay",
@@ -112,7 +113,7 @@ async def get_replay(
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
 	})
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
-async def get_replay(
+async def get_replay_teams(
 	request: faRequest,
 	user: ServerBearer,
 	replayId: Annotated[
@@ -135,7 +136,7 @@ async def get_replay(
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
 	})
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
-async def get_replay(
+async def get_replay_match(
 	request: faRequest,
 	user: ServerBearer,
 	replayId: Annotated[

@@ -1,10 +1,13 @@
 from dataclasses import dataclass
-from fastapi import status
-from fastapi.exceptions import HTTPException
+from enum import Enum, IntEnum, auto
 from json import JSONDecodeError
 from typing import Any
+
+from fastapi import status
+from fastapi.exceptions import HTTPException
+
 from utils.connection.blk_utils import Decompress
-from enum import IntEnum, Enum, auto
+
 
 @dataclass
 class _ReplayHeader:
@@ -73,9 +76,9 @@ class _ReplayHeader:
 
 			if field_type == '_Difficulty':
 				value = self._Difficulty(data[offset])
-			elif field_type == str:
+			elif field_type is str:
 				value = data[offset:offset+size].split(b'\x00')[0].decode('ascii')
-			elif field_type == int:
+			elif field_type is int:
 				value = int.from_bytes(data[offset:offset+size.value], 'little')
 			elif field_type is None: # Padding
 				offset += size
@@ -96,6 +99,6 @@ class ReplayParser:
 			self.body = (await Decompress.async_init(replay[self.header.rezOffset:])).as_dict()
 		except RuntimeError:
 			self.body = {}
-		except JSONDecodeError:
-			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason")
+		except JSONDecodeError as e:
+			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason") from e
 		return self

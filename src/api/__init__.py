@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status
-from api.v1 import router as v1Router
+
 from api.root import router as rootRouter
+from api.v1 import router as v1Router
 
 router = APIRouter(
 	prefix="",

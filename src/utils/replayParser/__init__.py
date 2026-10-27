@@ -1,9 +1,11 @@
 from asyncio import sleep
 from logging import getLogger
-from utils.replayParser.parser import ReplayParser
-import utils.connection.network as Network
+
 from fastapi import HTTPException, status
+
 import utils.cache as Cache
+import utils.connection.network as Network
+from utils.replayParser.parser import ReplayParser
 
 _logger = getLogger(__name__)
 
@@ -19,7 +21,8 @@ class Replay(dict):
 	@classmethod
 	async def get(cls, replay_id:int|str):
 		self = cls()
-		if isinstance(replay_id, str): replay_id = int(replay_id, 16) # Forces lowercase hex
+		if isinstance(replay_id, str):
+			replay_id = int(replay_id, 16) # Forces lowercase hex
 		replay_id = f"{replay_id:016x}"
 
 		cache = await self.get_cached(replay_id)
@@ -125,7 +128,8 @@ class Replay(dict):
 			add_obj["lineup"]["vehicles"] = {}
 			if lineupData is not None:
 				for key, value in lineupData["crafts_info"].items():
-					if key == "__array": continue
+					if key == "__array":
+						continue
 					add_obj["lineup"]["vehicles"][value["name"]] = {
 						"rank": value["rank"],
 						"battlerating": round(value["mrank"] / 3, 1)
@@ -141,7 +145,8 @@ class Replay(dict):
 
 	@staticmethod
 	async def get_cached(replay_id: int|str) -> Replay | None:
-		if isinstance(replay_id, str): replay_id = int(replay_id, 16) # Forces lowercase hex
+		if isinstance(replay_id, str):
+			replay_id = int(replay_id, 16) # Forces lowercase hex
 		replay_id = f"{replay_id:016x}"
 		entry = await Cache.CACHES["replay"].get(replay_id)
 		return entry.obj if entry is not None else None

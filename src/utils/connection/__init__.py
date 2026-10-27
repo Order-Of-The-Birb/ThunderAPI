@@ -1,16 +1,18 @@
-from random import choice
-from typing import Any, TYPE_CHECKING
 from collections.abc import Awaitable, Callable
-from fastapi import HTTPException, status
-from aiohttp import ClientResponse, ClientSession
 from datetime import timedelta
-from random import randint
-from json import dumps, loads, JSONDecodeError
+from json import JSONDecodeError, dumps, loads
+from random import choice, randint
+from typing import TYPE_CHECKING, Any
+
+from aiohttp import ClientResponse, ClientSession
+from fastapi import HTTPException, status
+
 import utils.connection.network as Network
-from utils.helper import AuthenticationError
 from utils.connection.blk_utils import Compress, Decompress
-from utils.connection.templates import TEMPLATES, load as load_template
-from utils.connection.const import Actions, GaijinErrorCodes, AuthLevel, ServerPool
+from utils.connection.const import Actions, AuthLevel, GaijinErrorCodes, ServerPool
+from utils.connection.templates import TEMPLATES
+from utils.connection.templates import load as load_template
+from utils.helper import AuthenticationError
 
 if TYPE_CHECKING:
 	from utils.auth import LoginEntry
@@ -108,10 +110,12 @@ class Request:
 		template: str,
 		/, *,
 		session:ClientSession|None=None,
-		remove_keys: set[str] = set(),
+		remove_keys: set[str] | None = None,
 		response_provider: ResponseProvider | None = None,
 		**data:str|dict[str, Any]
 	) -> "Request":
+		if remove_keys is None:
+			remove_keys = set()
 		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes=30):
 			await user.entry.refresh()
 		if template not in TEMPLATES:
@@ -155,7 +159,7 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
+	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, response_provider=response_provider, **data)
 		return await cls.send()
 
@@ -201,7 +205,8 @@ class Request:
 			raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Authentication required for this request, but no token is available. Please ensure you have logged in successfully.")
 
 	async def send(self) -> dict[str, Any]:
-		if self.action is None and self.url is None: return
+		if self.action is None and self.url is None:
+			return
 		if self.user.entry is None and self.action.value.auth is AuthLevel.USER:
 			raise HTTPException(403, "You must be logged in for this action")
 

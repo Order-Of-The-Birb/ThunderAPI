@@ -1,16 +1,18 @@
-import asyncio, math
-from fastapi import HTTPException, status
+import asyncio
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
+from enum import StrEnum
 from random import randint
 from typing import Any, TypedDict
-from dataclasses import dataclass, asdict, field
-from enum import StrEnum
-from datetime import datetime, UTC
 
-from utils.connection import Request
-from utils.auth import LoginEntry
-from utils.helper import dictUtil, dtToTimestampMs
+from fastapi import HTTPException, status
+
 import utils.connection.network as Network
 from api.v1.backends.shared import IntString
+from utils.auth import LoginEntry
+from utils.connection import Request
+from utils.helper import dictUtil, dtToTimestampMs
+
 
 async def get_asset_class(user: LoginEntry, hash:str) -> list[dict[str, str|IntString]]:
 	return await Request.send_template(

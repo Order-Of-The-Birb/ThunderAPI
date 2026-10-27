@@ -1,10 +1,12 @@
 from os import getenv
-from typing_extensions import Annotated
-from fastapi import APIRouter, Path, Request, status
 
-from utils import vehicle_cache
+from fastapi import APIRouter, Path, Request, status
+from typing_extensions import Annotated
+
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
+from api.v1.backends.shared import ServerBearer
+from utils import vehicle_cache
+
 #from api.models.units import # Currently no models have been implemented
 
 router = APIRouter(

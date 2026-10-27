@@ -1,26 +1,27 @@
 from __future__ import annotations
-from re import sub as re_sub, search as re_search
+
+from asyncio import Event, Lock, Task, get_running_loop, to_thread, wait_for
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum
+from hashlib import md5, sha256
 from logging import getLogger
-from asyncio import Lock, Task, get_running_loop, Event, wait_for, to_thread
+from os import getenv, urandom
+from re import sub as re_sub
+from secrets import token_urlsafe
+from typing import Any, ClassVar, Literal
+
+from aiosqlite import OperationalError, Row, connect
+from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from apscheduler.job import Job
-from aiosqlite import connect, Row, OperationalError
-from os import getenv, urandom
-from datetime import UTC, datetime, timedelta
-from typing import ClassVar, Literal, Any
-from fastapi import HTTPException, status
-from hashlib import sha256, md5
-from secrets import token_urlsafe
-from enum import StrEnum
-from contextlib import asynccontextmanager
-from dataclasses import dataclass, asdict, field
-from base64 import b64encode
 from cryptography.fernet import Fernet
+from fastapi import HTTPException, status
 
-from utils.helper import dtToTimestamp, AuthenticationError
 import utils.connection.network as Network
 from config import USERS_DB
+from utils.helper import AuthenticationError, dtToTimestamp
 
 _logger = getLogger(__name__)
 
@@ -606,8 +607,8 @@ async def login(email: str, password: str):
 		e = _PENDING_2FA[email]
 		try:
 			await wait_for(e.login.wait(), timeout=60)
-		except TimeoutError:
-			raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA timed out")
+		except TimeoutError as err:
+			raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA timed out") from err
 		if e.login_data["status"] == "2STEPERROR":
 			raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Invalid 2FA code provided.")
 		if e.login_data["status"] == "LOGINERROR":
@@ -631,10 +632,15 @@ async def login(email: str, password: str):
 			data = await Network.handle_response(r)
 
 		if data["status"] == "2STEP":
+
 			two_factor_types = set()
-			if data.get("hasGjPass"): two_factor_types.add("GaijinPass")
-			if data.get("hasTwoStepEmail"): two_factor_types.add("Email")
-			if data.get("hasWTR"): two_factor_types.add("WTR")
+			if data.get("hasGjPass"):
+				two_factor_types.add("GaijinPass")
+			if data.get("hasTwoStepEmail"):
+				two_factor_types.add("Email")
+			if data.get("hasWTR"):
+				two_factor_types.add("WTR")
+
 			_PENDING_2FA[email] = _pending2FA(
 				password_hash= md5(password.encode()).hexdigest(),
 				requestId= data['requestId'],

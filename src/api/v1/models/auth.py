@@ -1,5 +1,7 @@
 from typing import Literal
-from pydantic import Field, BaseModel
+
+from pydantic import BaseModel, Field
+
 
 class Login: # /v1/login endpoint
 	class LoginResponse(BaseModel):
