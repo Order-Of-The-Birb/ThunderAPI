@@ -5,30 +5,26 @@
 
 	const OPENAPI_URL = "/openapi.json";
 
-
 	// ============================================================
 	// Load WebSocket definitions
 	// ============================================================
 
-	const schema = await fetch(OPENAPI_URL).then(response => response.json());
+	const schema = await fetch(OPENAPI_URL).then((response) => response.json());
 
 	const websocketEndpoints = [];
 
 	for (const [path, definition] of Object.entries(schema.paths ?? {})) {
 		const websocket = definition["x-websocket"];
 
-		if (!websocket)
-			continue;
+		if (!websocket) continue;
 
 		websocketEndpoints.push({
 			path,
-			...websocket
+			...websocket,
 		});
 	}
 
-	if (websocketEndpoints.length === 0)
-		return;
-
+	if (websocketEndpoints.length === 0) return;
 
 	// ============================================================
 	// Wait until Swagger UI has rendered its operation groups
@@ -37,26 +33,18 @@
 	const waitForSwagger = setInterval(() => {
 		const swagger = document.querySelector("#swagger-ui .swagger-ui");
 
-		if (!swagger)
-			return;
+		if (!swagger) return;
 
-		const tagSections = swagger.querySelectorAll(
-			".opblock-tag-section"
-		);
+		const tagSections = swagger.querySelectorAll(".opblock-tag-section");
 
-		if (tagSections.length === 0)
-			return;
+		if (tagSections.length === 0) return;
 
 		clearInterval(waitForSwagger);
 
 		for (const endpoint of websocketEndpoints) {
-			insertWebSocketEndpoint(
-				endpoint,
-				tagSections
-			);
+			insertWebSocketEndpoint(endpoint, tagSections);
 		}
 	}, 50);
-
 
 	// ============================================================
 	// Insert WebSocket into its Swagger tag/category
@@ -64,53 +52,86 @@
 
 	function insertWebSocketEndpoint(endpoint, tagSections) {
 		const tags =
-			Array.isArray(endpoint.tags) &&
-			endpoint.tags.length > 0
+			Array.isArray(endpoint.tags) && endpoint.tags.length > 0
 				? endpoint.tags
 				: ["default"];
 
 		const tag = tags[0];
 
-		const targetSection = findTagSection(
-			tag,
-			tagSections
-		);
+		const targetSection = findTagSection(tag, tagSections);
 
 		if (!targetSection) {
 			console.warn(
 				`Swagger UI: could not find tag "${tag}" ` +
-				`for WebSocket ${endpoint.path}`
+					`for WebSocket ${endpoint.path}`,
 			);
 
 			return;
 		}
 
-		const operationId = createOperationId(
-			tag,
-			endpoint.path
-		);
+		const operationId = createOperationId(tag, endpoint.path);
 
 		// Prevent duplicates in case this script is somehow
 		// executed more than once.
-		if (document.getElementById(operationId))
-			return;
+		if (document.getElementById(operationId)) return;
 
-		const block = createWebSocketBlock(
-			endpoint,
-			tag,
-			operationId
-		);
+		const block = createWebSocketBlock(endpoint, tag, operationId);
 
 		/*
-		 * Swagger's operations are direct children of the
-		 * .opblock-tag-section after the tag heading.
+		 * Swagger UI renders its operations inside a .no-margin
+		 * container that is a direct child of the
+		 * .opblock-tag-section, right after the tag heading.
 		 *
-		 * Appending here therefore places WS alongside GET,
-		 * POST, DELETE, etc.
+		 * When a category is collapsed, React unmounts that
+		 * container entirely and renders a <noscript> in its
+		 * place; expanding it again creates a brand new
+		 * .no-margin element.
+		 *
+		 * Appending the WebSocket block directly to the section
+		 * therefore leaves it visible while the category is
+		 * collapsed and breaks React's DOM reconciliation
+		 * (which is what moved it to the top on reopen).
+		 *
+		 * Instead, mount the block inside the same .no-margin
+		 * container as the regular operations, and re-mount it
+		 * whenever React replaces that container.
 		 */
-		targetSection.appendChild(block);
-	}
 
+		const getOperationsContainer = () =>
+			targetSection.querySelector(":scope > .no-margin");
+
+		const mountBlock = () => {
+			const container = getOperationsContainer();
+
+			/*
+			 * Collapsed sections have no .no-margin element,
+			 * so the block disappears together with the rest
+			 * of the operations.
+			 */
+			if (!container) return;
+
+			/*
+			 * Re-mounting the same element is a no-op, which
+			 * also avoids observer feedback loops.
+			 */
+			if (block.parentNode === container) return;
+
+			container.appendChild(block);
+		};
+
+		mountBlock();
+
+		/*
+		 * Keep the block in sync with Swagger UI's
+		 * collapse/expand behaviour. React swaps the section's
+		 * direct children (<noscript> <-> .no-margin) when the
+		 * category is toggled, which is exactly what this
+		 * observer watches for.
+		 */
+		const observer = new MutationObserver(mountBlock);
+
+		observer.observe(targetSection, { childList: true });
+	}
 
 	// ============================================================
 	// Find existing Swagger category
@@ -118,12 +139,9 @@
 
 	function findTagSection(tag, tagSections) {
 		for (const section of tagSections) {
-			const heading = section.querySelector(
-				":scope > .opblock-tag"
-			);
+			const heading = section.querySelector(":scope > .opblock-tag");
 
-			if (!heading)
-				continue;
+			if (!heading) continue;
 
 			/*
 			 * Swagger's heading can contain the tag name,
@@ -135,9 +153,7 @@
 				heading.querySelector(".nostyle span") ??
 				heading.querySelector(".nostyle");
 
-			if (
-				nameElement?.textContent?.trim() === tag
-			) {
+			if (nameElement?.textContent?.trim() === tag) {
 				return section;
 			}
 
@@ -158,16 +174,11 @@
 		return null;
 	}
 
-
 	// ============================================================
 	// Create WebSocket operation
 	// ============================================================
 
-	function createWebSocketBlock(
-		endpoint,
-		tag,
-		operationId
-	) {
+	function createWebSocketBlock(endpoint, tag, operationId) {
 		// --------------------------------------------------------
 		// Root
 		// --------------------------------------------------------
@@ -177,33 +188,24 @@
 		block.id = operationId;
 		block.className = "opblock opblock-ws";
 
-
 		// --------------------------------------------------------
 		// Summary
 		// --------------------------------------------------------
 
 		const summary = document.createElement("div");
 
-		summary.className =
-			"opblock-summary opblock-summary-ws";
-
+		summary.className = "opblock-summary opblock-summary-ws";
 
 		// --------------------------------------------------------
 		// Main summary control
 		// --------------------------------------------------------
 
-		const summaryControl =
-			document.createElement("button");
+		const summaryControl = document.createElement("button");
 
 		summaryControl.type = "button";
-		summaryControl.className =
-			"opblock-summary-control";
+		summaryControl.className = "opblock-summary-control";
 
-		summaryControl.setAttribute(
-			"aria-expanded",
-			"false"
-		);
-
+		summaryControl.setAttribute("aria-expanded", "false");
 
 		// WS method label
 
@@ -212,15 +214,12 @@
 		method.className = "opblock-summary-method";
 		method.textContent = "WS";
 
-
 		// Path + summary description wrapper
 
-		const pathDescriptionWrapper =
-			document.createElement("div");
+		const pathDescriptionWrapper = document.createElement("div");
 
 		pathDescriptionWrapper.className =
 			"opblock-summary-path-description-wrapper";
-
 
 		// Path
 
@@ -229,57 +228,40 @@
 		path.className = "opblock-summary-path";
 		path.dataset.path = endpoint.path;
 
-
 		const pathLink = document.createElement("a");
 
 		pathLink.className = "nostyle";
 		pathLink.href = `#${operationId}`;
 
-
-		pathLink.appendChild(
-			createSwaggerPathText(endpoint.path)
-		);
-
+		pathLink.appendChild(createSwaggerPathText(endpoint.path));
 
 		path.appendChild(pathLink);
 
-
 		// Summary
 
-		const description =
-			document.createElement("div");
+		const description = document.createElement("div");
 
-		description.className =
-			"opblock-summary-description";
+		description.className = "opblock-summary-description";
 
-		description.textContent =
-			endpoint.summary ?? "";
-
+		description.textContent = endpoint.summary ?? "";
 
 		pathDescriptionWrapper.appendChild(path);
 		pathDescriptionWrapper.appendChild(description);
 
 		summaryControl.appendChild(method);
-		summaryControl.appendChild(
-			pathDescriptionWrapper
-		);
-
+		summaryControl.appendChild(pathDescriptionWrapper);
 
 		// --------------------------------------------------------
 		// Copy path
 		// --------------------------------------------------------
 
-		const copyWrapper =
-			createCopyPathButton(endpoint.path);
-
+		const copyWrapper = createCopyPathButton(endpoint.path);
 
 		// --------------------------------------------------------
 		// Expand/collapse arrow
 		// --------------------------------------------------------
 
-		const arrowButton =
-			createArrowButton(endpoint.path);
-
+		const arrowButton = createArrowButton(endpoint.path);
 
 		// --------------------------------------------------------
 		// Assemble summary
@@ -289,7 +271,6 @@
 		summary.appendChild(copyWrapper);
 		summary.appendChild(arrowButton);
 
-
 		// --------------------------------------------------------
 		// Expanded body
 		// --------------------------------------------------------
@@ -298,10 +279,8 @@
 
 		body.hidden = true;
 
-
 		block.appendChild(summary);
 		block.appendChild(body);
-
 
 		// --------------------------------------------------------
 		// Expand / collapse behavior
@@ -310,58 +289,35 @@
 		function setExpanded(expanded) {
 			body.hidden = !expanded;
 
-			block.classList.toggle(
-				"is-open",
-				expanded
-			);
+			block.classList.toggle("is-open", expanded);
 
-			summaryControl.setAttribute(
-				"aria-expanded",
-				String(expanded)
-			);
+			summaryControl.setAttribute("aria-expanded", String(expanded));
 
-			arrowButton.setAttribute(
-				"aria-expanded",
-				String(expanded)
-			);
+			arrowButton.setAttribute("aria-expanded", String(expanded));
 
-			const arrowSvg =
-				arrowButton.querySelector("svg");
+			const arrowSvg = arrowButton.querySelector("svg");
 
 			if (arrowSvg) {
-				arrowSvg.style.transform =
-					expanded
-						? "rotate(180deg)"
-						: "";
+				arrowSvg.style.transform = expanded ? "rotate(180deg)" : "";
 			}
 		}
-
 
 		function toggleExpanded() {
 			setExpanded(body.hidden);
 		}
 
+		summaryControl.addEventListener("click", (event) => {
+			event.preventDefault();
 
-		summaryControl.addEventListener(
-			"click",
-			event => {
-				event.preventDefault();
+			toggleExpanded();
+		});
 
-				toggleExpanded();
-			}
-		);
+		arrowButton.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
 
-
-		arrowButton.addEventListener(
-			"click",
-			event => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				toggleExpanded();
-			}
-		);
-
+			toggleExpanded();
+		});
 
 		/*
 		 * Don't allow clicking the visual path link itself
@@ -369,17 +325,12 @@
 		 *
 		 * The surrounding summary button handles expansion.
 		 */
-		pathLink.addEventListener(
-			"click",
-			event => {
-				event.preventDefault();
-			}
-		);
-
+		pathLink.addEventListener("click", (event) => {
+			event.preventDefault();
+		});
 
 		return block;
 	}
-
 
 	// ============================================================
 	// Swagger-style path
@@ -396,29 +347,23 @@
 	function createSwaggerPathText(path) {
 		const span = document.createElement("span");
 
-		const parts = path
-			.split("/")
-			.filter(Boolean);
+		const parts = path.split("/").filter(Boolean);
 
 		parts.forEach((part, index) => {
 			span.append(`/${part}`);
 
 			if (index < parts.length - 1) {
-				span.appendChild(
-					document.createElement("wbr")
-				);
+				span.appendChild(document.createElement("wbr"));
 			}
 		});
 
 		/*
 		 * Edge case for "/"
 		 */
-		if (parts.length === 0)
-			span.textContent = "/";
+		if (parts.length === 0) span.textContent = "/";
 
 		return span;
 	}
-
 
 	// ============================================================
 	// Copy path button
@@ -427,26 +372,17 @@
 	function createCopyPathButton(path) {
 		const wrapper = document.createElement("div");
 
-		wrapper.className =
-			"view-line-link copy-to-clipboard";
+		wrapper.className = "view-line-link copy-to-clipboard";
 
 		wrapper.title = "Copy path to clipboard";
 
-		wrapper.setAttribute(
-			"aria-label",
-			"Copy path to clipboard"
-		);
-
+		wrapper.setAttribute("aria-label", "Copy path to clipboard");
 
 		const button = document.createElement("button");
 
 		button.type = "button";
 
-		button.setAttribute(
-			"aria-label",
-			"Copy path to clipboard"
-		);
-
+		button.setAttribute("aria-label", "Copy path to clipboard");
 
 		/*
 		 * The exact SVG isn't important to Swagger's layout,
@@ -484,41 +420,29 @@
 			</svg>
 		`;
 
+		button.addEventListener("click", async (event) => {
+			event.preventDefault();
+			event.stopPropagation();
 
-		button.addEventListener(
-			"click",
-			async event => {
-				event.preventDefault();
-				event.stopPropagation();
+			try {
+				await navigator.clipboard.writeText(path);
 
-				try {
-					await navigator.clipboard.writeText(
-						path
-					);
+				const oldTitle = wrapper.title;
 
-					const oldTitle = wrapper.title;
+				wrapper.title = "Copied";
 
-					wrapper.title = "Copied";
-
-					setTimeout(() => {
-						wrapper.title = oldTitle;
-					}, 1000);
-				}
-				catch (error) {
-					console.error(
-						"Could not copy WebSocket path:",
-						error
-					);
-				}
+				setTimeout(() => {
+					wrapper.title = oldTitle;
+				}, 1000);
+			} catch (error) {
+				console.error("Could not copy WebSocket path:", error);
 			}
-		);
-
+		});
 
 		wrapper.appendChild(button);
 
 		return wrapper;
 	}
-
 
 	// ============================================================
 	// Arrow
@@ -531,16 +455,9 @@
 		button.className = "opblock-control-arrow";
 		button.tabIndex = -1;
 
-		button.setAttribute(
-			"aria-label",
-			`ws ${path}`
-		);
+		button.setAttribute("aria-label", `ws ${path}`);
 
-		button.setAttribute(
-			"aria-expanded",
-			"false"
-		);
-
+		button.setAttribute("aria-expanded", "false");
 
 		/*
 		 * Close approximation of Swagger's arrow.
@@ -576,7 +493,6 @@
 		return button;
 	}
 
-
 	// ============================================================
 	// Expanded WebSocket body
 	// ============================================================
@@ -586,31 +502,22 @@
 
 		body.className = "opblock-body";
 
-
 		// --------------------------------------------------------
 		// Description
 		// --------------------------------------------------------
 
 		if (endpoint.description) {
-			const descriptionWrapper =
-				document.createElement("div");
+			const descriptionWrapper = document.createElement("div");
 
-			descriptionWrapper.className =
-				"opblock-description-wrapper";
+			descriptionWrapper.className = "opblock-description-wrapper";
 
-
-			const markdown =
-				document.createElement("div");
+			const markdown = document.createElement("div");
 
 			markdown.className = "renderedMarkdown";
 
+			const paragraph = document.createElement("p");
 
-			const paragraph =
-				document.createElement("p");
-
-			paragraph.textContent =
-				endpoint.description;
-
+			paragraph.textContent = endpoint.description;
 
 			markdown.appendChild(paragraph);
 
@@ -619,75 +526,50 @@
 			body.appendChild(descriptionWrapper);
 		}
 
-
 		// --------------------------------------------------------
 		// Connection section
 		// --------------------------------------------------------
 
-		const connectionHeader =
-			createSectionHeader("WebSocket connection");
+		const connectionHeader = createSectionHeader("WebSocket connection");
 
 		body.appendChild(connectionHeader);
 
+		const connectionContainer = document.createElement("div");
 
-		const connectionContainer =
-			document.createElement("div");
+		connectionContainer.className = "websocket-connection-container";
 
-		connectionContainer.className =
-			"websocket-connection-container";
+		const connectionControls = document.createElement("div");
 
+		connectionControls.className = "websocket-controls";
 
-		const connectionControls =
-			document.createElement("div");
-
-		connectionControls.className =
-			"websocket-controls";
-
-
-		const connectButton =
-			document.createElement("button");
+		const connectButton = document.createElement("button");
 
 		connectButton.type = "button";
-		connectButton.className =
-			"btn execute websocket-connect";
+		connectButton.className = "btn execute websocket-connect";
 
 		connectButton.textContent = "Connect";
 
-
-		const disconnectButton =
-			document.createElement("button");
+		const disconnectButton = document.createElement("button");
 
 		disconnectButton.type = "button";
-		disconnectButton.className =
-			"btn websocket-disconnect";
+		disconnectButton.className = "btn websocket-disconnect";
 
 		disconnectButton.textContent = "Disconnect";
 		disconnectButton.disabled = true;
 
+		const status = document.createElement("span");
 
-		const status =
-			document.createElement("span");
-
-		status.className =
-			"websocket-status websocket-status-disconnected";
+		status.className = "websocket-status websocket-status-disconnected";
 
 		status.textContent = "Disconnected";
 
+		connectionControls.appendChild(connectButton);
 
-		connectionControls.appendChild(
-			connectButton
-		);
-
-		connectionControls.appendChild(
-			disconnectButton
-		);
+		connectionControls.appendChild(disconnectButton);
 
 		connectionControls.appendChild(status);
 
-		connectionContainer.appendChild(
-			connectionControls
-		);
-
+		connectionContainer.appendChild(connectionControls);
 
 		// --------------------------------------------------------
 		// URL
@@ -697,17 +579,13 @@
 
 		urlRow.className = "websocket-url-row";
 
-
 		const urlLabel = document.createElement("strong");
 
 		urlLabel.textContent = "URL";
 
-
 		const urlValue = document.createElement("code");
 
-		urlValue.textContent =
-			createWebSocketUrl(endpoint.path);
-
+		urlValue.textContent = createWebSocketUrl(endpoint.path);
 
 		urlRow.appendChild(urlLabel);
 		urlRow.appendChild(urlValue);
@@ -716,33 +594,23 @@
 
 		body.appendChild(connectionContainer);
 
-
 		// --------------------------------------------------------
 		// Messages
 		// --------------------------------------------------------
 
-		body.appendChild(
-			createSectionHeader("Messages")
-		);
+		body.appendChild(createSectionHeader("Messages"));
 
+		const messagesContainer = document.createElement("div");
 
-		const messagesContainer =
-			document.createElement("div");
-
-		messagesContainer.className =
-			"websocket-messages-container";
-
+		messagesContainer.className = "websocket-messages-container";
 
 		const output = document.createElement("pre");
 
 		output.className = "websocket-output";
-		output.textContent =
-			"No messages received.";
-
+		output.textContent = "No messages received.";
 
 		messagesContainer.appendChild(output);
 		body.appendChild(messagesContainer);
-
 
 		// --------------------------------------------------------
 		// Actual WebSocket state
@@ -750,172 +618,107 @@
 
 		let socket = null;
 
-
 		function setStatus(state, text) {
 			status.classList.remove(
 				"websocket-status-disconnected",
 				"websocket-status-connecting",
 				"websocket-status-connected",
-				"websocket-status-error"
+				"websocket-status-error",
 			);
 
-			status.classList.add(
-				`websocket-status-${state}`
-			);
+			status.classList.add(`websocket-status-${state}`);
 
 			status.textContent = text;
 		}
-
 
 		function resetButtons() {
 			connectButton.disabled = false;
 			disconnectButton.disabled = true;
 		}
 
+		connectButton.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
 
-		connectButton.addEventListener(
-			"click",
-			event => {
-				event.preventDefault();
-				event.stopPropagation();
+			if (socket) return;
 
-				if (socket)
-					return;
+			const url = createWebSocketUrl(endpoint.path);
 
-				const url =
-					createWebSocketUrl(endpoint.path);
+			setStatus("connecting", "Connecting...");
 
-				setStatus(
-					"connecting",
-					"Connecting..."
-				);
+			connectButton.disabled = true;
+
+			output.textContent = `Connecting to ${url}...`;
+
+			socket = new WebSocket(url);
+
+			// --------------------------------------------
+			// Connected
+			// --------------------------------------------
+
+			socket.addEventListener("open", () => {
+				setStatus("connected", "Connected");
 
 				connectButton.disabled = true;
+				disconnectButton.disabled = false;
 
-				output.textContent =
-					`Connecting to ${url}...`;
+				output.textContent = "Connected. Waiting for messages...";
+			});
 
-				socket = new WebSocket(url);
+			// --------------------------------------------
+			// Message received
+			// --------------------------------------------
 
-
-				// --------------------------------------------
-				// Connected
-				// --------------------------------------------
-
-				socket.addEventListener(
-					"open",
-					() => {
-						setStatus(
-							"connected",
-							"Connected"
-						);
-
-						connectButton.disabled = true;
-						disconnectButton.disabled = false;
-
-						output.textContent =
-							"Connected. Waiting for messages...";
-					}
-				);
-
-
-				// --------------------------------------------
-				// Message received
-				// --------------------------------------------
-
-				socket.addEventListener(
-					"message",
-					event => {
-						if (
-							output.textContent ===
-							"Connected. Waiting for messages..."
-						) {
-							output.textContent = "";
-						}
-
-						const message =
-							formatWebSocketMessage(
-								event.data
-							);
-
-						appendOutput(
-							output,
-							message
-						);
-					}
-				);
-
-
-				// --------------------------------------------
-				// Error
-				// --------------------------------------------
-
-				socket.addEventListener(
-					"error",
-					() => {
-						setStatus(
-							"error",
-							"Error"
-						);
-					}
-				);
-
-
-				// --------------------------------------------
-				// Disconnected
-				// --------------------------------------------
-
-				socket.addEventListener(
-					"close",
-					event => {
-						setStatus(
-							"disconnected",
-							"Disconnected"
-						);
-
-						resetButtons();
-
-						socket = null;
-
-						const suffix =
-							event.reason
-								? `: ${event.reason}`
-								: "";
-
-						appendOutput(
-							output,
-							`Connection closed (${event.code})${suffix}.`
-						);
-					}
-				);
-			}
-		);
-
-
-		disconnectButton.addEventListener(
-			"click",
-			event => {
-				event.preventDefault();
-				event.stopPropagation();
-
-				if (
-					socket &&
-					(
-						socket.readyState ===
-							WebSocket.OPEN ||
-						socket.readyState ===
-							WebSocket.CONNECTING
-					)
-				) {
-					socket.close();
+			socket.addEventListener("message", (event) => {
+				if (output.textContent === "Connected. Waiting for messages...") {
+					output.textContent = "";
 				}
-			}
-		);
 
+				const message = formatWebSocketMessage(event.data);
+
+				appendOutput(output, message);
+			});
+
+			// --------------------------------------------
+			// Error
+			// --------------------------------------------
+
+			socket.addEventListener("error", () => {
+				setStatus("error", "Error");
+			});
+
+			// --------------------------------------------
+			// Disconnected
+			// --------------------------------------------
+
+			socket.addEventListener("close", (event) => {
+				setStatus("disconnected", "Disconnected");
+
+				resetButtons();
+
+				socket = null;
+
+				const suffix = event.reason ? `: ${event.reason}` : "";
+
+				appendOutput(output, `Connection closed (${event.code})${suffix}.`);
+			});
+		});
+
+		disconnectButton.addEventListener("click", (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+
+			if (
+				socket &&
+				(socket.readyState === WebSocket.OPEN ||
+					socket.readyState === WebSocket.CONNECTING)
+			) {
+				socket.close();
+			}
+		});
 
 		return body;
 	}
-
 
 	// ============================================================
 	// Swagger-style section header
@@ -926,86 +729,65 @@
 
 		header.className = "opblock-section-header";
 
-
 		const heading = document.createElement("h4");
 
 		heading.textContent = title;
-
 
 		header.appendChild(heading);
 
 		return header;
 	}
 
-
 	// ============================================================
 	// Build ws:// or wss:// URL
 	// ============================================================
 
 	function createWebSocketUrl(path) {
-		const protocol =
-			window.location.protocol === "https:"
-				? "wss:"
-				: "ws:";
+		const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
 
 		return `${protocol}//${window.location.host}${path}`;
 	}
-
 
 	// ============================================================
 	// Message formatting
 	// ============================================================
 
 	function formatWebSocketMessage(data) {
-		if (typeof data !== "string")
-			return String(data);
+		if (typeof data !== "string") return String(data);
 
 		try {
 			const json = JSON.parse(data);
 
-			return JSON.stringify(
-				json,
-				null,
-				2
-			);
-		}
-		catch {
+			return JSON.stringify(json, null, 2);
+		} catch {
 			return data;
 		}
 	}
-
 
 	// ============================================================
 	// Append to console
 	// ============================================================
 
 	function appendOutput(output, message) {
-		if (
-			output.textContent ===
-			"No messages received."
-		) {
+		if (output.textContent === "No messages received.") {
 			output.textContent = "";
 		}
 
-		if (output.textContent)
-			output.textContent += "\\n\\n";
+		if (output.textContent) output.textContent += "\\n\\n";
 
 		output.textContent += message;
 
 		output.scrollTop = output.scrollHeight;
 	}
 
-
 	// ============================================================
 	// Operation ID
 	// ============================================================
 
 	function createOperationId(tag, path) {
-		const safeTag = String(tag)
-			.replace(/[^a-zA-Z0-9_-]/g, "_");
+		const safeTag = String(tag).replace(/[^a-zA-Z0-9_-]/g, "_");
 
-		const safePath = String(path)
-			.replace(/[^a-zA-Z0-9_-]/g, "_");
+		const safePath = String(path).replace(/[^a-zA-Z0-9_-]/g, "_");
 
 		return `operations-${safeTag}-ws_${safePath}`;
 	}
