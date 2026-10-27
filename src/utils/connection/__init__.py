@@ -1,5 +1,6 @@
 from random import choice
 from typing import Any, TYPE_CHECKING
+from collections.abc import Awaitable, Callable
 from fastapi import HTTPException, status
 from aiohttp import ClientResponse, ClientSession
 from datetime import timedelta
@@ -45,6 +46,8 @@ def get_server(action: Actions) -> str:
 		return choice(pool)
 	return pool
 
+type ResponseProvider = Callable[["Request"], Awaitable[dict[str, Any]]]
+
 class Request:
 	"""Request framework for sending messages to Gaijin's servers"""
 	user: LoginEntry = None
@@ -56,6 +59,7 @@ class Request:
 	method: str
 	action: Actions
 	__template: str
+	__response_provider: ResponseProvider | None
 	def __init__(
 		self,
 		action: Actions,
@@ -66,7 +70,9 @@ class Request:
 		host:str|None = None,
 		method:str = "POST",
 		session:ClientSession|None=None,
+		response_provider: ResponseProvider | None = None
 	):
+		self.__response_provider = response_provider
 		self.__template = template_name
 		self.body = body
 		self.headers = {
@@ -96,7 +102,16 @@ class Request:
 		self.session = session
 
 	@classmethod
-	async def from_template(cls, user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
+	async def from_template(
+		cls,
+		user:LoginEntry,
+		template: str,
+		/, *,
+		session:ClientSession|None=None,
+		remove_keys: set[str] = set(),
+		response_provider: ResponseProvider | None = None,
+		**data:str|dict[str, Any]
+	) -> "Request":
 		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes=30):
 			await user.entry.refresh()
 		if template not in TEMPLATES:
@@ -122,7 +137,8 @@ class Request:
 			method=tpl.get("method", "POST"),
 			action=action,
 			session=session,
-			template_name=template
+			template_name=template,
+			response_provider=response_provider
 		)
 		await self.add_auth_headers()
 		for key, value in data.items():
@@ -139,8 +155,8 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
-		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
+	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
+		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, response_provider=response_provider, **data)
 		return await cls.send()
 
 	def replace(self, key: str, value: Any):
@@ -236,6 +252,9 @@ class Request:
 				pass
 			case _:
 				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")
+
+		if self.__response_provider is not None:
+			return await self.__response_provider(self.url)
 
 		if self.session is None:
 			async with Network.request(self.method.upper(), self.url, **kwargs) as resp:
