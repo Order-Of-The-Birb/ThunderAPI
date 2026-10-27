@@ -68,9 +68,9 @@ class Item:
 			name = assetData["market_name"],
 			commodity = assetData.get("commodity", False),
 			icon = assetData.get("icon_url_large", assetData.get("icon_url", None)),
-			buy_price = max(i[0] for i in ordersData.get("BUY", [])) / 10000,
+			buy_price = max((i[0] for i in ordersData.get("BUY", [])), default=0) / 10000,
 			buy_orders = ordersData["depth"].get("BUY", 0),
-			sell_price = min(i[0] for i in ordersData.get("SELL", [])) / 10000,
+			sell_price = min((i[0] for i in ordersData.get("SELL", [])), default=0) / 10000,
 			sell_orders = ordersData["depth"].get("SELL", 0),
 			tags = {i["category"]:i["internal_name"] for i in assetData.get("tags", [])},
 			className = classValues[0]["name"],
@@ -230,7 +230,7 @@ class InventoryItem:
 		soldItems = []
 		sold = 0
 		if len(self.ids) < count:
-			raise HTTPException(status.HTTP_403_FORBIDDEN, f"Requested selling {count} items, but user only has {len(self.ids)} items in their inventory")
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Requested selling {count} items, but user only has {len(self.ids)} items in their inventory")
 
 		for id in list(self.ids):
 			resp = await Request.send_template(
@@ -263,8 +263,8 @@ class InventoryItem:
 
 	async def to_json(self):
 		SANITIZE = (
-			dictUtil.KeyRem("ids", "class_name", "class_value", "contextid", "LOGIN"),
-			dictUtil.KeyMod("ids", convert=lambda x: [str(i) for i in x])
+			dictUtil.KeyRem("class_name", "class_value", "contextid", "LOGIN"),
+
 		)
 		return await dictUtil.run_all(asdict(self), SANITIZE)
 
@@ -325,9 +325,9 @@ class Order:
 	class Entry:
 		LOGIN: LoginEntry
 		market_hash: str
-		id: IntString
+		id: int
 		type: Order.Type
-		pairId: IntString
+		pairId: int
 		price: float
 		timestamp: datetime
 		amount: int = field(default=1)
@@ -344,17 +344,6 @@ class Order:
 				timestamp=datetime.fromtimestamp(obj["time"], UTC),
 				amount=int(obj["amount"])
 			)
-
-		@staticmethod
-		async def get_orders(login: LoginEntry) -> tuple[Order.Entry]:
-			data = await Request.send_template(login, "cln_get_user_open_orders")
-			if (not data.get("success", False)) or "response" not in data:
-				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get user's orders")
-
-			orders = []
-			for entry in data["response"]:
-				orders.append(Order.Entry.from_dict(entry, login))
-			return tuple(orders)
 
 		async def cancel(self) -> bool:
 			data = await Request.send_template(
@@ -375,3 +364,15 @@ class Order:
 				dictUtil.KeyMod("id", convert=lambda x: str(x)),
 			)
 			return await dictUtil.run_all(asdict(self), SANITIZE)
+
+	@staticmethod
+	async def get(login: LoginEntry) -> tuple[Order.Entry]:
+		data = await Request.send_template(login, "cln_get_user_open_orders")
+		if (not data.get("success", False)) or "response" not in data:
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get user's orders")
+
+		orders = []
+		for entry in data["response"]:
+			orders.append(Order.Entry.from_dict(entry, login))
+		return tuple(orders)
+

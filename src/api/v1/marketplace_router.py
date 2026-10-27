@@ -90,13 +90,7 @@ async def getInventory(
 async def get_balance(
 	request: faRequest, user: TokenBearer
 ) -> float:
-	data = await Request.send_template(
-		user,
-		"GetBalance"
-	)
-	if data.get("status") == "OK":
-		return data["balance"]/10000
-	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to get balance")
+	return await InventoryItem.balance(user)
 
 @router.get(
 	"/search",
