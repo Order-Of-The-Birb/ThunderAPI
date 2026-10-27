@@ -1,0 +1,32 @@
+[project]
+name="ThunderAPI"
+description="Translation layer for Gaijin Entertainmen's servers"
+version = "1.0.0"
+requires-python = ">= 3.14"
+authors = [
+	{name = "Maho Yoshino", email="mahoyoshino@proton.me"}
+]
+dependencies = [
+    "fastapi",
+    "aiohttp",
+    "uvicorn",
+]
+readme = "README.md"
+license = "Apache-2.0"
+
+[project.urls]
+Homepage = "https://thunderapi.mahoyoshino.hu"
+Repository = "https://github.com/Order-Of-The-Birb/ThunderAPI.git"
+Issues = "https://github.com/Order-Of-The-Birb/ThunderAPI/issues"
+
+[project.optional-dependencies]
+dev = [
+	"pytest",
+	"pytest-asyncio",
+	"ruff"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
