@@ -189,13 +189,14 @@ async def kick_member(
 	user: TokenBearer,
 	userId: gaijinUserId,
 	reason: Annotated[str, Form(title="The reason for kicking")] = "",
-):
-	return await Request.send_template(
+) -> SuccessEmptyDict:
+	data = await Request.send_template(
 		user,
 		"clan_dismiss_member",
 		userid = userId,
 		comments = reason
 	)
+	return data
 
 @router.get(
 	"/logs/{clanId}",

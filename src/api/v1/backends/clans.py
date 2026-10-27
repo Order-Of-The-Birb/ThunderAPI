@@ -97,12 +97,12 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 		}
 		if item.get("uId") is not None and not (action == Actions.rem and item.get("uid") is not None and item["uId"] == item["uid"]):
 			logEntry["admin"] = {
-				"_id": item["uId"],
+				"id": item["uId"],
 				"nickname": item["uN"]
 			}
 		if item.get("uid") is not None:
 			logEntry["affected"] = {
-				"_id": item["uid"],
+				"id": item["uid"],
 				"nickname": item["nick"],
 			}
 		match action:

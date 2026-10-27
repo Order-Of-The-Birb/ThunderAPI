@@ -62,7 +62,7 @@ class LogsModel(BaseModel):
 	logs: list[ClanLogs]
 	class ClanLogs(BaseModel):
 		class _userEntry(BaseModel):
-			_id: int
+			id: int
 			nickname: str
 		class _action(BaseModel):
 			value: int

@@ -105,7 +105,7 @@ async def get_replay(
 
 @router.get(
 	"/{replayId}/teams",
-	summary="Gets results from a specified replay",
+	summary="Gets the results from a specified replay",
 	responses={
 		status.HTTP_200_OK: {"model": ResultsModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},

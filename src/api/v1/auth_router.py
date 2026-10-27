@@ -10,6 +10,7 @@ from utils.helper import dtToTimestamp
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
 from api.v1.models.auth import Login, LoginToken
+from api.v1.models.base import GenericEmptyResponse
 
 router = APIRouter(
 	tags=["authentication"],
@@ -72,7 +73,7 @@ async def answer_2fa(
 	email: Annotated[EmailStr, Form(title="The email address for the account")],
 	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title="The 2FA code")]
-):
+) -> None:
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
 	if _PENDING_2FA[email].check_password(password):
@@ -89,7 +90,7 @@ async def answer_2fa(
 async def remove_login(
 	request: Request,
 	user: TokenBearer
-):
+) -> GenericEmptyResponse:
 	if (await users_auth.remove_entry(user)):
 		return JSONResponse({"success": True})
 	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")
