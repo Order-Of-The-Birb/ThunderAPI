@@ -1,6 +1,5 @@
 from os import getenv
 from typing_extensions import Annotated
-from typing import Any
 from random import randint
 from datetime import datetime, UTC
 from fastapi import APIRouter, Query, Path, Request as faRequest, HTTPException, status
@@ -9,8 +8,8 @@ from utils.connection import Request
 from utils.helper import dtToTimestampMs
 from api.shared import limiter
 from api.v1.backends.shared import ServerBearer, OptionalAuth, TokenBearer
-from api.v1.backends.marketplace import item_in_inventory, get_inventory
-from api.v1.models.marketplace import SellModel, ItemModel
+from api.v1.backends.marketplace import Order, InventoryItem, Item
+from api.v1.models.marketplace import Models
 from api.v1.models.base import GenericEmptyResponse
 
 router = APIRouter(
@@ -20,102 +19,57 @@ router = APIRouter(
 )
 
 @router.post(
-	"/sell/{itemHash}",
-	summary="Puts up a sell order for the given `itemHash`",
-	responses={
-		status.HTTP_200_OK: {"description": "Sell order has successfully been placed", "model": list[SellModel]},
-		status.HTTP_400_BAD_REQUEST: {"description": "Count is too high"},
-		status.HTTP_404_NOT_FOUND: {"description": "Item could not be found in the inventory"}
-	}
+	"/orders/{orderId}/cancel",
+	summary="Cancels an order"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
-async def sell_item(
+async def cancel_order(
 	request: faRequest, user: TokenBearer,
-	itemHash: Annotated[str, Path(description="The item's hash value")],
-	price: Annotated[float, Query(description="The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge=0.1, le=2000)],
-	count: Annotated[int, Query(description="The amount to sell at once", gt=0)] = 1,
-	anonymous: Annotated[bool, Query(description="Appear as an anonymous seller")] = False
-):
-	agree_stamp = dtToTimestampMs(datetime.now(UTC))
-
-	itemsInInv = await item_in_inventory(user, itemHash)
-	if itemsInInv is None:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
-	if len(itemsInInv.ids) < count:
-		raise HTTPException(status.HTTP_400_BAD_REQUEST, "Count is higher than the items in inventory")
-
-	price = price
-	gaijin_fee = price*0.15
-	seller_should_get = price-gaijin_fee
-
-	solditems = []
-	for i in range(count):
-		assetId = itemsInInv.ids.pop()
-		resp = await Request.send_template(
-			user,
-			"cln_market_sell",
-			transactid = randint(10**6, 10**15),
-			reqstamp = dtToTimestampMs(datetime.now(UTC)),
-			assetid = assetId,
-			amount = 1,
-			price = int(price*10000),
-			seller_should_get = int(seller_should_get*10000),
-			agree_stamp = agree_stamp,
-			privateMode = anonymous,
-			contextid = itemsInInv.contextid
-		)
-		solditems.append({
-			"item": assetId,
-			"success": "response" in resp and resp["response"].get("success", False),
-			"price": price,
-			"seller_gets": seller_should_get
-		})
-	return solditems
-
-@router.post(
-	"/buy/{itemHash}",
-	summary="Puts up a buy order for the given `itemHash`",
-	responses={
-		status.HTTP_200_OK: {"description": "The buy order has successfully been placed", "model": GenericEmptyResponse},
-		status.HTTP_400_BAD_REQUEST: {"description": "Something prevented the buy order from being placed"},
-		status.HTTP_403_FORBIDDEN: {"description": "Not enough funds"},
-		status.HTTP_404_NOT_FOUND: {"description": "The given item doesn't exist"}
-	}
-)
-@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
-async def buy_item(
-	request: faRequest, user: TokenBearer,
-	itemHash: Annotated[str, Path(description="The item's hash value")],
-	price: Annotated[float, Query(description="The price in GJN to buy for", ge=0.1, le=2000)],
-	count: Annotated[int, Query(description="The amount to buy", gt=0)] = 1,
-	anonymous: Annotated[bool, Query(description="Appear as an anonymous buyer")] = False
+	orderId: Annotated[int, Path(description="The order ID")]
 ) -> GenericEmptyResponse:
-	agree_stamp = dtToTimestampMs(datetime.now(UTC))
-	resp = await Request.send_template(
-		user,
-		"cln_market_buy",
-		transactid = randint(10**6, 10**15),
-		reqstamp = dtToTimestampMs(datetime.now(UTC)),
-		market_name = itemHash,
-		amount = count,
-		price = int(price*10000),
-		agree_stamp = agree_stamp,
-		privateMode = anonymous
-	)
-	if "response" not in resp:
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An unexpected error occurred")
-	resp = resp["response"]
-	if "error" in resp:
-		if resp["error"] == "ASSET_NOT_FOUND":
-			raise HTTPException(status.HTTP_404_NOT_FOUND, "Item doesn't exist")
-		elif "details" in resp and resp["details"] == "NOT_ENOUGH_FUNDS":
-			raise HTTPException(status.HTTP_403_FORBIDDEN, "Not enough funds")
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, resp["error"])
-	if resp.get("success", False):
-		return {
-			"success": True
-		}
-	raise HTTPException(status.HTTP_400_BAD_REQUEST, "Failed to put up buy order")
+	orders = await Order.Entry.get_orders(user)
+	for order in orders:
+		if order.id == orderId:
+			await order.cancel()
+			return {"success": True}
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+
+@router.get(
+	"/orders/{orderId}",
+	summary="Gets information about an order"
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
+async def get_order(
+	request: faRequest, user: TokenBearer,
+	orderId: Annotated[int, Path(description="The order ID")]
+):
+	orders = await Order.Entry.get_orders(user)
+	for order in orders:
+		if order.id == orderId:
+			return await order.to_json()
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+
+@router.get(
+	"/orders",
+	summary="Gets the currently active orders",
+	responses={
+		status.HTTP_200_OK: {"model": list[Models.OrderModel]}
+	}
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
+async def get_orders(
+	request: faRequest, user: TokenBearer,
+	orderType: Annotated[Order.Type | None, Query()] = None
+) -> list[Models.OrderModel]:
+	orders = await Order.Entry.get_orders(user)
+	if orderType is None:
+		return [await order.to_json() for order in orders]
+
+	display_orders = []
+	for order in orders:
+		if order.type == orderType:
+			display_orders.append(await order.to_json())
+	return display_orders
 
 @router.get(
 	"/inventory",
@@ -124,9 +78,9 @@ async def buy_item(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def getInventory(
 	request: faRequest, user: TokenBearer
-):
-	inv = await get_inventory(user)
-	return [i.to_json() for i in inv]
+) -> list[Models.InventoryItemModel]:
+	inv = await InventoryItem.get(user)
+	return [await i.to_json() for i in inv]
 
 @router.get(
 	"/balance",
@@ -148,7 +102,7 @@ async def get_balance(
 	"/search",
 	summary="Searches the marketplace for a given item",
 	responses={
-		status.HTTP_200_OK: {"model": list[ItemModel]}
+		status.HTTP_200_OK: {"model": list[Models.ItemModel]}
 	}
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
@@ -158,58 +112,18 @@ async def searchItem(
 	count: Annotated[int, Query(title="Amount to get at once")] = 25,
 	page: Annotated[int, Query(title="Pagination page. Works based off of `count`")] = 0,
 ):
-	data = await Request.send_template(
-		user,
-		"cln_market_search",
-		count = count,
-		skip = count*page,
-		text = name
-	)
-	if "response" in data:
-		data:list[dict[str, Any]] = data["response"]["assets"]
-	else:
-		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get item data")
-	for item in data:
-		item["sell_price"] = item["price"] / 100000000
-		item["buy_price"] = item["buy_price"] / 100000000
-		item.pop("price")
-
-		item["sell_orders"] = item["depth"]
-		item["buy_orders"] = item["buy_depth"]
-		item.pop("depth")
-		item.pop("buy_depth")
-
-		item.pop("appid")
-		item.pop("color")
-		item.pop("asset_class")
-
-		new_tags = {}
-		for tag in item["tags"]:
-			tag:str
-			if tag.count(":") != 1:
-				... # TODO: Figure out something here
-				return
-			key, value = tag.split(":")
-			if value == "yes":
-				new_tags[key] = True
-			elif value == "no":
-				new_tags[key] = False
-			else:
-				new_tags[key] = value
-		item["tags"] = new_tags
-		del new_tags
-
-	return data
+	data = await Item.search(user, name, count, page)
+	return [await i.to_json() for i in data]
 
 @router.get(
-	"/{itemHash}/orders/history",
+	"/{itemHash}/history",
 	summary="Retrieves marketplace history data about the given item"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_history(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
-):
+) -> Models.OrderHistoryModel:
 	pairData = await Request.send_template(
 		user,
 		"cln_get_pair_stat",
@@ -246,7 +160,7 @@ async def get_item_history(
 async def get_item_orders(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
-):
+) -> Models.OrdersModel:
 	books_brief = await Request.send_template(
 		user,
 		"cln_books_brief",
@@ -302,6 +216,52 @@ async def view_item(
 	)
 	return resp.get("status") == "ok"
 
+@router.post(
+	"/{itemHash}/sell",
+	summary="Puts up a sell order for the given `itemHash`",
+	responses={
+		status.HTTP_200_OK: {"description": "Sell order has successfully been placed", "model": list[Models.SellModel]},
+		status.HTTP_400_BAD_REQUEST: {"description": "Count is too high"},
+		status.HTTP_404_NOT_FOUND: {"description": "Item could not be found in the inventory"}
+	}
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
+async def sell_item(
+	request: faRequest, user: TokenBearer,
+	itemHash: Annotated[str, Path(description="The item's hash value")],
+	price: Annotated[float, Query(description="The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge=0.1, le=2000)],
+	count: Annotated[int, Query(description="The amount to sell at once", gt=0)] = 1,
+	anonymous: Annotated[bool, Query(description="Appear as an anonymous seller")] = False
+):
+	inventoryItems = await InventoryItem.get(user)
+	for item in inventoryItems:
+		if item.hash == itemHash:
+			return await item.sell(price=price, count=count, anonymous=anonymous)
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
+
+@router.post(
+	"/{itemHash}/buy",
+	summary="Puts up a buy order for the given `itemHash`",
+	responses={
+		status.HTTP_200_OK: {"description": "The buy order has successfully been placed", "model": GenericEmptyResponse},
+		status.HTTP_400_BAD_REQUEST: {"description": "Something prevented the buy order from being placed"},
+		status.HTTP_403_FORBIDDEN: {"description": "Not enough funds"},
+		status.HTTP_404_NOT_FOUND: {"description": "The given item doesn't exist"}
+	}
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
+async def buy_item(
+	request: faRequest, user: TokenBearer,
+	itemHash: Annotated[str, Path(description="The item's hash value")],
+	price: Annotated[float, Query(description="The price in GJN to buy for", ge=0.1, le=2000)],
+	count: Annotated[int, Query(description="The amount to buy", gt=0)] = 1,
+	anonymous: Annotated[bool, Query(description="Appear as an anonymous buyer")] = False
+) -> GenericEmptyResponse:
+	item = await Item.get(user, itemHash)
+	if item:
+		return await item.buy(user, price=price, count=count, anonymous=anonymous)
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
+
 @router.get(
 	"/{itemHash}",
 	summary="Gets metadata about the given item"
@@ -310,38 +270,8 @@ async def view_item(
 async def get_item(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
-):
-	hashData = await Request.send_template(
-		user,
-		"cln_market_get_asset_class",
-		name = itemHash
-	)
-	if "response" not in hashData or "asset_class" not in hashData["response"]:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
-	hashData = hashData["response"]["asset_class"]
-	if len(hashData) <= 0:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
-	resp = await Request.send_template(
-		user,
-		"GetAssetClassInfo",
-		class_name0 = hashData[0]["name"],
-		class_value0 = hashData[0]["value"]
-	)
-	if "result" not in resp or "asset" not in resp["result"]:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item data could not be obtained")
-	resp = resp["result"]["asset"]
-	ret_data = {}
-
-	ret_data["description"] = resp["descriptions"][0]["value"]
-	ret_data["tags"] = resp["tags"]
-	ret_data["sellable"] = bool(resp["marketable"])
-	ret_data["hash"] = resp["market_hash_name"]
-	ret_data["market_name"] = resp["market_name"]
-	ret_data["display_name"] = resp["name"]
-	ret_data["images"] = {
-		"icon": resp["icon_url"],
-		"image": resp["icon_url_large"]
-	}
-	ret_data["type"] = resp["type"]
-
-	return ret_data
+) -> Models.ItemModel:
+	item = await Item.get(user, itemHash)
+	if item is not None:
+		return await item.to_json()
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")

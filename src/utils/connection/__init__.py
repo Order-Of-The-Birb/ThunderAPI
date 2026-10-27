@@ -96,7 +96,7 @@ class Request:
 		self.session = session
 
 	@classmethod
-	async def from_template(cls, user:LoginEntry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
+	async def from_template(cls, user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> "Request":
 		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes=30):
 			await user.entry.refresh()
 		if template not in TEMPLATES:
@@ -139,13 +139,20 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:LoginEntry, template: str, session:ClientSession|None=None, *, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
+	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] = set(), **data:str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, **data)
 		return await cls.send()
 
 	def replace(self, key: str, value: Any):
 		if key in self.body and key in self.headers:
-			raise RuntimeError(f"Key `{key}` found in both headers and body for template `{self.__template}`")
+			if (self.body[key].lower() == "<replace>") and not (self.headers[key].lower() == "<replace>"):
+				self.body[key] = value
+			elif not (self.body[key].lower() == "<replace>") and (self.headers[key].lower() == "<replace>"):
+				self.headers[key] = value
+			elif not (self.body[key].lower() == "<replace>") and not (self.headers[key].lower() == "<replace>"):
+				return
+			else:
+				raise RuntimeError(f"Key `{key}` found in both headers and body for template `{self.__template}`")
 		elif key in self.body:
 			self.body[key] = value
 		elif key in self.headers:
