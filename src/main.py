@@ -12,8 +12,8 @@ from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from uvicorn import run as uvicorn_run
 from slowapi.util import get_remote_address
+from uvicorn import run as uvicorn_run
 
 import utils
 import utils.cache as Cache
