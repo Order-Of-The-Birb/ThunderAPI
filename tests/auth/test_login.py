@@ -28,7 +28,9 @@ async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group,
 		if state in templ:
 			return templ[state]
 		if state in extra_templates:
-			return extra_templates[state]
+			if extra_templates[state] not in templ:
+				raise FileNotFoundError(f"State `{extra_templates[state]}` not found in template '{templ}'")
+			return templ[extra_templates[state]]
 		raise FileNotFoundError(f"State `{state}` not found in template '{templ}'")
 	for test in tests:
 		expected = test.value[1]

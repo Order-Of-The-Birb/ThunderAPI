@@ -172,7 +172,7 @@ class UserAuth:
 						"Content-Type": "application/x-www-form-urlencoded"
 					}
 				) as r:
-					content = await Network.handle_response(r)
+					content = await Network.handle_response(r, Network.ReturnType.JSON)
 
 			if content.get("status") == "LOGINERROR":
 				if content.get("error") == "Wrong token":
@@ -496,6 +496,7 @@ class ServerAuth:
 			return
 		async with Network.post(
 			"https://auth.gaijinent.com/login_token.php",
+			Network.ReturnType.JSON,
 			data={"token": self._TOKEN},
 			headers={
 				"User-Agent": "ThunderAPI/1.0",
@@ -551,7 +552,7 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 				data = await response_provider("await_2fa")
 			else:
 				async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
-					data = await Network.handle_response(r)
+					data = await Network.handle_response(r, Network.ReturnType.JSON)
 			if "GaijinPass" in entry.types:
 				try:
 					success = True
@@ -573,7 +574,7 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 								"User-Agent": "ThunderAPI/1.0"
 							}
 						) as r:
-							data = await Network.handle_response(r)
+							data = await Network.handle_response(r, Network.ReturnType.JSON)
 					entry.requestId = data["requestId"]
 					tries += 1
 					continue
@@ -601,6 +602,7 @@ async def _login_2fa(email: str, *, response_provider: ResponseProvider | None =
 	else:
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
+			Network.ReturnType.JSON,
 			data={
 				"login": email,
 				"password": entry.password,
@@ -650,7 +652,7 @@ async def login(email: str, password: str, /, *, response_provider: ResponseProv
 					"User-Agent": "ThunderAPI/1.0"
 				}
 			) as r:
-				data = await Network.handle_response(r)
+				data = await Network.handle_response(r, Network.ReturnType.JSON)
 
 		if data["status"] == "2STEP":
 

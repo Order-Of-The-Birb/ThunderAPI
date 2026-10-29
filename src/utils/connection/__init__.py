@@ -262,26 +262,25 @@ class Request:
 			return await self.__response_provider(self.url)
 
 		if self.session is None:
-			async with Network.request(self.method.upper(), self.url, **kwargs) as resp:
+			async with Network.request(self.method.upper(), self.url, Network.ReturnType.BIN, **kwargs) as resp:
 				response = await self._decode(resp)
 		else:
 			async with self.session.request(self.method.upper(), self.url, **kwargs) as resp:
-				response = await self._decode(resp)
+				response = await self._decode(await resp.read())
 
 		return response
 
-	async def _decode(self, response: ClientResponse) -> dict[str, Any]:
+	async def _decode(self, response: bytes) -> dict[str, Any]:
 		"""Decode from compressed or raw .blk binary to json."""
-		content = await response.read()
-		if content == b"":
+		if response == b"":
 			return {}
-		if content.startswith(b"!ERROR:"):
-			GaijinErrorCodes.parse(content) # Throws an HTTPException
-		if content.startswith(b"!OK"):
+		if response.startswith(b"!ERROR:"):
+			GaijinErrorCodes.parse(response) # Throws an HTTPException
+		if response.startswith(b"!OK"):
 			return {
 				"status": "success"
 			}
 		try:
-			return loads(content)
+			return loads(response)
 		except (JSONDecodeError, UnicodeDecodeError):
-			return (await Decompress.async_init(content)).as_dict()
+			return (await Decompress.async_init(response)).as_dict()

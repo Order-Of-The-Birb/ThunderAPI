@@ -1,4 +1,5 @@
 from asyncio import Event, Lock
+from contextlib import AbstractAsyncContextManager
 from json import loads
 from typing import Any, Literal, overload, Callable, Awaitable
 
@@ -6,10 +7,16 @@ from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
 from fastapi import HTTPException
 from fastapi.concurrency import asynccontextmanager
+from enum import IntEnum, auto
 
 
 class NetworkError(HTTPException):
 	pass
+
+class ReturnType(IntEnum):
+	JSON = auto()
+	TEXT = auto()
+	BIN = auto()
 
 __session: ClientSession | None = None
 __closing = False
@@ -20,26 +27,47 @@ __lock = Lock()
 
 type ResponseProvider = Callable[[Any], Awaitable[dict[str, Any]]]
 
+#region POST
+@overload
+def post(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+@overload
+def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+@overload
+def post(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def post(url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
-	async with request("POST", url, response_provider=response_provider, resp_state=resp_state, autoconvert=autoconvert, **kwargs) as resp:
+async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
+	async with request("POST", url, response_provider=response_provider, resp_state=resp_state, return_type=return_type, **kwargs) as resp:
 		yield resp
-
+#endregion
+#region GET
+@overload
+def get(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+@overload
+def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+@overload
+def get(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def get(url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
-	async with request("GET", url, response_provider=response_provider, resp_state=resp_state, autoconvert=autoconvert, **kwargs) as resp:
+async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
+	async with request("GET", url, response_provider=response_provider, resp_state=resp_state, return_type=return_type, **kwargs) as resp:
 		yield resp
-
+#endregion
+#region Request
+@overload
+def request(method: str, url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+@overload
+def request(method: str, url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+@overload
+def request(method: str, url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def request(method:str, url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
+async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
 	async with operation() as session:
 		if response_provider is not None:
 			yield await response_provider(resp_state)
 		else:
 			async with session.request(method, url, **kwargs) as resp:
 				resp.raise_for_status()
-				yield await handle_response(resp, autoconvert=autoconvert)
-
+				yield await handle_response(resp=resp, convert=return_type)
+#endregion
 @asynccontextmanager
 async def operation():
 	session = await _enter_op()
@@ -70,12 +98,12 @@ async def close():
 
 #region handle_response
 @overload
-async def handle_response(resp: ClientResponse, autoconvert: Literal[True] = True) -> dict[str, Any]: ...
+async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.JSON]) -> dict[str, Any]: ...
 @overload
-async def handle_response(resp: ClientResponse, autoconvert: Literal[False]) -> bytes: ...
+async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.BIN]) -> bytes: ...
 @overload
-async def handle_response(resp: ClientResponse, autoconvert: bool = True) -> dict[str, Any]|bytes: ...
-async def handle_response(resp:ClientResponse, autoconvert:bool = True) -> dict[str, Any]|bytes:
+async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.TEXT]) -> str: ...
+async def handle_response(resp:ClientResponse, convert:ReturnType) -> dict[str, Any]|bytes|str:
 	content = await resp.read()
 
 	if resp.status >= 400:
@@ -83,9 +111,14 @@ async def handle_response(resp:ClientResponse, autoconvert:bool = True) -> dict[
 	if content.startswith(b"!ERROR"):
 		raise NetworkError(400, f"Request failed: {content}")
 
-	if autoconvert:
-		return loads(content)
-	return content
+	match convert:
+		case ReturnType.TEXT:
+			return content.decode("utf-8")
+		case ReturnType.JSON:
+			return loads(content)
+		case ReturnType.BIN:
+			return content
+	raise ValueError(f"Invalid ReturnType '{convert}'")
 #endregion
 
 async def _enter_op():

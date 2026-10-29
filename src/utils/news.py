@@ -86,8 +86,11 @@ class NewsEntry:
 	@classmethod
 	async def from_forum(cls, id: int):
 		"""### Technical limitation: Only works on "Planned Battle Rating Changes" posts"""
-		async with Network.get(f"https://forum.warthunder.com/t/{id}") as resp:
-			document = BeautifulSoup(await resp.text(), "lxml")
+		async with Network.get(
+			f"https://forum.warthunder.com/t/{id}",
+			Network.ReturnType.TEXT
+		) as resp:
+			document = BeautifulSoup(resp, "lxml")
 
 		post = document.select_one("div>div.topic-body")
 		# select first div, which is main post
@@ -309,7 +312,10 @@ class NewsManager:
 		global _news_endpoint_down
 		news:list[NewsEntry] = []
 		try:
-			async with Network.get(self._API_URL, autoconvert=True) as response:
+			async with Network.get(
+				self._API_URL,
+				Network.ReturnType.JSON
+			) as response:
 				if _news_endpoint_down:
 					self.__logger.info("Gaijin's news endpoint is back online")
 					_news_endpoint_down = False
@@ -345,7 +351,10 @@ class NewsManager:
 		global _changelog_maintenance
 		final_changelogs = []
 		try:
-			async with Network.get(self._CHANGELOG_URL, autoconvert=False) as resp:
+			async with Network.get(
+				self._CHANGELOG_URL,
+				Network.ReturnType.TEXT
+			) as resp:
 				if _changelog_maintenance:
 					self.__logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
@@ -429,7 +438,10 @@ class NewsManager:
 	#region Forum
 	async def fetchForumIDs(self) -> tuple[int, ...]:
 		"""Gets the latest "planned battle rating changes" post's ID"""
-		async with Network.get("https://forum.warthunder.com/tag/br-changes") as resp:
+		async with Network.get(
+			"https://forum.warthunder.com/tag/br-changes",
+			Network.ReturnType.TEXT
+		) as resp:
 			document = BeautifulSoup(resp, "lxml")
 		rows = document.select("tr.topic-list-item")
 		# Ordered by date by default

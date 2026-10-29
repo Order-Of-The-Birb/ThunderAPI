@@ -129,8 +129,8 @@ async def update_gamefiles():
 	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
 		return
 	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
-	async with Network.get(REMOTE_VERSION_URL) as response:
-		remote_ver = Version(await response.text("utf-8"))
+	async with Network.get(REMOTE_VERSION_URL, Network.ReturnType.TEXT) as response:
+		remote_ver = Version(response)
 	loop = get_running_loop()
 
 	await loop.run_in_executor(None, lambda: sub_run("git pull", cwd=gamefiles, shell=True, check=True))

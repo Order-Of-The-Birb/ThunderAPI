@@ -205,13 +205,14 @@ SQB_BRACKET_CACHE_LOCK = Lock()
 
 async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 	async def get_brackets():
-		async with Network.get("https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446", headers={
-			"User-Agent": "Thunderapi/1.0"
-		}) as resp:
-			resp.raise_for_status()
-			response = await resp.text()
-
-		document = BeautifulSoup(response, 'lxml')
+		async with Network.get(
+			"https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446",
+			Network.ReturnType.TEXT,
+			headers={
+				"User-Agent": "Thunderapi/1.0"
+			}
+		) as resp:
+			document = BeautifulSoup(resp, 'lxml')
 
 		post = document.select_one("div.topic-body.crawler-post")
 		meta = post.select_one("span.crawler-post-infos>meta[itemprop='dateModified']")
