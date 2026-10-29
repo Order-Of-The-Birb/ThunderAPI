@@ -88,7 +88,7 @@ class LoginEntry:
 
 	entry: UserAuth.Entry | None = None
 
-type ResponseProvider = Callable[[str], Awaitable[dict[str, Any]]]
+type ResponseProvider = Callable[[Any], Awaitable[dict[str, Any]]]
 
 class UserAuth:
 	_auth_used_cache = {}
@@ -489,7 +489,7 @@ class ServerAuth:
 		except AttributeError:
 			return
 
-	async def __refresh(self):
+	async def __refresh(self, *, response_provider: ResponseProvider | None = None):
 		if self.__EXP < datetime.now(UTC):
 			return await self.__login()
 		elif (datetime.now(UTC) + timedelta(minutes=50)) < self.__EXP: # 5 extra minutes for buffer
@@ -500,9 +500,10 @@ class ServerAuth:
 			headers={
 				"User-Agent": "ThunderAPI/1.0",
 				"Content-Type": "application/x-www-form-urlencoded"
-			}
+			},
+			response_provider=response_provider
 		) as r:
-			content = await Network.handle_response(r)
+			content = r
 
 		if content.get("status") == "LOGINERROR":
 			if content.get("error") == "Wrong token":
@@ -513,9 +514,9 @@ class ServerAuth:
 			self._JWT = content["jwt"]
 		self.__EXP = datetime.now(UTC) + timedelta(seconds=content["token_exp"])
 
-	async def __login(self):
+	async def __login(self, *, response_provider: ResponseProvider | None = None):
 		try:
-			data = await login(self.__EMAIL, self.__PASS)
+			data = await login(self.__EMAIL, self.__PASS, response_provider=response_provider)
 		except HTTPException as e:
 			if e.status_code == status.HTTP_206_PARTIAL_CONTENT:
 				entry = _PENDING_2FA[self.__EMAIL]
@@ -523,7 +524,7 @@ class ServerAuth:
 					entry.code = await to_thread(input, "Please provide the 2FA code: ")
 					entry.provided.set()
 				await entry.provided.wait()
-				data = await login(self.__EMAIL, self.__PASS)
+				data = await login(self.__EMAIL, self.__PASS, response_provider=response_provider)
 			else:
 				raise
 
@@ -546,13 +547,19 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 
 	async with Network.operation() as session:
 		while not success and tries < 10:
-			async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
-				if "GaijinPass" in entry.types:
-					try:
-						data = await Network.handle_response(r)
-						success = True
-						entry.provided.set()
-					except Network.NetworkError:
+			if response_provider is not None:
+				data = await response_provider("await_2fa")
+			else:
+				async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
+					data = await Network.handle_response(r)
+			if "GaijinPass" in entry.types:
+				try:
+					success = True
+					entry.provided.set()
+				except Network.NetworkError:
+					if response_provider is not None:
+						data = await response_provider("init")
+					else:
 						async with session.post(
 							"https://auth.gaijinent.com/login.php",
 							data={
@@ -566,45 +573,49 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 								"User-Agent": "ThunderAPI/1.0"
 							}
 						) as r:
-							if response_provider is not None:
-								data = await response_provider("2fa")
-							else:
-								data = await Network.handle_response(r)
-						entry.requestId = data["requestId"]
-						tries += 1
-						continue
-				else: # UNTESTED PATH
-					data = await Network.handle_response(r)
-					await entry.provided.wait()
+							data = await Network.handle_response(r)
+					entry.requestId = data["requestId"]
+					tries += 1
+					continue
+				except Exception:
+					_PENDING_2FA.pop(email, None)
+					raise
+			else: # UNTESTED PATH
+				await entry.provided.wait()
 
-					success = True
+				success = True
 	if not success or data.get("Message") == "cancel":
+		_PENDING_2FA.pop(email, None)
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
 
 	entry.auth_data = data
-	return await _login_2fa(email)
+	return await _login_2fa(email, response_provider=response_provider)
 
-async def _login_2fa(email: str):
+async def _login_2fa(email: str, *, response_provider: ResponseProvider | None = None):
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "2FA Entry not found")
 	entry = _PENDING_2FA[email]
 	await entry.provided.wait()
-	async with Network.post(
-		"https://auth.gaijinent.com/login.php",
-		data={
-			"login": email,
-			"password": entry.password,
-			"game": "wt",
-			"2step": entry.auth_data["Message"],
-			"requestId": entry.auth_data["Request"],
-			"client": _MACHINE_ID
-		},
-		headers={
-			"Content-Type": "application/x-www-form-urlencoded",
-			"User-Agent": "ThunderAPI/1.0"
-		}
-	) as r:
-		entry.login_data = await Network.handle_response(r)
+	if response_provider is not None:
+		entry.login_data = await response_provider("2fa_login")
+	else:
+		async with Network.post(
+			"https://auth.gaijinent.com/login.php",
+			data={
+				"login": email,
+				"password": entry.password,
+				"game": "wt",
+				"2step": entry.auth_data["Message"],
+				"requestId": entry.auth_data["Request"],
+				"client": _MACHINE_ID
+			},
+			headers={
+				"Content-Type": "application/x-www-form-urlencoded",
+				"User-Agent": "ThunderAPI/1.0"
+			},
+			response_provider=response_provider
+		) as r:
+			entry.login_data = r
 	_PENDING_2FA.pop(email, None)
 	entry.login.set()
 
@@ -622,22 +633,23 @@ async def login(email: str, password: str, /, *, response_provider: ResponseProv
 		return e.login_data
 
 	async with Network.operation() as session:
-		async with session.post(
-			"https://auth.gaijinent.com/login.php",
-			data={
-				"login": email,
-				"password": password,
-				"game": "wt",
-				"client": _MACHINE_ID
-			},
-			headers={
-				"Content-Type": "application/x-www-form-urlencoded",
-				"User-Agent": "ThunderAPI/1.0"
-			}
-		) as r:
-			if response_provider is not None:
-				data = await response_provider("init")
-			else:
+
+		if response_provider is not None:
+			data = await response_provider("init")
+		else:
+			async with session.post(
+				"https://auth.gaijinent.com/login.php",
+				data={
+					"login": email,
+					"password": password,
+					"game": "wt",
+					"client": _MACHINE_ID
+				},
+				headers={
+					"Content-Type": "application/x-www-form-urlencoded",
+					"User-Agent": "ThunderAPI/1.0"
+				}
+			) as r:
 				data = await Network.handle_response(r)
 
 		if data["status"] == "2STEP":

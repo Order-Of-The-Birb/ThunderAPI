@@ -1,6 +1,6 @@
 from asyncio import Event, Lock
 from json import loads
-from typing import Any, Literal, overload
+from typing import Any, Literal, overload, Callable, Awaitable
 
 from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
@@ -18,22 +18,27 @@ __active_ops_done = Event()
 __active_ops_done.set()
 __lock = Lock()
 
+type ResponseProvider = Callable[[Any], Awaitable[dict[str, Any]]]
+
 @asynccontextmanager
-async def post(url:str, **kwargs):
-	async with request("POST", url, **kwargs) as resp:
+async def post(url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
+	async with request("POST", url, response_provider=response_provider, resp_state=resp_state, autoconvert=autoconvert, **kwargs) as resp:
 		yield resp
 
 @asynccontextmanager
-async def get(url:str, **kwargs):
-	async with request("GET", url, **kwargs) as resp:
+async def get(url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
+	async with request("GET", url, response_provider=response_provider, resp_state=resp_state, autoconvert=autoconvert, **kwargs) as resp:
 		yield resp
 
 @asynccontextmanager
-async def request(method:str, url:str, **kwargs):
+async def request(method:str, url:str, response_provider: ResponseProvider | None = None, resp_state: str | None = None, autoconvert:bool = False, **kwargs):
 	async with operation() as session:
-		async with session.request(method, url, **kwargs) as resp:
-			resp.raise_for_status()
-			yield resp
+		if response_provider is not None:
+			yield await response_provider(resp_state)
+		else:
+			async with session.request(method, url, **kwargs) as resp:
+				resp.raise_for_status()
+				yield await handle_response(resp, autoconvert=autoconvert)
 
 @asynccontextmanager
 async def operation():

@@ -309,12 +309,11 @@ class NewsManager:
 		global _news_endpoint_down
 		news:list[NewsEntry] = []
 		try:
-			async with Network.get(self._API_URL) as response:
+			async with Network.get(self._API_URL, autoconvert=True) as response:
 				if _news_endpoint_down:
 					self.__logger.info("Gaijin's news endpoint is back online")
 					_news_endpoint_down = False
-				data = await response.json()
-				for item in data["items"]:
+				for item in response["items"]:
 					news.append(NewsEntry.from_json(item))
 		except ClientResponseError:
 			if not _news_endpoint_down:
@@ -346,12 +345,12 @@ class NewsManager:
 		global _changelog_maintenance
 		final_changelogs = []
 		try:
-			async with Network.get(self._CHANGELOG_URL) as resp:
+			async with Network.get(self._CHANGELOG_URL, autoconvert=False) as resp:
 				if _changelog_maintenance:
 					self.__logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
 
-				parsed = BeautifulSoup(await resp.text(), 'lxml')
+				parsed = BeautifulSoup(resp, 'lxml')
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
 					raise RuntimeError("Less, than 2 changelogs found (somehow)")
@@ -431,7 +430,7 @@ class NewsManager:
 	async def fetchForumIDs(self) -> tuple[int, ...]:
 		"""Gets the latest "planned battle rating changes" post's ID"""
 		async with Network.get("https://forum.warthunder.com/tag/br-changes") as resp:
-			document = BeautifulSoup(await resp.text(), "lxml")
+			document = BeautifulSoup(resp, "lxml")
 		rows = document.select("tr.topic-list-item")
 		# Ordered by date by default
 
