@@ -36,7 +36,7 @@ def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider
 def post(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
 async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
-	async with request("POST", url, response_provider=response_provider, resp_state=resp_state, return_type=return_type, **kwargs) as resp:
+	async with request("POST", url, return_type, response_provider=response_provider, resp_state=resp_state, **kwargs) as resp:
 		yield resp
 #endregion
 #region GET
@@ -48,7 +48,7 @@ def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider:
 def get(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
 async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
-	async with request("GET", url, response_provider=response_provider, resp_state=resp_state, return_type=return_type, **kwargs) as resp:
+	async with request("GET", url, return_type, response_provider=response_provider, resp_state=resp_state, **kwargs) as resp:
 		yield resp
 #endregion
 #region Request
