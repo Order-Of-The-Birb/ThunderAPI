@@ -8,7 +8,7 @@ from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
 from fastapi import HTTPException
 from fastapi.concurrency import asynccontextmanager
-
+from .const import GaijinErrorCodes
 
 class NetworkError(HTTPException):
 	pass
@@ -107,7 +107,7 @@ async def handle_response(resp:ClientResponse, convert:ReturnType) -> dict[str, 
 	content = await resp.read()
 
 	if content.startswith(b"!ERROR"):
-		raise NetworkError(400, f"Request failed: {content}")
+		GaijinErrorCodes.parse(content)
 
 	match convert:
 		case ReturnType.TEXT:

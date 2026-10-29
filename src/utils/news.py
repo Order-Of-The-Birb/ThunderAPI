@@ -60,7 +60,7 @@ class NewsEntry:
 	def from_json(cls, data:dict[str, Any]):
 		tags = set(data.get('tags', []))
 		title:str = data["title"]
-		while title.strip()[0] == "[":
+		while len(title.strip()) > 0 and title.strip()[0] == "[":
 			tag = re.search(r"\[([A-z]+)\]", title, re.IGNORECASE)
 			if tag is not None:
 				title = re.sub(r"\[([A-z]+)\]", "", title, count=1, flags=re.IGNORECASE)

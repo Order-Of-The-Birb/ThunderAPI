@@ -1,5 +1,4 @@
 from os import getenv
-from urllib.parse import unquote
 
 from fastapi import APIRouter, Path, Query, status
 from fastapi import Request as faRequest
@@ -33,7 +32,7 @@ async def get_users_terse_info(
 		min_length=1,
 		max_length=50)
 	],
-) -> dict[int, TerseReturnModel]:
+) -> dict[str, TerseReturnModel]:
 	"""Get terse information about users by their IDs."""
 	return await get_terse(user, *id)
 
@@ -120,7 +119,7 @@ async def get_users_search(
 	response = await Request.send_template(
 		user,
 		"find_users_by_nick_prefix",
-		nick = unquote(nick),
+		nick = nick,
 		maxCount = limit
 	)
 

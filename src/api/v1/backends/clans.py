@@ -26,7 +26,7 @@ async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanI
 	)
 
 	if clanId is None:
-		response.headers.pop("clanId")
+		response.headers.pop("clanId", Network)
 	else:
 		response.replace("count", 1)
 		response.replace("start", 0)
@@ -133,14 +133,14 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 	}
 
 async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
+	if clanName is None and clanTag is None:
+		raise HTTPException(status.HTTP_400_BAD_REQUEST, "You must provide either a clanName or clanTag")
 	response = await Request.from_template(
 		user,
 		"clan_find_by_prefix",
 		count=limit,
 		start=limit*page
 	)
-	if clanName is None and clanTag is None:
-		raise HTTPException(status.HTTP_400_BAD_REQUEST, "You must provide either a clanName or clanTag")
 	if clanName:
 		response.headers["namePrefix"] = clanName
 	else:
@@ -149,6 +149,7 @@ async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str
 		response.headers["tagPrefix"] = clanTag
 	else:
 		del response.headers["tagPrefix"]
+
 	response = await response.send()
 	if isinstance(response["clan"], dict):
 		response["clan"] = [response["clan"],]
@@ -310,15 +311,18 @@ async def sanitizeApplicants(applicants:dict|list|None):
 		applicants = [applicants,]
 
 	def _ip_to_geo(x: str) -> dict[str, Any] | None:
-		geo = lookup_city(x)
-		if geo is None:
-			return
+		try:
+			geo = lookup_city(x)
+			if geo is None:
+				return None
 
-		return {
-			"offset": lookup_utc_offset(geo.location.time_zone),
-			"city": geo.city.name,
-			"country": geo.country.iso_code
-		}
+			return {
+				"offset": lookup_utc_offset(geo.location.time_zone),
+				"city": geo.city.name,
+				"country": geo.country.iso_code
+			}
+		except Exception:
+			return None
 
 	SANITIZATION = (
 		dictUtil.KeyMod("uid", convert=lambda x: int(x)),

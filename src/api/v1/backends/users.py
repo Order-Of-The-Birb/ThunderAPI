@@ -25,7 +25,7 @@ async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnM
 		dictUtil.KeyMod("nick", new_name="username")
 	)
 	for k in dict(data):
-		data[int(k)] = await dictUtil.run_all(data.pop(k), SANITIZE)
+		data[k] = await dictUtil.run_all(data.pop(k), SANITIZE)
 
 	return data
 
