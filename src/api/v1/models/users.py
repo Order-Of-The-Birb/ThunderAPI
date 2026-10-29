@@ -158,8 +158,8 @@ class getUserDirect:
 	#countries: dict[SIMPLE_COUNTRIES, _countriesModel]
 
 class TerseReturnModel(BaseModel):
-	clanName: str = Field(description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""])
-	clanTag: str = Field(description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"])
+	clanName: str = Field(default=None, description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""], exclude_if=lambda x: x is None)
+	clanTag: str = Field(default=None, description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"], exclude_if=lambda x: x is None)
 	username: str
 
 USER_RANK: tuple[int] = (

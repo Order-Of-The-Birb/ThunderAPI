@@ -1,4 +1,4 @@
-from asyncio import Lock
+import asyncio
 from datetime import UTC, datetime, time
 from logging import getLogger as _gL
 from re import IGNORECASE
@@ -202,7 +202,7 @@ SQB_BRACKET_TIMES = (
 	)
 )
 SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] | None = None
-SQB_BRACKET_CACHE_LOCK = Lock()
+SQB_BRACKET_CACHE_LOCK = asyncio.Lock()
 
 async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 	async def get_brackets():
@@ -310,14 +310,14 @@ async def sanitizeApplicants(applicants:dict|list|None):
 	if isinstance(applicants, dict):
 		applicants = [applicants,]
 
-	def _ip_to_geo(x: str) -> dict[str, Any] | None:
+	async def _ip_to_geo(x: str) -> dict[str, Any] | None:
 		try:
-			geo = lookup_city(x)
+			geo = await asyncio.to_thread(lookup_city, x)
 			if geo is None:
 				return None
 
 			return {
-				"offset": lookup_utc_offset(geo.location.time_zone),
+				"offset": await asyncio.to_thread(lookup_utc_offset, geo.location.time_zone),
 				"city": geo.city.name,
 				"country": geo.country.iso_code
 			}
@@ -329,7 +329,7 @@ async def sanitizeApplicants(applicants:dict|list|None):
 		dictUtil.KeyMod("nick", new_name="nickname"),
 		dictUtil.KeyMod("comments", new_name="comment", default=""),
 		dictUtil.KeyMod("date", new_name="timestamp"),
-		dictUtil.KeyMod("ip", new_name="geo", convert=lambda x: _ip_to_geo(x))
+		dictUtil.KeyMod("ip", new_name="geo", convert=_ip_to_geo)
 	)
 
 	for i, applicant in enumerate(applicants):

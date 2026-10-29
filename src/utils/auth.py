@@ -574,11 +574,11 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 					tries += 1
 					continue
 				except Exception:
+					_PENDING_2FA.pop(email, None)
 					raise
 			if "GaijinPass" in entry.types:
 				success = True
 				entry.provided.set()
-				_PENDING_2FA.pop(email, None)
 			else: # UNTESTED PATH
 				await entry.provided.wait()
 
