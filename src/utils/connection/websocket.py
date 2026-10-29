@@ -1,7 +1,7 @@
 from asyncio import Lock
 from collections.abc import AsyncGenerator
-from typing import Awaitable, Callable
 from json import JSONDecodeError
+from typing import Awaitable, Callable
 
 from fastapi import WebSocket, WebSocketDisconnect, status
 
