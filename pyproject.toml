@@ -25,6 +25,10 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
+filterwarnings = [
+    "ignore",
+    "always::Warning:(src|utils|api|config|main|tests)",
+]
 
 [tool.ruff]
 target-version = "py314"

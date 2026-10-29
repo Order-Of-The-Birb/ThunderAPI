@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum, IntEnum
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):
@@ -164,8 +164,7 @@ class ClanModel(BaseModel):
 	clanRewardRatingPerUser_60: dict | None = None
 	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
 
-	class Config:
-		extra = "allow"
+	model_config = ConfigDict(extra="allow")
 
 class ClanSearchResultModel(BaseModel):
 	id: int

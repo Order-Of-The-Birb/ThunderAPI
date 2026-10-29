@@ -11,6 +11,7 @@ from os import getenv, urandom
 from re import sub as re_sub
 from secrets import token_urlsafe
 from typing import Any, ClassVar, Literal
+from collections.abc import Awaitable, Callable
 
 from aiosqlite import OperationalError, Row, connect
 from apscheduler.job import Job
@@ -86,6 +87,8 @@ class LoginEntry:
 	uidHint: int
 
 	entry: UserAuth.Entry | None = None
+
+type ResponseProvider = Callable[[str], Awaitable[dict[str, Any]]]
 
 class UserAuth:
 	_auth_used_cache = {}
@@ -285,9 +288,9 @@ class UserAuth:
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
 
-	async def login(self, email:str, password:str|None = None) -> tuple[str, int]:
+	async def login(self, email:str, password:str|None = None, /, *, response_provider: ResponseProvider | None = None) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
-		data = await login(email, password)
+		data = await login(email, password, response_provider=response_provider)
 
 		async with self._transaction() as cur:
 			schema = dbSchema
@@ -529,7 +532,7 @@ class ServerAuth:
 		self._UID = data["user_id"]
 		self.__EXP = datetime.now(UTC) + timedelta(seconds=data["token_exp"])
 
-async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
+async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider | None = None) -> dict[str, str|int] | None:
 	tries = 0
 	success = False
 	entry = _PENDING_2FA.get(email)
@@ -563,7 +566,10 @@ async def _await_2fa_code(email:str) -> dict[str, str|int] | None:
 								"User-Agent": "ThunderAPI/1.0"
 							}
 						) as r:
-							data = await Network.handle_response(r)
+							if response_provider is not None:
+								data = await response_provider("2fa")
+							else:
+								data = await Network.handle_response(r)
 						entry.requestId = data["requestId"]
 						tries += 1
 						continue
@@ -602,7 +608,7 @@ async def _login_2fa(email: str):
 	_PENDING_2FA.pop(email, None)
 	entry.login.set()
 
-async def login(email: str, password: str):
+async def login(email: str, password: str, /, *, response_provider: ResponseProvider | None = None):
 	if email in _PENDING_2FA:
 		e = _PENDING_2FA[email]
 		try:
@@ -629,7 +635,10 @@ async def login(email: str, password: str):
 				"User-Agent": "ThunderAPI/1.0"
 			}
 		) as r:
-			data = await Network.handle_response(r)
+			if response_provider is not None:
+				data = await response_provider("init")
+			else:
+				data = await Network.handle_response(r)
 
 		if data["status"] == "2STEP":
 
@@ -649,7 +658,7 @@ async def login(email: str, password: str):
 				password=password
 			)
 
-			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
+			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email, response_provider=response_provider))
 			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
 
 		if data["status"] == "LOGINERROR":
