@@ -2,7 +2,6 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict, dataclass
-from ipaddress import ip_address, ip_network
 from json import loads
 from logging.handlers import TimedRotatingFileHandler
 from os import getenv, path
@@ -22,7 +21,7 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS, PROXIED
+from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, PROXIED, SWAGGER_CSS, SWAGGER_JS
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
