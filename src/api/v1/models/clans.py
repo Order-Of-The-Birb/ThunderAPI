@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum, IntEnum
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):

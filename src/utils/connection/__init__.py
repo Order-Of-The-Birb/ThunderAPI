@@ -4,7 +4,7 @@ from json import JSONDecodeError, dumps, loads
 from random import choice, randint
 from typing import TYPE_CHECKING, Any
 
-from aiohttp import ClientResponse, ClientSession
+from aiohttp import ClientSession
 from fastapi import HTTPException, status
 
 import utils.connection.network as Network

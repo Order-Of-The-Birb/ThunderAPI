@@ -1,13 +1,13 @@
 from asyncio import Event, Lock
 from contextlib import AbstractAsyncContextManager
+from enum import IntEnum, auto
 from json import loads
-from typing import Any, Literal, overload, Callable, Awaitable
+from typing import Any, Awaitable, Callable, Literal, overload
 
 from aiohttp import ClientResponse, ClientSession
 from aiohttp.cookiejar import DummyCookieJar
 from fastapi import HTTPException
 from fastapi.concurrency import asynccontextmanager
-from enum import IntEnum, auto
 
 
 class NetworkError(HTTPException):

@@ -19,6 +19,7 @@ dev = [
 	"pytest",
 	"pytest-asyncio",
 	"ruff",
+	"httpx"
 ]
 
 [tool.pytest.ini_options]
