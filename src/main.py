@@ -175,7 +175,7 @@ class WebSocketInfo:
 	def to_json(self):
 		return asdict(self)
 websockets: dict[str, WebSocketInfo] = {
-	"/news_ws": WebSocketInfo(
+	"/v1/news_ws": WebSocketInfo(
 		tags = ["general"],
 		summary = "Live news feed",
 		description = "Sends the newest news article every time a new one is posted"
@@ -197,19 +197,20 @@ def custom_openapi():
 		for method in ep_path.values():
 			method["responses"].pop("422", None)
 
-	def handle_routes(route: _IncludedRouter|APIRoute|APIWebSocketRoute):
+	def handle_routes(route: _IncludedRouter|APIRoute|APIWebSocketRoute, path: str = ""):
 		if isinstance(route, _IncludedRouter):
-			for route in route.original_router.routes:
-				handle_routes(route)
+			for r in route.original_router.routes:
+				handle_routes(r, path+route.original_router.prefix)
 			return
 		nonlocal openapi_schema
 		if isinstance(route, APIWebSocketRoute):
-			ws_data = websockets.get(route.path)
+			ws_path = path+route.path
+			ws_data = websockets.get(ws_path)
 			if ws_data is None:
-				logger.warning(f"Route {route.path} doesn't have any configuration, it will not show up in Swagger UI")
+				logger.warning(f"Route {ws_path} doesn't have any configuration, it will not show up in Swagger UI")
 				return
-			openapi_schema["paths"].setdefault(route.path, {})
-			openapi_schema["paths"][route.path]["x-websocket"] = ws_data.to_json()
+			openapi_schema["paths"].setdefault(ws_path, {})
+			openapi_schema["paths"][ws_path]["x-websocket"] = ws_data.to_json()
 
 	for route in app.routes:
 		handle_routes(route)
