@@ -22,7 +22,7 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS
+from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS, PROXIED
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
@@ -147,75 +147,9 @@ app.add_exception_handler(
 )
 #endregion
 
-#region Client IP trust (Cloudflare)
-CLOUDFLARE_IPV4 = (
-	"173.245.48.0/20",
-	"103.21.244.0/22",
-	"103.22.200.0/22",
-	"103.31.4.0/22",
-	"141.101.64.0/18",
-	"108.162.192.0/18",
-	"190.93.240.0/20",
-	"188.114.96.0/20",
-	"197.234.240.0/22",
-	"198.41.128.0/17",
-	"162.158.0.0/15",
-	"104.16.0.0/13",
-	"104.24.0.0/14",
-	"172.64.0.0/13",
-	"131.0.72.0/22",
-)
-CLOUDFLARE_IPV6 = (
-	"2400:cb00::/32",
-	"2606:4700::/32",
-	"2803:f800::/32",
-	"2405:b500::/32",
-	"2405:8100::/32",
-	"2a06:98c0::/29",
-	"2c0f:f248::/32",
-)
-CLOUDFLARE_NETS = tuple(ip_network(net) for net in (*CLOUDFLARE_IPV4, *CLOUDFLARE_IPV6))
-
-
-def _is_trusted_peer(ip: str) -> bool:
-	"""True when the direct peer is Cloudflare (proxy) or a local/private host (cloudflared tunnel)."""
-	try:
-		addr = ip_address(ip)
-	except ValueError:
-		return False
-	return addr.is_loopback or addr.is_private or any(addr in net for net in CLOUDFLARE_NETS)
-
-
-class CloudflareClientIPMiddleware:
-	"""Rewrite the client address from Cloudflare's CF-Connecting-IP header.
-
-	The header is only honoured when the request comes from a trusted peer
-	(Cloudflare edge or the local tunnel), so a directly connected client can't
-	spoof the header to evade rate limiting.
-	"""
-
-	def __init__(self, app):
-		self.app = app
-
-	async def __call__(self, scope, receive, send):
-		if scope["type"] in ("http", "websocket") and scope.get("client") is not None:
-			peer_ip, peer_port = scope["client"]
-			if _is_trusted_peer(peer_ip):
-				for name, value in scope.get("headers", []):
-					if name == b"cf-connecting-ip":
-						try:
-							real_ip = str(ip_address(value.decode("latin1").strip()))
-						except ValueError:
-							break
-						scope["client"] = (real_ip, peer_port)
-						break
-		await self.app(scope, receive, send)
-#endregion
 
 app.include_router(router)
 app.add_middleware(SlowAPIMiddleware)
-if int(getenv("ENABLE_CLOUDFLARE_MIDDLEWARE", "0")) == 1:
-	app.add_middleware(CloudflareClientIPMiddleware)
 
 #region Modify OpenAPI schema
 @dataclass(slots=True)
@@ -353,7 +287,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host=HOST, port=PORT)
+		uvicorn_run(app, host=HOST, port=PORT, forwarded_allow_ips="*" if PROXIED else None)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:

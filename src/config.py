@@ -3,6 +3,8 @@ from pathlib import Path
 
 __DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
 
+PROXIED = int(getenv("PROXIED", "0")) == 1
+
 DATA_DIR = Path("/data/") if not __DEBUG_MODE else Path(__file__).parent.parent / "data"
 TOOL_DIR = Path("/opt/tools/") if not __DEBUG_MODE else Path(__file__).parent.parent / "tools"
 
