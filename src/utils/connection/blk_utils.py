@@ -27,8 +27,10 @@ class Decompress(dict):
 			[str(WT_EXT_CLI), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
 			input=payload,
 			capture_output=True,
-			timeout=60
+			timeout=60,
 		)
+		if unpacked.returncode != 0:
+			raise RuntimeError(f"wt_ext_cli failed to unpack (exit code {unpacked.returncode})")
 		super().__init__(loads(unpacked.stdout))
 	@classmethod
 	async def async_init(cls, data:bytes):

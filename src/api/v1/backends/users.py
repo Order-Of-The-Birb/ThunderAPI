@@ -112,7 +112,7 @@ async def get_user(user:LoginEntry, userid: int):
 		for vehicle, v_data in m_data.items():
 			m_data[vehicle] = await dictUtil.run_all(v_data, VEHICLE_SANITIZE)
 		data["userstat"][mode] = m_data
-		data["userstat"] = await dictUtil.KeyMod("simulation", new_name="simulator").run(data["userstat"])
+	data["userstat"] = await dictUtil.KeyMod("simulation", new_name="simulator").run(data["userstat"])
 	for mode in data["summary"]:
 		data["summary"][mode] = await dictUtil.KeyMod("hardcore", new_name="simulator").run(data["summary"][mode])
 

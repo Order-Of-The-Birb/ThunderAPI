@@ -185,8 +185,6 @@ class Request:
 			authTimeLeft = self.user.entry.timeLeft()
 			if authTimeLeft <= timedelta(minutes=30):
 				await self.user.entry.refresh()
-			elif authTimeLeft < timedelta():
-				raise AuthenticationError(status.HTTP_401_UNAUTHORIZED, "Your login has expired, please log in again to reauthenticate.")
 		if self.user.jwt:
 			if "Authorization" in self.body:
 				self.body["Authorization"] = f"Bearer {self.user.jwt}"

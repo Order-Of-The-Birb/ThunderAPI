@@ -323,7 +323,7 @@ class NewsManager:
 					news.append(NewsEntry.from_json(item))
 		except ClientResponseError:
 			if not _news_endpoint_down:
-				self.__logger.error("Gaijin's news endpoint is currently down. Returning emptry until it is back")
+				self.__logger.error("Gaijin's news endpoint is currently down. Returning empty until it is back")
 				_news_endpoint_down = True
 		return news
 	async def _get_new_news(self):

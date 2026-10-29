@@ -16,8 +16,6 @@ class Authentication:
 	@staticmethod
 	async def _track_usage(user: LoginEntry):
 		# move the existing flush/counter block here
-		if user.entry is None:
-			raise HTTPException(status.HTTP_409_CONFLICT, "You must be logged in")
 		flush = False
 		async with users_auth._auth_used_lock:
 			cache = users_auth._auth_used_cache.setdefault(user.entry.hashed, {"cnt": 0})
@@ -41,13 +39,15 @@ class Authentication:
 		return user
 
 	@staticmethod
-	async def get_server_auth() -> LoginEntry:
+	async def get_server_auth(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],) -> LoginEntry:
 		if utils.server_auth is None:
-			raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account not configured")
+			if credentials is None:
+				raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
+			return await Authentication.get_auth(credentials.credentials)
 
 		entry = utils.server_auth.getLogin()
 		if entry is None:
-			raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account not configured")
+			raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
 		return entry
 
 	@staticmethod

@@ -74,6 +74,9 @@ class Replay(dict):
 		#region Parse gaijin JSON to proper JSON
 		resultsData = await get_data()
 
+		if resultsData is None:
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not parse replay")
+
 		self.update({
 			"status": "OK",
 			"matchId": resultsData.header.sessionIdHex,
