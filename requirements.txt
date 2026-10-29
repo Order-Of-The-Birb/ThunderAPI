@@ -3,7 +3,7 @@ packaging
 
 # API Backend
 slowapi
-fastapi==0.136.1
+fastapi==0.162.0
 uvicorn
 apscheduler
 python-multipart

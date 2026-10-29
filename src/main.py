@@ -191,12 +191,16 @@ def custom_openapi():
 			method["responses"].pop("422", None)
 
 	for route in app.routes:
-		ws_data = websockets.get(route.path)
+		route_path = getattr(route, "path", None)
+		if route_path is None:
+			continue
+
+		ws_data = websockets.get(route_path)
 		if ws_data is None:
 			continue
 
-		openapi_schema["paths"].setdefault(route.path, {})
-		openapi_schema["paths"][route.path]["x-websocket"] = ws_data.to_json()
+		openapi_schema["paths"].setdefault(route_path, {})
+		openapi_schema["paths"][route_path]["x-websocket"] = ws_data.to_json()
 
 	app.openapi_schema = openapi_schema
 	return app.openapi_schema
