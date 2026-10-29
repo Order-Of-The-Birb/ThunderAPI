@@ -49,7 +49,9 @@ class Authentication:
 
 		entry = utils.server_auth.getLogin()
 		if entry is None:
-			raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
+			if credentials is None:
+				raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
+			return await Authentication.get_auth(credentials.credentials)
 		return entry
 
 	@staticmethod

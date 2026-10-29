@@ -56,7 +56,7 @@ async def send_application(
 	response = await Request.send_template(
 		user,
 		"clan_membership_request",
-		remove_keys=("cancelRequest",),
+		remove_keys=set(["cancelRequest"]),
 		_id=clanId,
 		comments=comment
 	)
@@ -78,7 +78,7 @@ async def unsend_application(
 	response = await Request.send_template(
 		user,
 		"clan_membership_request",
-		remove_keys=("_id",),
+		remove_keys=set(["_id"]),
 		comments=comment,
 		cancelRequest=True
 	)

@@ -79,6 +79,7 @@ async def answer_2fa(
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
 	if _PENDING_2FA[email].check_password(password):
 		_PENDING_2FA[email].code = code
+		_PENDING_2FA[email].provided.set()
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement

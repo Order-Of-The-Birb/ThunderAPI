@@ -185,22 +185,19 @@ class Request:
 			authTimeLeft = self.user.entry.timeLeft()
 			if authTimeLeft <= timedelta(minutes=30):
 				await self.user.entry.refresh()
-		if self.user.jwt:
-			if "Authorization" in self.body:
-				self.body["Authorization"] = f"Bearer {self.user.jwt}"
-			elif "token" in self.body:
-				self.body["token"] = self.user.jwt
-				self.body["uidHint"] = str(self.user.uidHint)
-				self.body["transactid"] = str(randint(0, 999999999999))
-			elif "Authorization" in self.headers:
-				self.headers["Authorization"] = f"Bearer {self.user.jwt}"
-			elif "token" in self.headers:
-				self.headers["token"] = self.user.jwt
-				self.headers["uidHint"] = str(self.user.uidHint)
-				self.headers["transactid"] = str(randint(0, 999999999999))
-			return
-		else:
-			raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Authentication required for this request, but no token is available. Please ensure you have logged in successfully.")
+		if "Authorization" in self.body:
+			self.body["Authorization"] = f"Bearer {self.user.jwt}"
+		elif "token" in self.body:
+			self.body["token"] = self.user.jwt
+			self.body["uidHint"] = str(self.user.uidHint)
+			self.body["transactid"] = str(randint(0, 999999999999))
+		elif "Authorization" in self.headers:
+			self.headers["Authorization"] = f"Bearer {self.user.jwt}"
+		elif "token" in self.headers:
+			self.headers["token"] = self.user.jwt
+			self.headers["uidHint"] = str(self.user.uidHint)
+			self.headers["transactid"] = str(randint(0, 999999999999))
+		return
 
 	async def send(self) -> dict[str, Any]:
 		if self.action is None and self.url is None:

@@ -1,6 +1,7 @@
 from asyncio import Lock
 from collections.abc import AsyncGenerator
 from typing import Awaitable, Callable
+from json import JSONDecodeError
 
 from fastapi import WebSocket, WebSocketDisconnect, status
 
@@ -29,7 +30,7 @@ class WebsocketManager:
 		try:
 			while True:
 				yield await ws.receive_json()
-		except (WebSocketDisconnect, RuntimeError):
+		except (WebSocketDisconnect, RuntimeError, JSONDecodeError):
 			pass
 		finally:
 			await self.disconnect(ws)
