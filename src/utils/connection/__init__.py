@@ -12,7 +12,6 @@ from utils.connection.blk_utils import Compress, Decompress
 from utils.connection.const import Actions, AuthLevel, GaijinErrorCodes, ServerPool
 from utils.connection.templates import TEMPLATES
 from utils.connection.templates import load as load_template
-from utils.helper import AuthenticationError
 
 if TYPE_CHECKING:
 	from utils.auth import LoginEntry
