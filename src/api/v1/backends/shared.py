@@ -39,7 +39,9 @@ class Authentication:
 		return user
 
 	@staticmethod
-	async def get_server_auth(credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],) -> LoginEntry:
+	async def get_server_auth(
+		credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)] = None
+	) -> LoginEntry:
 		if utils.server_auth is None:
 			if credentials is None:
 				raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
@@ -52,7 +54,7 @@ class Authentication:
 
 	@staticmethod
 	async def get_optional_auth(
-		credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)],
+		credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(optional_security)]
 	) -> LoginEntry:
 		if credentials is not None:
 			user = await users_auth.get(credentials.credentials)
