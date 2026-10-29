@@ -1,6 +1,7 @@
 from utils.auth import AuthenticationError as AuthenticationError
 from utils.auth import ServerAuth, UserAuth
 from utils.news import NewsManager
+
 #from utils.vehicleParser import Vehicles
 
 users_auth = UserAuth()
