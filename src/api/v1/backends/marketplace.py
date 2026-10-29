@@ -39,8 +39,7 @@ class Item:
 		for tag in data["tags"]:
 			tag:str
 			if tag.count(":") != 1:
-				... # TODO: Figure out something here
-				return
+				raise RuntimeError(f"Somehow item {data["hash_name"]}'s tag '{tag}' has more than 1 separator")
 			key, value = tag.split(":")
 			if value == "yes":
 				tags[key] = True
@@ -200,7 +199,6 @@ class InventoryItem:
 	contextid: int
 	@classmethod
 	def from_json(cls, data:dict[str, Any], user: LoginEntry, itemData: dict[str, Any], context: int):
-		pass
 		assetData: dict[str, Any] = data["result"]["asset"]
 		classData: dict[str, Any] = itemData["class"][0]
 
@@ -227,7 +225,7 @@ class InventoryItem:
 		agree_stamp = dtToTimestampMs(datetime.now(UTC))
 
 		gaijin_fee = price*0.15
-		seller_should_get = int((price-gaijin_fee)*10000//100*100)
+		seller_should_get = int((price-gaijin_fee)*10000)
 
 		soldItems = []
 		sold = 0

@@ -106,8 +106,6 @@ async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.TEXT
 async def handle_response(resp:ClientResponse, convert:ReturnType) -> dict[str, Any]|bytes|str:
 	content = await resp.read()
 
-	if resp.status >= 400:
-		raise NetworkError(400, f"Request failed: {resp.status}")
 	if content.startswith(b"!ERROR"):
 		raise NetworkError(400, f"Request failed: {content}")
 

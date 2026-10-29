@@ -97,8 +97,8 @@ class ReplayParser:
 		self.header = _ReplayHeader(replay)
 		try:
 			self.body = (await Decompress.async_init(replay[self.header.rezOffset:])).as_dict()
+			return self
 		except RuntimeError:
-			self.body = {}
+			return
 		except JSONDecodeError as e:
 			raise HTTPException(status.HTTP_425_TOO_EARLY, "Replay hasn't ended yet, or is not parseable for some reason") from e
-		return self

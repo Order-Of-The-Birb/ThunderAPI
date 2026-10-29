@@ -213,18 +213,15 @@ class UserAuth:
 				tagPrefix=userEntry["clanTag"]
 			)
 			if "clan" in squadronData:
-				for member in squadronData["clan"]["members"]:
-					# Extra check, when applying Gaijin already sets `clanName`, before being accepted
-					if int(member["uid"]) == self.uidHint:
-						return int(squadronData["clan"]["_id"])
-				return
-			elif isinstance(squadronData, dict):
-				squadronData = [squadronData,]
+				clans = squadronData["clan"]
+				if isinstance(clans, dict):
+					clans = [clans]
 
-			for squadron in squadronData:
-				for member in squadron["members"]:
-					if int(member["uid"]) == self.uidHint:
-						return int(squadron["_id"])
+				for squadron in clans:
+					for member in squadron["members"]:
+						# Extra check, when applying Gaijin already sets `clanName`, before being accepted
+						if int(member["uid"]) == self.uidHint:
+							return int(squadron["_id"])
 			return None
 
 		async def _write_values(self):
@@ -351,17 +348,18 @@ class UserAuth:
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')")).fetchall()
 
-			for row in rows:
-				entry = await self.Entry.from_row(self, row)
-				try:
-					if entry.usedWithin(24*60): # Used within the last day
-						await entry.refresh()
-					else:
-						await self.remove_entry(entry)
-				except AuthenticationError:
-					_logger.error(f"Could not refresh entry {entry.email}")
+		for row in rows:
+			entry = await self.Entry.from_row(self, row)
+			try:
+				if entry.usedWithin(24*60): # Used within the last day
+					await entry.refresh()
+				else:
 					await self.remove_entry(entry)
+			except AuthenticationError:
+				_logger.error(f"Could not refresh entry {entry.email}")
+				await self.remove_entry(entry)
 
+		async with self._transaction() as cur:
 			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} <= strftime('%s', 'now')")
 			if operation.rowcount > 0:
 				_logger.info(f"Deleted {operation.rowcount} expired entries")

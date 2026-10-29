@@ -13,4 +13,4 @@ def privacy_policy():
 
 @router.get("/github", summary="Redirects to the github source code")
 async def github_redirect():
-    return RedirectResponse("https://github.com/Order-Of-The-Birb/ThunderAPI", status.HTTP_301_MOVED_PERMANENTLY)
+	return RedirectResponse("https://github.com/Order-Of-The-Birb/ThunderAPI", status.HTTP_301_MOVED_PERMANENTLY)
