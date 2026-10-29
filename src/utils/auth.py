@@ -622,7 +622,6 @@ async def _login_2fa(email: str, *, response_provider: ResponseProvider | None =
 	entry.login.set()
 
 async def login(email: str, password: str, /, *, response_provider: ResponseProvider | None = None):
-	return None # Testing pytest workflow
 	if email in _PENDING_2FA:
 		e = _PENDING_2FA[email]
 		try:

@@ -34,5 +34,3 @@ BINBLK = TOOL_DIR / "binBlk"
 
 HOST: str = getenv("HOST", "127.0.0.1") if __DEBUG_MODE else "0.0.0.0"
 PORT: int = int(getenv("PORT", "8000")) if __DEBUG_MODE else 8000
-
-PORT = "Testing linting workflow"
