@@ -202,7 +202,6 @@ def custom_openapi():
 			for r in route.original_router.routes:
 				handle_routes(r, path+route.original_router.prefix)
 			return
-		nonlocal openapi_schema
 		if isinstance(route, APIWebSocketRoute):
 			ws_path = path+route.path
 			ws_data = websockets.get(ws_path)
