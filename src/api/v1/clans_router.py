@@ -14,6 +14,7 @@ from api.v1.backends.clans import (
 	getLeaderboard,
 	getLogs,
 	searchClan,
+	next_sqb_bracket
 )
 from api.v1.backends.shared import OptionalAuth, ServerBearer, TokenBearer
 from api.v1.models.base import SuccessEmptyDict
@@ -290,11 +291,11 @@ async def get_brackets(
 
 @router.get(
 	"/sqb/current",
-	summary="Returns the current SQB/SRB bracket, and if one is open, also returns it's start and end time",
+	summary="Returns the current SQB/SRB bracket, and if one is open, also returns it's start and end time. If currently there is no open timebracket, it returns the next bracket's start and end",
 	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
-async def get_current_br(
+async def get_current_bracket(
 	request: faRequest,
 	user: ServerBearer
 ) -> CurrentSQBBracket:
@@ -305,6 +306,12 @@ async def get_current_br(
 		start_dt = datetime.combine(rn.date(), start, UTC)
 		end_dt = datetime.combine(rn.date(), end, UTC)
 		if start_dt <= rn <= end_dt:
+			return {
+				"bracket": bracket,
+				"start": start_dt,
+				"end": end_dt
+			}
+		if start_dt > rn:
 			return {
 				"bracket": bracket,
 				"start": start_dt,
