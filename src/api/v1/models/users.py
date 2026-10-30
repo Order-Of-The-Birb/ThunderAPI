@@ -1,0 +1,212 @@
+from __future__ import annotations
+
+from bisect import bisect_right
+from datetime import date, datetime
+from enum import Enum
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+COUNTRIES = Literal[
+	"country_usa",
+	"country_germany",
+	"country_ussr",
+	"country_britain",
+	"country_japan",
+	"country_china",
+	"country_italy",
+	"country_france",
+	"country_sweden",
+	"country_israel"
+]
+SIMPLE_COUNTRIES = Literal[
+	"usa",
+	"germany",
+	"ussr",
+	"britain",
+	"japan",
+	"china",
+	"italy",
+	"france",
+	"sweden",
+	"israel"
+]
+GAMEMODES = Literal[
+	"arcade",
+	"realistic",
+	"simulator"
+]
+SPECIFIC_GAMEMODES = Literal[
+	"air_arcade",
+	"air_realistic",
+	"air_simulation",
+	"tank_arcade",
+	"tank_realistic",
+	"tank_simulation",
+	"test_ship_arcade",
+	"test_ship_realistic",
+	"helicopter_arcade"
+]
+VEHICLE_TYPES = Literal[
+	"fighter",
+	"bomber",
+	"assault",
+	"tank",
+	"heavy_tank",
+	"tank_destroyer",
+	"SPAA",
+	"ship",
+	"torpedo_boat",
+	"gun_boat",
+	"torpedo_gun_boat",
+	"submarine_chaser",
+	"destroyer",
+	"naval_ferry_barge",
+	"helicopter",
+	"cruiser",
+	"human"
+]
+
+class getUserDirect:
+	class summaryModel(BaseModel):
+		class summaryGameModeModel(BaseModel):
+			class vehicleModel(BaseModel):
+				timePlayed: int
+				air_kills: int
+				ground_kills: int
+				naval_kills: int
+				respawns: int
+			missionsComplete: int
+			victories: int
+			fighter:vehicleModel
+			bomber: vehicleModel
+			assault: vehicleModel
+			tank: vehicleModel
+			heavy_tank: vehicleModel
+			tank_destroyer: vehicleModel
+			SPAA: vehicleModel
+			ship: vehicleModel
+			torpedo_boat: vehicleModel
+			gun_boat: vehicleModel
+			torpedo_gun_boat: vehicleModel
+			submarine_chaser: vehicleModel
+			destroyer: vehicleModel
+			naval_ferry_barge: vehicleModel
+			helicopter: vehicleModel
+			cruiser: vehicleModel
+			human: vehicleModel
+		single_played: dict[GAMEMODES, summaryGameModeModel]
+		pvp_played: dict[GAMEMODES, summaryGameModeModel]
+		skirmish_played: dict[GAMEMODES, summaryGameModeModel]
+		campaign_played: dict[GAMEMODES, summaryGameModeModel]
+		dynamic_played: dict[GAMEMODES, summaryGameModeModel]
+		builder_played: dict[GAMEMODES, summaryGameModeModel]
+		other_played: dict[GAMEMODES, summaryGameModeModel]
+
+	class statisticsModel(BaseModel):
+		class unitStatModel(BaseModel):
+			victories: int = 0
+			deaths: int = 0
+			defeats: int = 0
+			air_kills: int = 0
+			ground_kills: int = 0
+			naval_kills: int = 0
+			respawns: int = 0
+			total_sl: int = 0
+			total_rp: int = 0
+
+		arcade: dict[str, unitStatModel] = {}
+		historical: dict[str, unitStatModel] = {}
+		simulator: dict[str, unitStatModel] = {}
+
+	class countriesModel(BaseModel):
+		class maxRanksModel(BaseModel):
+			Aircraft: int = -1
+			Tank: int = -1
+			Ship: int = -1
+			Helicopter: int = -1
+			Boat: int = -1
+			Human: int = -1
+		max_ranks: maxRanksModel
+		numUnits: int = 0
+		numEliteUnits: int = 0
+		current_lineup: tuple[str, ...] = tuple()
+		units: tuple[str, ...] = tuple()
+
+	class metaModel(BaseModel):
+		class _clanDataModel(BaseModel):
+			name: str
+			tag: str
+			type: int
+			role: int
+			id: int
+
+		class _playerLevelModel(BaseModel):
+			title: str
+			level: int
+
+		nick: str
+		last_login: date
+		registered_at: datetime
+		id: int
+		rank: _playerLevelModel
+		clan: _clanDataModel | None = Field(default=None, exclude_if=lambda x: x is None)
+		numEliteUnits: int
+		penaltyStatus: str
+	#summary: _summaryModel
+	#statistics: _statisticsModel
+	#countries: dict[SIMPLE_COUNTRIES, _countriesModel]
+
+class TerseReturnModel(BaseModel):
+	clanName: str = Field(default=None, description="Name of the clan the user is in, if applicable", examples=["Order Of The Birb", ""], exclude_if=lambda x: x is None)
+	clanTag: str = Field(default=None, description="Clan tag of the clan the user is in, if applicable. Includes border. Key doesn't exist if user is not in a clan", examples=["┾PECK┿"], exclude_if=lambda x: x is None)
+	username: str
+
+USER_RANK: tuple[int] = (
+	0, 500, 1800, 5000, 11600, 23500, 42700, 71700, 113200, 170100,
+	245600, 322600, 401400, 482100, 564600, 648900, 735000, 822900, 912700, 1004300,
+	1097700, 1192900, 1290000, 1388900, 1489600, 1592100, 1696500, 1802700, 1910700, 2020500,
+	2132200, 2245700, 2361000, 2478100, 2597100, 2717900, 2840500, 2964900, 3091200, 3219300,
+	3349200, 3480900, 3614500, 3749900, 3887100, 4026100, 4167000, 4309700, 4454200, 4600500,
+	4748700, 4898700, 5050500, 5204100, 5359600, 5516900, 5676000, 5836900, 5999600, 6164200,
+	6330600, 6498800, 6668800, 6840700, 7014400, 7189900, 7367200, 7546400, 7727400, 7910200,
+	8094800, 8281300, 8469600, 8659700, 8851600, 9045400, 9241000, 9438400, 9637600, 9838700,
+	10041600, 10246300, 10452800, 10661200, 10871400, 11083400, 11297200, 11512900, 11730400, 11949700,
+	12170800, 12393800, 12618600, 12845200, 13073600, 13303900, 13536000, 13769900, 14005600, 14243100,
+	14482500
+)
+
+class PlayerRank(Enum):
+	ROOKIE = 0, 11, "Rookie"
+	LIEUTENANT = 12, 23, "Lieutenant"
+	CAPTAIN = 24, 35, "Captain"
+	MAJOR = 36, 47, "Major"
+	COLONEL = 48, 59, "Colonel"
+	COMMANDER = 60, 71, "Commander"
+	COMMODORE = 72, 83, "Commodore"
+	GENERAL = 84, 99, "General"
+	MARSHAL = 100, 100, "Marshal"
+
+	def __new__(cls, rank_from: int, rank_to: int, label: str):
+		obj = object.__new__(cls)
+		obj._value_ = rank_from          # `.value` == rank_from
+		obj.rank_from = rank_from
+		obj.rank_to = rank_to
+		obj.label = label
+		return obj
+
+	@classmethod
+	def from_level(cls, level: int) -> "PlayerRank":
+		if level < 0:
+			level = 0
+		for rank in cls:
+			if rank.rank_from <= level <= rank.rank_to:
+				return rank
+		raise ValueError(f"No rank for level {level}")
+
+	@staticmethod
+	def get_level(exp: int) -> int:
+		"""Map raw account XP to the numeric player level (0–100)."""
+		if exp < 0:
+			exp = 0
+		return bisect_right(USER_RANK, exp) - 1

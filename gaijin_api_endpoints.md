@@ -614,6 +614,23 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 		- `auction`  
 		- `seen`  
 #### cln_get_user_open_orders  
+- `POST` request  
+- Form data  
+	- `token`  
+- Response format  
+	- `success` (bool, `true`)  
+	- `response`  
+		- `mid`  
+		- `txId` (Transaction id)  
+		- `currency` (`GJN`)  
+		- `amount`  
+		- `market` (Hash name of item)  
+		- `id` (Used for cancelling)  
+		- `type` (`BUY` or `SELL`)  
+		- `appid` (`1067`)  
+		- `pairId` (Used for cancelling)  
+		- `localPrice` (The buy price *10000)  
+	- `time` (timestamp)  
 #### cln_market_sell  
 - `POST` request  
 - Form data  
@@ -831,23 +848,23 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- `meta` (only sends metadata, such as creation location, CC URL used, registration IP, etc.)  
 	- `v` (Unsure what this does)  
 	- `2step` (2FA verification code)  
-- 2FA Auth flow
-  - Response form schema, if the account is protected by 2FA, and isn't authenticated yet  
-	```json
-	{
-		"status": "2STEP", 
-		"error": "2-step authentication code lost",
-		"hasGjPass": true, 
-		"hasTwoStepEmail": false, 
-		"hasWTR": false, 
-		"requestId": "REQUEST_ID", 
-		"userId": 00000000
-	}
-	```	 
-  - Send the `requestId` and `userId` to the [2FA request endpoint](#httpsauthgaijinentcomapiauthrequesttwostep) to request the current 2FA code
-  - Resend this request, this time with the `code` value filled in, that is returned by the previous endpoint
+- 2FA Auth flow  
+	- Response form schema, if the account is protected by 2FA, and isn't authenticated yet  
+	```json  
+	{  
+		"status": "2STEP",  
+		"error": "2-step authentication code lost",  
+		"hasGjPass": true,  
+		"hasTwoStepEmail": false,  
+		"hasWTR": false,  
+		"requestId": "REQUEST_ID",  
+		"userId": 00000000  
+	}  
+	```  
+	- Send the `requestId` and `userId` to the [2FA request endpoint](#httpsauthgaijinentcomapiauthrequesttwostep) to request the current 2FA code  
+	- Resend this request, this time with the `code` value filled in, that is returned by the previous endpoint  
 - Response form schema:  
-  - ``
+	- ``  
 	```json  
 	{  
 		"auth": "login",  

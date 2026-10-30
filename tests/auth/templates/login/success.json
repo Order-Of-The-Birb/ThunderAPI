@@ -1,0 +1,17 @@
+{
+	"auth": "login",
+	"country": "HU",
+	"gjnick": "username",
+	"jwt": "examplestring",
+	"lang": "en",
+	"level": "fastregister",
+	"login": "test@example.com",
+	"nick": "username",
+	"nickorig": "username",
+	"reg_time": "1000000000",
+	"status": "OK",
+	"tags": "diffcurr,email_verified,lang_nl,partner_organic,player_wt,wt_first_login,wt_nl",
+	"token": "tokenstring",
+	"token_exp": 3600,
+	"user_id": "1000000000"
+}
