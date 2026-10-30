@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum, IntEnum
 from typing import Literal
+from api.v1.backends.shared import IntString
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -144,7 +145,7 @@ class ClanModel(BaseModel):
 		activity: int
 		clan_activity_by_periods: int
 	pos: int | None = None
-	_id: int | None = None
+	id: IntString | None = None
 	autoaccept: bool | None = None
 	cdate: int | None = None
 	changed_by_uid: int | None = None

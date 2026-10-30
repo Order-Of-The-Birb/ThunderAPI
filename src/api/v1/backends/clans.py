@@ -177,6 +177,7 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	SANITIZE = (
 		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
 		dictUtil.KeyMod("members", convert=lambda x: sanitizeMembers(x)),
+		dictUtil.KeyMod("_id", new_name="id"),
 		dictUtil.KeyRem(
 			"transactions",
 			"namel",
