@@ -14,7 +14,6 @@ from api.v1.backends.clans import (
 	getLeaderboard,
 	getLogs,
 	searchClan,
-	next_sqb_bracket
 )
 from api.v1.backends.shared import OptionalAuth, ServerBearer, TokenBearer
 from api.v1.models.base import SuccessEmptyDict
