@@ -276,6 +276,14 @@ async def current_sqb_br() -> dict[str, datetime|float]:
 			return week
 	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find current bracket data")
 
+async def next_sqb_bracket() -> dict[str, datetime|float]:
+	weeks = await get_sqb_brackets()
+	rn = datetime.now(UTC)
+	for week in weeks:
+		if week["start"] > rn:
+			return week
+	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find next bracket data")
+
 async def sanitizeMembers(members:dict|list):
 	if members is None:
 		return []
