@@ -15,6 +15,7 @@ from pandas import DataFrame, read_csv
 
 import utils.connection.network as Network
 from config import VEHICLES
+from enum import StrEnum
 
 from .constants import *
 
@@ -115,14 +116,52 @@ WPCOST: dict[str, dict[str, Any]] = loads(vehicle_data_loc.WPCOST.read_text())
 VEHICLE_DATA: dict[str, dict[str, Any]] = loads(vehicle_data_loc.VEHICLE_DATA.read_text())
 LOC_META: dict[str, str|list[str]|dict] = loads(vehicle_data_loc.LOC_META.read_text())
 
-UNIT_LOC: DataFrame = read_csv(vehicle_data_loc.VEHICLE_LOC, delimiter=';', encoding='utf-8')
-UNIT_LOC.set_index("<ID|readonly|noverify>", inplace=True)
+def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
+	df = read_csv(vehicle_data_loc.VEHICLE_LOC, delimiter=";", encoding="utf-8")
+	df.set_index("<ID|readonly|noverify>", inplace=True)
+	unit_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
+	for idx, row in df.to_dict(orient="index").items():
+		base, _, variant = str(idx).rpartition("_")
+		if variant == "0":
+			key = "short"
+		elif variant == "shop":
+			key = "shop"
+		else:
+			continue
+		unit_loc.setdefault(base, {})[key] = row
+	return unit_loc
+
+UNIT_LOC = _load_unit_loc()
 
 WEAPON_LOC = read_csv(vehicle_data_loc.WEAPON_LOC, delimiter=";", encoding="utf-8")
 WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace=True)
 
 MOD_LOC = read_csv(vehicle_data_loc.MODIFICATION_LOC, delimiter=";", encoding="utf-8")
 MOD_LOC.set_index("<ID|readonly|noverify>", inplace=True)
+
+class Languages(StrEnum):
+	en = "<English>"
+	fr = "<French>"
+	it = "<Italian>"
+	de = "<German>"
+	es = "<Spanish>"
+	ru = "<Russian>"
+	pl = "<Polish>"
+	cs = "<Czech>"
+	tr = "<Turkish>"
+	zh = "<Chinese>"
+	ja = "<Japanese>"
+	pt = "<Portuguese>"
+	uk = "<Ukrainian>"
+	sr = "<Serbian>"
+	hu = "<Hungarian>"
+	kr = "<Korean>"
+	be = "<Belarusian>"
+	ro = "<Romanian>"
+	zh_tw = "<TChinese>"
+	zh_cn = "<HChinese>"
+	vi = "<Vietnamese>"
+
 
 async def update_gamefiles():
 	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META
@@ -140,8 +179,7 @@ async def update_gamefiles():
 	VEHICLE_DATA = await loop.run_in_executor(None, lambda: loads(vehicle_data_loc.VEHICLE_DATA.read_text()))
 	LOC_META = await loop.run_in_executor(None, lambda: loads(vehicle_data_loc.LOC_META.read_text()))
 
-	UNIT_LOC = await loop.run_in_executor(None, lambda: read_csv(vehicle_data_loc.VEHICLE_LOC, delimiter=';', encoding='utf-8'))
-	UNIT_LOC.set_index("<ID|readonly|noverify>", inplace=True)
+	UNIT_LOC = await loop.run_in_executor(None, _load_unit_loc)
 
 	WEAPON_LOC = await loop.run_in_executor(None, lambda: read_csv(vehicle_data_loc.WEAPON_LOC, delimiter=";", encoding="utf-8"))
 	WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace=True)
@@ -1115,8 +1153,12 @@ class Vehicle:
 	def _parse_localization(self):
 		localizations = []
 
-		long_line = UNIT_LOC.loc[f"{self.identifier}_shop"]
-		short_line = UNIT_LOC.loc[f"{self.identifier}_0"]
+		entry = UNIT_LOC.get(self.identifier)
+		if entry is None:
+			self.localizations = tuple()
+			return
+		long_line = entry["shop"]
+		short_line = entry["short"]
 		languages = LOC_META["text_translation"]["lang"]
 		for lang in languages:
 			localizations.append(self.Localization(
