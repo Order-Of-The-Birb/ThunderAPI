@@ -1,12 +1,11 @@
+from enum import StrEnum
 from os import getenv
 
-from fastapi import APIRouter, Path, Query, status, HTTPException
-from typing_extensions import Annotated
+from fastapi import APIRouter, HTTPException, Path, Query, status
 from fastapi import Request as faRequest
-from enum import StrEnum
+from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, TokenBearer
 from utils.vehicleParser.vehiclesProcessor import UNIT_LOC, Languages
 
 router = APIRouter(
