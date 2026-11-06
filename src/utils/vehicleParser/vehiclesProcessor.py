@@ -1,6 +1,7 @@
 from asyncio import get_running_loop
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from logging import getLogger
 from pathlib import Path
 from re import compile
@@ -11,11 +12,10 @@ from typing import Any, Literal
 
 from orjson import loads
 from packaging.version import Version
-from pandas import DataFrame, read_csv
+from pandas import read_csv
 
 import utils.connection.network as Network
 from config import VEHICLES
-from enum import StrEnum
 
 from .constants import *
 
