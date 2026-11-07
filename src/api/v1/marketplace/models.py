@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from ..backends.shared import IntString
+from api.v1.shared import IntString
 
 
 class TagsModel(BaseModel):

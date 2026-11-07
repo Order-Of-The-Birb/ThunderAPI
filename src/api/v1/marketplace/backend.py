@@ -8,7 +8,7 @@ from typing import Any, TypedDict
 from fastapi import HTTPException, status
 
 import utils.connection.network as Network
-from api.v1.backends.shared import IntString
+from api.v1.shared import IntString
 from utils.auth import LoginEntry
 from utils.connection import Request
 from utils.helper import dictUtil, dtToTimestampMs

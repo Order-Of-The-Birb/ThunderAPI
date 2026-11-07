@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from api.v1.backends.shared import IntString
+from api.v1.shared import IntString
 
 PLATFORM_NAMES = Literal["PC", "PSN_TRANSFER_PC", "PSN", "XBOX_TRANSFER_PC", "XBOX"]
 class Actions(Enum):

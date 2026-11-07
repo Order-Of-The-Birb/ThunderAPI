@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException, status
 
 import utils.connection.network as Network
-from api.v1.models.clans import Actions, ClanLeaderboardModel, ClanModel, ClanSearchResultModel, Platforms, Roles
+from .models import Actions, ClanLeaderboardModel, ClanModel, ClanSearchResultModel, Platforms, Roles
 from utils.auth import LoginEntry
 from utils.connection import Request
 from utils.geo import lookup_city, lookup_utc_offset
