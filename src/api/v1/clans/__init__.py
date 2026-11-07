@@ -15,8 +15,10 @@ from api.v1.clans.backend import (
 	getLogs,
 	searchClan,
 )
-from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
 from api.v1.models import SuccessEmptyDict
+from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
+from utils.connection import Request
+
 from .models import (
 	ApplicantModel,
 	ClanLeaderboardModel,
@@ -28,7 +30,6 @@ from .models import (
 	RolesDisplay,
 	SQBTimeBracket,
 )
-from utils.connection import Request
 
 squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
 gaijinUserId = Annotated[int, Path(title="The user's ID", gt=0)]

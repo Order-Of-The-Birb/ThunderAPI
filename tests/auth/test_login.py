@@ -1,10 +1,12 @@
+from collections.abc import Awaitable, Callable
+from typing import Any, Iterable
+
 import pytest
 from fastapi import HTTPException
-from . import templates
-from typing import NamedTuple, Any, Iterable
-from collections.abc import Awaitable, Callable
 
-from src.utils.auth import ServerAuth, UserAuth, login, _PENDING_2FA
+from src.utils.auth import login
+
+from . import templates
 
 group = templates.Groups.LOGIN
 
@@ -35,7 +37,7 @@ async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group,
 	for test in tests:
 		expected = test.value[1]
 		if expected is not None:
-			with pytest.raises(type(expected), check=lambda x: type(x) == type(expected)) as exc_info:
+			with pytest.raises(type(expected), check=lambda x, expected=expected: type(x) is type(expected)) as exc_info:
 				await func(*args, **kwargs, response_provider=provider)
 			if type(expected) is HTTPException:
 				assert exc_info.value.status_code == expected.status_code

@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
-from .models import PlayerRank, TerseReturnModel
 from utils.auth import LoginEntry
 from utils.connection import Request
 from utils.helper import dictUtil
+
+from .models import PlayerRank, TerseReturnModel
 
 
 async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnModel]:

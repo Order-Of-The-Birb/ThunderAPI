@@ -5,10 +5,11 @@ from fastapi import APIRouter, Query, Request, WebSocket, status
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from .backend import getLatestGameVer
 from api.v1.shared import IpString, ServerBearer
 from utils import newsManager
 from utils.news import NewsEntry
+
+from .backend import getLatestGameVer
 
 router = APIRouter(
 	tags=["general"],

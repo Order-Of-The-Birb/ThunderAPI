@@ -5,11 +5,12 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from .backend import InventoryItem, Item, Order
-from api.v1.shared import ServerBearer, TokenBearer
 from api.v1.models import GenericEmptyResponse
-from .models import Models
+from api.v1.shared import ServerBearer, TokenBearer
 from utils.connection import Request
+
+from .backend import InventoryItem, Item, Order
+from .models import Models
 
 router = APIRouter(
 	prefix="/market",
