@@ -9,11 +9,12 @@ from bs4 import BeautifulSoup
 from fastapi import HTTPException, status
 
 import utils.connection.network as Network
-from .models import Actions, ClanLeaderboardModel, ClanModel, ClanSearchResultModel, Platforms, Roles
 from utils.auth import LoginEntry
 from utils.connection import Request
 from utils.geo import lookup_city, lookup_utc_offset
 from utils.helper import dictUtil
+
+from .models import Actions, ClanLeaderboardModel, ClanModel, ClanSearchResultModel, Platforms, Roles
 
 _logger = _gL(__name__)
 

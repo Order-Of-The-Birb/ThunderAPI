@@ -7,10 +7,11 @@ from typing_extensions import Annotated
 
 from api.shared import limiter
 from api.v1.shared import ServerBearer, TokenBearer
-from .backend import get_self, get_terse, get_user
-from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
 from utils.connection import Request
 from utils.helper import dictUtil
+
+from .backend import get_self, get_terse, get_user
+from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
 
 router = APIRouter(
 	prefix="/users",
