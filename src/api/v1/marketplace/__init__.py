@@ -5,10 +5,10 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.marketplace import InventoryItem, Item, Order
-from api.v1.backends.shared import ServerBearer, TokenBearer
-from api.v1.models.base import GenericEmptyResponse
-from api.v1.models.marketplace import Models
+from .backend import InventoryItem, Item, Order
+from api.v1.shared import ServerBearer, TokenBearer
+from api.v1.models import GenericEmptyResponse
+from .models import Models
 from utils.connection import Request
 
 router = APIRouter(

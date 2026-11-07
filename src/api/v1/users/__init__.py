@@ -6,9 +6,9 @@ from fastapi.responses import JSONResponse
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.shared import ServerBearer, TokenBearer
-from api.v1.backends.users import get_self, get_terse, get_user
-from api.v1.models.users import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
+from api.v1.shared import ServerBearer, TokenBearer
+from .backend import get_self, get_terse, get_user
+from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
 from utils.connection import Request
 from utils.helper import dictUtil
 

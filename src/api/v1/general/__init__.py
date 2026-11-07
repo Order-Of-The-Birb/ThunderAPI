@@ -5,8 +5,8 @@ from fastapi import APIRouter, Query, Request, WebSocket, status
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.general import getLatestGameVer
-from api.v1.backends.shared import IpString, ServerBearer
+from .backend import getLatestGameVer
+from api.v1.shared import IpString, ServerBearer
 from utils import newsManager
 from utils.news import NewsEntry
 

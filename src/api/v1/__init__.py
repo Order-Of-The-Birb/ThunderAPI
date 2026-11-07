@@ -1,12 +1,12 @@
 from fastapi import APIRouter
 
-from .auth_router import router as authRouter
-from .clans_router import router as clanRouter
-from .general_router import router as generalRouter
-from .marketplace_router import router as tradeRouter
-from .replays_router import router as replayRouter
-from .units_router import router as unitRouter
-from .users_router import router as userRouter
+from .auth import router as authRouter
+from .clans import router as clanRouter
+from .general import router as generalRouter
+from .marketplace import router as tradeRouter
+from .replays import router as replayRouter
+from .units import router as unitRouter
+from .users import router as userRouter
 
 router = APIRouter(
     prefix="/v1"

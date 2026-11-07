@@ -6,7 +6,7 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.clans import (
+from api.v1.clans.backend import (
 	SQB_BRACKET_TIMES,
 	current_sqb_br,
 	get_sqb_brackets,
@@ -15,9 +15,9 @@ from api.v1.backends.clans import (
 	getLogs,
 	searchClan,
 )
-from api.v1.backends.shared import OptionalAuth, ServerBearer, TokenBearer
-from api.v1.models.base import SuccessEmptyDict
-from api.v1.models.clans import (
+from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
+from api.v1.models import SuccessEmptyDict
+from .models import (
 	ApplicantModel,
 	ClanLeaderboardModel,
 	ClanModel,

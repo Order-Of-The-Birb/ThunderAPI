@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from api.v1.models.users import PlayerRank, TerseReturnModel
+from .models import PlayerRank, TerseReturnModel
 from utils.auth import LoginEntry
 from utils.connection import Request
 from utils.helper import dictUtil

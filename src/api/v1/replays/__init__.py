@@ -5,9 +5,9 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.backends.replay import ReplayMode, ReplayTechType, ReplayType, search_replay
-from api.v1.backends.shared import ServerBearer, TokenBearer
-from api.v1.models.replay import DataModel, ReplayNotFoundModel, ResultsModel
+from api.v1.shared import ServerBearer, TokenBearer
+from .backend import ReplayMode, ReplayTechType, ReplayType, search_replay
+from .models import DataModel, ReplayNotFoundModel, ResultsModel
 from utils.replayParser import Replay
 
 router = APIRouter(
