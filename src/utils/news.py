@@ -135,6 +135,8 @@ class NewsEntry:
 		obj = asdict(self)
 		obj["created"] = dtToTimestamp(self.created)
 		obj["importance"] = int(self.importance)
+		obj["platforms"] = list(self.platforms)
+		obj["tags"] = list(self.tags)
 		return obj
 
 	def _getImportance(self) -> ImportanceLevel:
@@ -160,7 +162,7 @@ class NewsEntry:
 							"black friday" in title
 						)
 					) or (
-						re.search("Meet the “[A-z0-9 ]+” Major Update!", title, re.IGNORECASE) is not None and self.pinned
+						re.search(r"Meet the “.+” Major Update!", title, re.IGNORECASE) is not None and self.pinned
 					)
 				):
 				return self.ImportanceLevel.MAJOR

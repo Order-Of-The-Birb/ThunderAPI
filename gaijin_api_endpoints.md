@@ -630,7 +630,7 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 		- `appid` (`1067`)  
 		- `pairId` (Used for cancelling)  
 		- `localPrice` (The buy price *10000)  
-	- `time` (timestamp)  
+		- `time` (timestamp)  
 #### cln_market_sell  
 - `POST` request  
 - Form data  

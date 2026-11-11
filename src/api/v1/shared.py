@@ -45,13 +45,13 @@ class Authentication:
 		if utils.server_auth is None:
 			if credentials is None:
 				raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
-			return await Authentication.get_auth(credentials.credentials)
+			return await Authentication.get_auth(credentials)
 
 		entry = utils.server_auth.getLogin()
 		if entry is None:
 			if credentials is None:
 				raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account unavailable, you must log in with an account")
-			return await Authentication.get_auth(credentials.credentials)
+			return await Authentication.get_auth(credentials)
 		return entry
 
 	@staticmethod
@@ -65,7 +65,7 @@ class Authentication:
 				await Authentication._track_usage(user)
 				return user
 			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
-		return await Authentication.get_server_auth()
+		return await Authentication.get_server_auth(credentials)
 
 
 TokenBearer =	Annotated[LoginEntry, Depends(Authentication.get_auth)			]
@@ -75,7 +75,12 @@ OptionalAuth =	Annotated[LoginEntry, Depends(Authentication.get_optional_auth)	]
 IntString = Annotated[
 	str,
 	StringConstraints(pattern=r"^\d+$"),
-	Field(description="Integer value represented as a string", examples=["10016", "652677", "62762477"]),
+	Field(description="Integer value represented as a string. Needed where large numbers appear, due to floating point errors in JSON", examples=["10016", "652677", "62762477"]),
+]
+FloatString = Annotated[
+	str,
+	StringConstraints(pattern=r"^\d+(?:\.\d+)?$"),
+	Field(description="Float value represented as a string. Needed where large numbers appear, due to floating point errors in JSON", examples=["0.005", "1.0", "4.3"]),
 ]
 IpString = Annotated[
 	str,
