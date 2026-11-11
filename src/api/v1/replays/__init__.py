@@ -126,7 +126,7 @@ async def get_replay_teams(
 		),
 	]
 ):
-	return await Replay.get(replayId)["results"]
+	return (await Replay.get(replayId))["results"]
 
 @router.get(
 	"/{replayId}/match",
@@ -149,4 +149,4 @@ async def get_replay_match(
 		),
 	]
 ):
-	return await Replay.get(replayId)["match"]
+	return (await Replay.get(replayId))["match"]
