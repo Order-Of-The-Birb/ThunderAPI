@@ -9,7 +9,7 @@ from api.v1.models import GenericEmptyResponse
 from api.v1.shared import ServerBearer, TokenBearer
 from utils.connection import Request
 
-from .backend import InventoryItem, Item, Order
+from .backend import User
 from .models import Models
 
 router = APIRouter(
@@ -27,12 +27,12 @@ async def cancel_order(
 	request: faRequest, user: TokenBearer,
 	orderId: Annotated[int, Path(description="The order ID")]
 ) -> GenericEmptyResponse:
-	orders = await Order.Entry.get_orders(user)
-	for order in orders:
-		if order.id == orderId:
-			await order.cancel()
-			return {"success": True}
-	raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+	orders = await User(user).orders()
+	if orderId not in orders:
+		raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+
+	result = await orders[orderId].cancel()
+	return {"success": result}
 
 @router.get(
 	"/orders/{orderId}",
@@ -43,11 +43,10 @@ async def get_order(
 	request: faRequest, user: TokenBearer,
 	orderId: Annotated[int, Path(description="The order ID")]
 ):
-	orders = await Order.Entry.get_orders(user)
-	for order in orders:
-		if order.id == orderId:
-			return await order.to_json()
-	raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+	orders = await User(user).orders()
+	if orderId not in orders:
+		raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
+	return await orders[orderId].to_json()
 
 @router.get(
 	"/orders",
@@ -59,17 +58,9 @@ async def get_order(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_orders(
 	request: faRequest, user: TokenBearer,
-	orderType: Annotated[Order.Type | None, Query()] = None
+	orderType: Annotated[User.Order.Type | None, Query()] = None
 ) -> list[Models.OrderModel]:
-	orders = await Order.Entry.get_orders(user)
-	if orderType is None:
-		return [await order.to_json() for order in orders]
-
-	display_orders = []
-	for order in orders:
-		if order.type == orderType:
-			display_orders.append(await order.to_json())
-	return display_orders
+	return [await order.to_json() for order in (await User(user).orders(orderType)).values()]
 
 @router.get(
 	"/inventory",
@@ -79,8 +70,11 @@ async def get_orders(
 async def getInventory(
 	request: faRequest, user: TokenBearer
 ) -> list[Models.InventoryItemModel]:
-	inv = await InventoryItem.get(user)
-	return [await i.to_json() for i in inv]
+	inv = await User(user).inventory()
+	return [
+		await i.to_json()
+		for i in inv
+	]
 
 @router.get(
 	"/balance",
@@ -90,7 +84,7 @@ async def getInventory(
 async def get_balance(
 	request: faRequest, user: TokenBearer
 ) -> float:
-	return await InventoryItem.balance(user)
+	return await User(user).balance()
 
 @router.get(
 	"/search",
@@ -106,8 +100,8 @@ async def searchItem(
 	count: Annotated[int, Query(title="Amount to get at once")] = 25,
 	page: Annotated[int, Query(title="Pagination page. Works based off of `count`")] = 0,
 ):
-	data = await Item.search(user, name, count, page)
-	return [await i.to_json() for i in data]
+	data = await User(user).MarketItem.search(user, name, count, page)
+	return [await i.to_json() for i in data.values()]
 
 @router.get(
 	"/{itemHash}/history",
@@ -227,11 +221,10 @@ async def sell_item(
 	count: Annotated[int, Query(description="The amount to sell at once", gt=0)] = 1,
 	anonymous: Annotated[bool, Query(description="Appear as an anonymous seller")] = False
 ):
-	inventoryItems = await InventoryItem.get(user)
-	for item in inventoryItems:
-		if item.hash == itemHash:
-			return await item.sell(price=price, count=count, anonymous=anonymous)
-	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
+	inventoryItems = await User(user).inventory()
+	if itemHash not in inventoryItems:
+		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
+	return await inventoryItems[itemHash].sell(price=price, count=count, anonymous=anonymous)
 
 @router.post(
 	"/{itemHash}/buy",
@@ -251,10 +244,7 @@ async def buy_item(
 	count: Annotated[int, Query(description="The amount to buy", gt=0)] = 1,
 	anonymous: Annotated[bool, Query(description="Appear as an anonymous buyer")] = False
 ) -> GenericEmptyResponse:
-	item = await Item.get(user, itemHash)
-	if item:
-		return await item.buy(user, price=price, count=count, anonymous=anonymous)
-	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
+	return await User(user).buy(item_hash=itemHash, price=price, count=count, anonymous=anonymous)
 
 @router.get(
 	"/{itemHash}",
@@ -265,7 +255,7 @@ async def get_item(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title="The item to look up")],
 ) -> Models.ItemModel:
-	item = await Item.get(user, itemHash)
+	item = await User.MarketItem.get(user, itemHash)
 	if item is not None:
 		return await item.to_json()
 	raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found")
