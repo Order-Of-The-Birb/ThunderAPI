@@ -64,7 +64,9 @@ class Cache[T]:
 LONG_RUNNING: tuple[asyncio.Task] = () # Set in main.py
 CACHES: dict[str, Cache] = {
 	"replay": Cache(),
-	"news": Cache()
+	"news": Cache(),
+	"units": Cache(),
+	"localization": Cache(),
 }
 
 runtime_task: asyncio.Task = None

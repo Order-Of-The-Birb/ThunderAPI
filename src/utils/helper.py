@@ -95,3 +95,11 @@ class dictUtil:
 		if isawaitable(value):
 			return await value
 		return value
+
+def getMultipleKeys(obj:dict, *keys:str, default:Any = None, raise_on_missing:bool = False):
+	for key in keys:
+		if key in obj:
+			return obj[key]
+	if raise_on_missing:
+		raise KeyError("Could not find any of the keys provided within the object")
+	return default
