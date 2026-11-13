@@ -1,0 +1,9 @@
+{
+	"headers": {
+		"Content-Type": "application/x-www-form-urlencoded"
+	},
+	"body": {
+		"action": "cln_get_user_open_orders",
+		"token": "<replace>"
+	}
+}

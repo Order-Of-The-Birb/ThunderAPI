@@ -1,9 +1,19 @@
+# EditorConfig is awesome: https://EditorConfig.org
+
+# top-most EditorConfig file
 root = true
 
 [*]
-insert_final_newline = true
+indent_style = tabs
+indent_size = 4
+end_of_line = lf
+charset = utf-8
 trim_trailing_whitespace = true
-indent_style = tab
+insert_final_newline = true
 
 [*.md]
-trim_trailing_whitespace = false   # keep the two-space markdown line breaks
+# keep the two-space markdown line breaks
+trim_trailing_whitespace = false
+
+[*.yaml]
+indent_style = space

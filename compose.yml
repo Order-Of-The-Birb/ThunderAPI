@@ -5,8 +5,6 @@ services:
       - .env
     environment:
       DEBUG_MODE: "0"
-      # Trust X-Forwarded-For from the Cloudflare tunnel so logs show the real client IP
-      FORWARDED_ALLOW_IPS: "*"
     user: "${UID:-1000}:${GID:-1001}"
     volumes:
       - "./data:/data"

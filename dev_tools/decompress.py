@@ -3,6 +3,7 @@ import bz2
 import struct
 import sys
 
+
 def read_input_bytes(input_file):
     with open(input_file, 'rb') as f:
         raw_data = f.read()

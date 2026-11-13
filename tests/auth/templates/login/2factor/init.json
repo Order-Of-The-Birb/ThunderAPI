@@ -1,0 +1,9 @@
+{
+	"error": "2-step authentication code lost",
+	"hasGjPass": true,
+	"hasTwoStepEmail": false,
+	"hasWTR": false,
+	"requestId": "zzzzzzzzzzzzz",
+	"status": "2STEP",
+	"userId": 1000000000
+}

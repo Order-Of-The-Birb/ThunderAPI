@@ -1,0 +1,27 @@
+name: Ruff linter
+on: pull_request
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version: ["3.14"]
+        steps:
+            - uses: actions/checkout@v7
+              with:
+                  ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+            - name: Set up Python ${{ matrix.python-version }}
+              uses: actions/setup-python@v7
+              with:
+                  python-version: ${{ matrix.python-version }}
+            - name: Install dependencies
+              run: pip install ruff
+            - name: Auto-fix with Ruff
+              run: ruff check src/ --fix
+            - name: Commit and push fixes
+              uses: stefanzweifel/git-auto-commit-action@v7
+              with:
+                  commit_message: "style: apply ruff fixes"
+        permissions:
+            contents: write

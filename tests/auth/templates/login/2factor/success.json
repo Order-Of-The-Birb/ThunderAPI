@@ -1,0 +1,17 @@
+{
+	"auth": "2step",
+	"country": "HU",
+	"gjnick": "nickname",
+	"jwt": "longasstoken",
+	"lang": "en",
+	"level": "normal",
+	"login": "test@example.com",
+	"nick": "nickname",
+	"nickorig": "nickname",
+	"reg_time": "1640070602",
+	"status": "OK",
+	"tags": "2step,2step_totp,customer,customer_el,customer_wt,diffcurr,email_verified,gjpass,google,infantry_cbt_requester,liveclone,partner_unknown,phone_verified,player_el,player_wt,sso_allowed_post,steam_el,wt_first_login,wt_quiz_success",
+	"token": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+	"token_exp": 3600,
+	"user_id": "1000000000"
+}

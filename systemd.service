@@ -5,7 +5,7 @@ After=docker.service network-online.target
 
 [Service]
 Type=exec
-ExecStart=/usr/bin/docker compose up
+ExecStart=/usr/bin/docker compose up thunderapi
 WorkingDirectory={DIRECTORY}
 Restart=on-failure
 RestartSec=10
