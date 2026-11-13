@@ -6,7 +6,8 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from utils.vehicleParser.vehiclesProcessor import UNIT_LOC, Languages
+from utils.vehicleParser.localization import Languages
+from utils.vehicleParser.shared import UNIT_LOC
 
 router = APIRouter(
 	tags=["units"],
