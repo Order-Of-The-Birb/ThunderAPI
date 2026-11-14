@@ -35,42 +35,45 @@ class Replay(dict):
 			async with Network.operation() as session:
 				wrpl_num = 0
 				wait_time = 1
+				overshot = False
 				while True:
 					url = f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl"
-					try:
-						async with Network.head(url, session=session) as r:
-							wrpl_num += 1
-					except ClientResponseError as e:
-						if e.status == 429:
+					async with Network.head(url, session = session) as r:
+						if r.status == 429:
 							if wait_time == 60:
-								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.") from e
+								raise HTTPException(429, detail = "Replay server rate limit exceeded. Please try again later.")
 							await sleep(wait_time)
 							wait_time = min(wait_time * 2, 60) # Exponential backoff, max 60 seconds
 							continue
 						wait_time = 1 # Reset wait time on successful request
-						if e.status == 404:
+						if r.status == 404:
 							if wrpl_num == 0:
-								raise HTTPException(404, detail="Replay could not be found") from e
+								raise HTTPException(404, detail = "Replay could not be found")
 							wrpl_num -= 1
-							break
+							overshot = True
+							continue
 
-						if e.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error") from e
+						if r.status >= 400:
+							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error")
+
+						if overshot:
+							break
+						wrpl_num += 5 # Step by 5 to speed up lookup on larger replays (eg. 3 hour long simulator -> 240 parts)
 
 				while True:
 					try:
-						async with Network.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl", Network.ReturnType.BIN, session=session) as r:
+						async with Network.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl", Network.ReturnType.BIN, session = session) as r:
 							return await ReplayParser.from_replay(r)
 					except ClientResponseError as e:
 						if e.status == 429:
 							if wait_time == 60:
-								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.") from e
+								raise HTTPException(429, detail = "Replay server rate limit exceeded. Please try again later.") from e
 
 							await sleep(wait_time)
 							wait_time = min(wait_time * 2, 60) # Exponential backoff, max 60 seconds
 							continue
 						if e.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error") from e
+							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error") from e
 
 
 		#endregion
@@ -92,6 +95,7 @@ class Replay(dict):
 				"battleType": resultsData.header.battleClass
 			},
 			"results": {
+				"spectators": {},
 				"team1": {},
 				"team2": {}
 			}
@@ -107,7 +111,7 @@ class Replay(dict):
 			user:dict[str, str|int|bool]
 			add_obj = {
 				"clanTag": user.get("clanTag", None),
-				"userId": int(user["userId"]),
+				"nickname": user["name"],
 				"autosquad": user.get("autosquad", False),
 				"squadId": user.get("squadId", None),
 				"stats": {
@@ -130,7 +134,7 @@ class Replay(dict):
 				},
 				"lineup" : {}
 			}
-			lineupData = _["matchingInfo"].get(f"{add_obj["userId"]}")
+			lineupData = _["matchingInfo"].get(str(user["userId"]))
 			add_obj["lineup"]["vehicles"] = {}
 			if lineupData is not None:
 				for key, value in lineupData["crafts_info"].items():
@@ -138,13 +142,28 @@ class Replay(dict):
 						continue
 					add_obj["lineup"]["vehicles"][value["name"]] = {
 						"rank": value["rank"],
-						"battlerating": round(value["mrank"] / 3, 1)
+						"battlerating": round(value["mrank"] / 3 + 1, 1)
 					}
 				try:
-					add_obj["lineup"]["maxBr"] = round(lineupData["mrank"] / 3, 1)
+					add_obj["lineup"]["maxBr"] = round(lineupData["mrank"] / 3 + 1, 1)
 				except KeyError:
 					add_obj["lineup"]["maxBr"] = max(i["battlerating"] for i in add_obj["lineup"]["vehicles"].values())
-			self["results"][f"team{user["team"]}"][user["name"]] = add_obj
+
+			if add_obj["squadId"] == int(user["userId"]):
+				add_obj.pop("squadId", None)
+			if add_obj["clanTag"] == "":
+				add_obj.pop("clanTag", None)
+
+			match user["team"]:
+				case 0:
+					team = "spectators"
+				case 1:
+					team = "team1"
+				case 2:
+					team = "team2"
+				case _:
+					raise RuntimeError(f"Invalid team value {user["team"]} found")
+			self["results"][team][user["userId"]] = add_obj
 		# endregion
 		await Cache.CACHES["replay"].add(replay_id, self)
 		return self

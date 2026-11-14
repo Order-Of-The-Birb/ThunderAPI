@@ -25,9 +25,9 @@ class Decompress(dict):
 		payload = decompressed or data
 		unpacked = run_process(
 			[str(WT_EXT_CLI), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
-			input=payload,
-			capture_output=True,
-			timeout=60,
+			input = payload,
+			capture_output = True,
+			timeout = 60,
 		)
 		if unpacked.returncode != 0:
 			raise RuntimeError(f"wt_ext_cli failed to unpack (exit code {unpacked.returncode})")
@@ -59,7 +59,7 @@ class Decompress(dict):
 		for label, uncompressed_size, compressed_payload in candidates:
 			try:
 				_logger.debug(f"Trying LZ4 {label}; potential uncompressed size: {uncompressed_size}")
-				return lz4decompress(compressed_payload, uncompressed_size=uncompressed_size)
+				return lz4decompress(compressed_payload, uncompressed_size = uncompressed_size)
 			except Exception as e:
 				_logger.debug(f"LZ4 {label} decompression failed: {e}")
 
@@ -149,16 +149,16 @@ class Compress(bytes):
 
 		result = run_process(
 			[str(BINBLK), '-', '-', '-b'],
-			input=blkx_text,
-			capture_output=True,
-			timeout=60
+			input = blkx_text,
+			capture_output = True,
+			timeout = 60
 		)
 		if result.returncode != 0:
-			stderr_msg = result.stderr.decode('utf-8', errors='replace').strip()
+			stderr_msg = result.stderr.decode('utf-8', errors = 'replace').strip()
 			raise RuntimeError(f'binBlk failed: {stderr_msg}')
 
 		if algo == Compress.Algorithm.LZ4:
-			compressed = lz4compress(result.stdout, mode='high_compression', store_size=False)
+			compressed = lz4compress(result.stdout, mode = 'high_compression', store_size = False)
 			return struct.pack('>I', len(result.stdout)) + compressed
 		elif algo == Compress.Algorithm.BZIP:
 			return bzcompress(result.stdout)

@@ -9,7 +9,7 @@ from .units import router as unitRouter
 from .users import router as userRouter
 
 router = APIRouter(
-    prefix="/v1"
+    prefix = "/v1"
 )
 router.include_router(authRouter)
 router.include_router(clanRouter)

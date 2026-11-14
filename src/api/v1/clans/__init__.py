@@ -31,19 +31,19 @@ from .models import (
 	SQBTimeBracket,
 )
 
-squadronId = Annotated[int, Path(title="The squadron's ID", gt=0)]
-gaijinUserId = Annotated[int, Path(title="The user's ID", gt=0)]
+squadronId = Annotated[int, Path(title = "The squadron's ID", gt = 0)]
+gaijinUserId = Annotated[int, Path(title = "The user's ID", gt = 0)]
 
 router = APIRouter(
-	prefix="/clans",
-	tags=["clans"],
-	responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
+	prefix = "/clans",
+	tags = ["clans"],
+	responses = {status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
 )
 
 @router.post(
 	"/apply/{clanId}",
-	summary="Sends an application to the squadron, if allowed",
-	responses={
+	summary = "Sends an application to the squadron, if allowed",
+	responses = {
 		status.HTTP_409_CONFLICT: {"description": "User is already in a squadron"}
 	}
 )
@@ -52,21 +52,21 @@ async def send_application(
 	request: faRequest,
 	user: TokenBearer,
 	clanId: squadronId,
-	comment: Annotated[str, Query(description="The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")]
+	comment: Annotated[str, Query(description = "The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")]
 ) -> bool:
 	response = await Request.send_template(
 		user,
 		"clan_membership_request",
-		remove_keys=set(["cancelRequest"]),
-		_id=clanId,
-		comments=comment
+		remove_keys = set(["cancelRequest"]),
+		_id = clanId,
+		comments = comment
 	)
 	return response.get("clanTag") is not None
 
 @router.post(
 	"/cancelApply",
-	summary="Cancels the current squadron application",
-	responses={
+	summary = "Cancels the current squadron application",
+	responses = {
 		status.HTTP_409_CONFLICT: {"description": "User is already accepted into the squadron. Use the `leave` endpoint instead"}
 	}
 )
@@ -79,15 +79,15 @@ async def unsend_application(
 	response = await Request.send_template(
 		user,
 		"clan_membership_request",
-		remove_keys=set(["_id"]),
-		comments=comment,
-		cancelRequest=True
+		remove_keys = set(["_id"]),
+		comments = comment,
+		cancelRequest = True
 	)
 	return response.get("clanTag") is None
 
 @router.post(
 	"/leave",
-	summary="Leaves the current squadron"
+	summary = "Leaves the current squadron"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def leave_squadron(
@@ -102,7 +102,7 @@ async def leave_squadron(
 
 @router.get(
 	"/applicants/{clanId}",
-	summary="Gets the currently applying members"
+	summary = "Gets the currently applying members"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_applicants(
@@ -117,7 +117,7 @@ async def get_applicants(
 	return applicants
 @router.post(
 	"/accept/{userId}",
-	responses={
+	responses = {
 		status.HTTP_200_OK: {
 			"model": SuccessEmptyDict,
 			"description": "Successfully accepted the applicant",
@@ -145,12 +145,12 @@ async def accept_applicant(
 		"clan_accept_membership_request",
 		userId = userId,
 		_id = squadronId,
-		role=Roles[role.name.upper()].value
+		role = Roles[role.name.upper()].value
 	)
 
 @router.post(
 	"/reject/{userId}",
-	responses={
+	responses = {
 		status.HTTP_200_OK: {"model": SuccessEmptyDict, "description":"Successfully rejected user"},
 		status.HTTP_404_NOT_FOUND: {"description":"Applicant could not be found"},
 		status.HTTP_403_FORBIDDEN: {"description":"You do not have permission to reject applicants"}
@@ -161,7 +161,7 @@ async def reject_applicant(
 	request: faRequest,
 	user: TokenBearer,
 	userId: gaijinUserId,
-	message: Annotated[str, Query(title="Message to include alongside rejection")] = "",
+	message: Annotated[str, Query(title = "Message to include alongside rejection")] = "",
 ):
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
@@ -176,9 +176,9 @@ async def reject_applicant(
 
 @router.post(
 	"/role/{userId}",
-	summary="Set a member's role",
-	description="Requires `Deputy` or `Commander` level in squadron",
-	responses={
+	summary = "Set a member's role",
+	description = "Requires `Deputy` or `Commander` level in squadron",
+	responses = {
 		status.HTTP_200_OK: {"model": SuccessEmptyDict},
 		status.HTTP_403_FORBIDDEN: {"description": "You do not have the required permissions"}
 	}
@@ -188,7 +188,7 @@ async def change_role(
 	request: faRequest,
 	user: TokenBearer,
 	userId: gaijinUserId,
-	role: Annotated[RolesDisplay, Query(title="The role to assign")],
+	role: Annotated[RolesDisplay, Query(title = "The role to assign")],
 ):
 	role = Roles[role.name]
 	return await Request.send_template(
@@ -200,15 +200,15 @@ async def change_role(
 
 @router.post(
 	"/kick/{userId}",
-	summary="Kicks the given user",
-	description="Requires either `Officer`, `Deputy` or `Commander` rank to remove someone else"
+	summary = "Kicks the given user",
+	description = "Requires either `Officer`, `Deputy` or `Commander` rank to remove someone else"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def kick_member(
 	request: faRequest,
 	user: TokenBearer,
 	userId: gaijinUserId,
-	reason: Annotated[str, Form(title="The reason for kicking")] = "",
+	reason: Annotated[str, Form(title = "The reason for kicking")] = "",
 ) -> SuccessEmptyDict:
 	data = await Request.send_template(
 		user,
@@ -220,47 +220,47 @@ async def kick_member(
 
 @router.get(
 	"/logs/{clanId}",
-	summary="Gets the squadron logs"
+	summary = "Gets the squadron logs"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_logs(
 	request: faRequest,
 	user: OptionalAuth,
 	clanId: squadronId,
-	limit: Annotated[int, Query(title="The max ammount to get at once", gt=0, le=50)] = 10,
-	fromEntry: Annotated[str, Query(title="The last call's 'lastLog' value to begin searching from")] = None,
+	limit: Annotated[int, Query(title = "The max ammount to get at once", gt = 0, le = 50)] = 10,
+	fromEntry: Annotated[str, Query(title = "The last call's 'lastLog' value to begin searching from")] = None,
 ) -> LogsModel:
 	return await getLogs(user, clanId, limit, fromEntry)
 
-@router.get("/search", summary="Search for squadron")
+@router.get("/search", summary = "Search for squadron")
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_search(
 	request: faRequest,
 	user: ServerBearer,
-	clanName: Annotated[str, Query(title="Squadron name to look up")] = None,
-	clanTag: Annotated[str, Query(title="Squadron tag to look up")] = None,
-	limit: Annotated[int, Query(title="Amount of squadrons to return", gt=0, lt=50)] = 10,
-	page: Annotated[int, Query(title="The page to display. Count starts from 0", ge=0)] = 0,
+	clanName: Annotated[str, Query(title = "Squadron name to look up")] = None,
+	clanTag: Annotated[str, Query(title = "Squadron tag to look up")] = None,
+	limit: Annotated[int, Query(title = "Amount of squadrons to return", gt = 0, lt = 50)] = 10,
+	page: Annotated[int, Query(title = "The page to display. Count starts from 0", ge = 0)] = 0,
 ) -> list[ClanSearchResultModel]:
-	return await searchClan(user, clanName=clanName, clanTag=clanTag, limit=limit, page=page)
+	return await searchClan(user, clanName = clanName, clanTag = clanTag, limit = limit, page = page)
 
 @router.get(
 	"/leaderboard",
-	summary="Gets the leaderboard of squadrons.",
+	summary = "Gets the leaderboard of squadrons.",
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan_leaderboard(
 	request: faRequest,
 	user: ServerBearer,
-	limit: Annotated[int, Query(title="The max amount to get at once", gt=0, le=50)] = 20,
-	page: Annotated[int, Query(title="The page to look up. Starts from 0.", ge=0)] = 0,
+	limit: Annotated[int, Query(title = "The max amount to get at once", gt = 0, le = 50)] = 20,
+	page: Annotated[int, Query(title = "The page to look up. Starts from 0.", ge = 0)] = 0,
 ) -> list[ClanLeaderboardModel]:
 	return await getLeaderboard(user, limit, page)
 
 @router.get(
 	"/leaderboard/{clanId}",
-	summary="Gets the leaderboard position of a given squadron.",
-	responses={
+	summary = "Gets the leaderboard position of a given squadron.",
+	responses = {
 		404: {"description": "Clan not found"}
 	}
 )
@@ -268,9 +268,9 @@ async def get_clan_leaderboard(
 async def get_clan_leaderboard_position(
 	request: faRequest,
 	user: ServerBearer,
-	clanId: Annotated[int, Path(title="The squadron's ID")],
+	clanId: Annotated[int, Path(title = "The squadron's ID")],
 ) -> ClanLeaderboardModel:
-	r = await getLeaderboard(user, clanId=clanId)
+	r = await getLeaderboard(user, clanId = clanId)
 
 	if r is None or len(r) < 1:
 		raise HTTPException(404, "Clan not found")
@@ -279,8 +279,8 @@ async def get_clan_leaderboard_position(
 
 @router.get(
 	"/sqb",
-	summary="Returns the current season's SQB/SRB battle rating brackets",
-	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
+	summary = "Returns the current season's SQB/SRB battle rating brackets",
+	description = "Data is obtained from <a href = \"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_brackets(
@@ -291,8 +291,8 @@ async def get_brackets(
 
 @router.get(
 	"/sqb/current",
-	summary="Returns the current SQB/SRB bracket, and if one is open, also returns it's start and end time. If currently there is no open timebracket, it returns the next bracket's start and end",
-	description="Data is obtained from <a href=\"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
+	summary = "Returns the current SQB/SRB bracket, and if one is open, also returns it's start and end time. If currently there is no open timebracket, it returns the next bracket's start and end",
+	description = "Data is obtained from <a href = \"https://forum.warthunder.com/t/season-schedule-for-squadron-battles-01-09-31-10-2026/4446\">the forum post</a>, if this data is outdated here, it is probably outdated there"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_current_bracket(
@@ -311,8 +311,8 @@ async def get_current_bracket(
 				"start": start_dt,
 				"end": end_dt
 			}
-	next_start = datetime.combine(rn.date() + timedelta(days=1), SQB_BRACKET_TIMES[0][0], UTC)
-	next_end = datetime.combine(rn.date() + timedelta(days=1), SQB_BRACKET_TIMES[0][1], UTC)
+	next_start = datetime.combine(rn.date() + timedelta(days = 1), SQB_BRACKET_TIMES[0][0], UTC)
+	next_end = datetime.combine(rn.date() + timedelta(days = 1), SQB_BRACKET_TIMES[0][1], UTC)
 	if next_start <= bracket["end"]:
 		return {
 			"bracket": bracket,
@@ -325,12 +325,12 @@ async def get_current_bracket(
 
 @router.get(
 	"/{clanId}",
-	summary="Gets data about the given squadron"
+	summary = "Gets data about the given squadron"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_clan(
 	request: faRequest,
 	user: ServerBearer,
-	clanId: Annotated[int, Path(title="The squadron's ID")],
+	clanId: Annotated[int, Path(title = "The squadron's ID")],
 ) -> ClanModel:
 	return await getClan(user, clanId)

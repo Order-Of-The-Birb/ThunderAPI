@@ -22,12 +22,12 @@ if TYPE_CHECKING:
 _logger = getLogger(__name__)
 
 GAMEFILES = VEHICLES / "gamefiles"
-GAMEFILES.mkdir(exist_ok=True, parents=True)
+GAMEFILES.mkdir(exist_ok = True, parents = True)
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/refs/heads/master/version"
 
 class DataLocations:
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class VehicleData:
 		DATA:Path
 		IMAGE:Path
@@ -65,7 +65,7 @@ class DataLocations:
 	VERSION = GAMEFILES / "version"
 
 async def setup():
-	GAMEFILES.mkdir(exist_ok=True)
+	GAMEFILES.mkdir(exist_ok = True)
 	if not (GAMEFILES / ".git").exists():
 		_logger.warning(f"{GAMEFILES} doesn't have a git repository set up. Setting up automatically")
 		tracked_paths = [ # Put a / before single files
@@ -90,19 +90,19 @@ async def setup():
 
 		await asyncio.to_thread(
 			run,
-			"git clone --filter=blob:none --sparse https://github.com/gszabi99/War-Thunder-Datamine.git ./ &&" +
+			"git clone --filter = blob:none --sparse https://github.com/gszabi99/War-Thunder-Datamine.git ./ &&" +
 			f"git sparse-checkout set --no-cone {" ".join(tracked_paths)}",
-			check=True,
-			shell=True,
-			cwd=GAMEFILES
+			check = True,
+			shell = True,
+			cwd = GAMEFILES
 		)
 	pass
 async def check_git():
 	git_ver = await asyncio.to_thread(
 		run,
 		["git", "version"],
-		stdout=PIPE,
-		stderr=PIPE
+		stdout = PIPE,
+		stderr = PIPE
 	)
 	if git_ver.returncode != 0:
 		raise EnvironmentError("No git installed on this system. Install it before running the server")
@@ -111,12 +111,12 @@ async def check_git():
 LAST_CHECK: datetime = datetime.fromtimestamp(0, UTC)
 async def check_update():
 	global VERSION, LAST_CHECK
-	if (datetime.now(UTC)-LAST_CHECK) < timedelta(minutes=10):
+	if (datetime.now(UTC)-LAST_CHECK) < timedelta(minutes = 10):
 		return
 	LAST_CHECK = datetime.now(UTC)
 	await check_git()
 	await setup()
-	result = await asyncio.to_thread(run, "git pull", cwd=GAMEFILES, shell=True, stdout=PIPE, stderr=PIPE)
+	result = await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True, stdout = PIPE, stderr = PIPE)
 	if result.returncode == 0:
 		pass
 	elif result.returncode == 1:
@@ -135,10 +135,10 @@ def referenceToPath(reference:str) -> Path:
 	return GAMEFILES / "aces.vromfs.bin_u" / (reference.lower().replace("blk", "blkx"))
 
 def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
-	df = read_csv(DataLocations.VEHICLE_LOC, delimiter=";", encoding="utf-8")
-	df.set_index("<ID|readonly|noverify>", inplace=True)
+	df = read_csv(DataLocations.VEHICLE_LOC, delimiter = ";", encoding = "utf-8")
+	df.set_index("<ID|readonly|noverify>", inplace = True)
 	unit_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
-	for idx, row in df.to_dict(orient="index").items():
+	for idx, row in df.to_dict(orient = "index").items():
 		base, _, variant = str(idx).rpartition("_")
 		if variant == "0":
 			key = "short"
@@ -154,7 +154,7 @@ async def update_gamefiles():
 		return
 	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
 	await setup()
-	await asyncio.to_thread(run, "git pull", cwd=GAMEFILES, shell=True, check=True)
+	await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True, check = True)
 
 	new_ver = Version(await asyncio.to_thread(DataLocations.VERSION.read_text))
 	if VERSION == new_ver:
@@ -168,11 +168,11 @@ async def update_gamefiles():
 
 	UNIT_LOC = await asyncio.to_thread(_load_unit_loc)
 
-	WEAPON_LOC = await asyncio.to_thread(read_csv, DataLocations.WEAPON_LOC, delimiter=";", encoding="utf-8")
-	WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace=True)
+	WEAPON_LOC = await asyncio.to_thread(read_csv, DataLocations.WEAPON_LOC, delimiter = ";", encoding = "utf-8")
+	WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace = True)
 
-	MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter=";", encoding="utf-8")
-	MOD_LOC.set_index("<ID|readonly|noverify>", inplace=True)
+	MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
+	MOD_LOC.set_index("<ID|readonly|noverify>", inplace = True)
 
 	weapon_cache = {}
 	sensor_cache = {}

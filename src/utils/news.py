@@ -16,14 +16,14 @@ from utils.connection.websocket import WebsocketManager
 from utils.helper import dtToTimestamp
 
 fasterUpdate = (
-	time(hour=11, minute=0, tzinfo=UTC), # Start
-	time(hour=21, minute=30, tzinfo=UTC) # End
+	time(hour = 11, minute = 0, tzinfo = UTC), # Start
+	time(hour = 21, minute = 30, tzinfo = UTC) # End
 )
 excludeFastWeekdays = (5,6) # Zero-indexed number of weekday
 fastCheck = 5*60 # Every 5 mins
 slowCheck = 30*60 # Every 30 mins
 
-@dataclass(slots=True)
+@dataclass(slots = True)
 class NewsEntry:
 	class ImportanceLevel(IntEnum):
 		REGULAR = 0
@@ -42,7 +42,7 @@ class NewsEntry:
 	type:Literal["news", "changelog", "forum"] # Article Type
 	created:datetime # Article Creation Time
 	importance:ImportanceLevel = ImportanceLevel.REGULAR
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class Image:
 		src: str
 		width: int
@@ -50,9 +50,9 @@ class NewsEntry:
 		@classmethod
 		def from_json(cls, data:dict[str, Any]):
 			return cls(
-				src=data["src"],
-				width=int(data["width"]),
-				height=int(data["height"])
+				src = data["src"],
+				width = int(data["width"]),
+				height = int(data["height"])
 			)
 		def to_json(self):
 			return asdict(self)
@@ -110,24 +110,24 @@ class NewsEntry:
 		images = []
 		for image in img:
 			images.append(cls.Image(
-				src=image.get("src"),
-				width=int(image.get("width", -1)),
-				height=int(image.get("height", -1))
+				src = image.get("src"),
+				width = int(image.get("width", -1)),
+				height = int(image.get("height", -1))
 			))
 
 		return cls(
-			id=id,
-			anons=desc_text,
-			title=title.get_text(),
-			link=f"https://forum.warthunder.com/t/{id}",
-			pinned=False,
-			images=images,
-			tags=set(["Development",]),
-			platforms=set(),
-			project="warthunder",
-			type="forum",
-			created=created,
-			importance=cls.ImportanceLevel.REGULAR
+			id = id,
+			anons = desc_text,
+			title = title.get_text(),
+			link = f"https://forum.warthunder.com/t/{id}",
+			pinned = False,
+			images = images,
+			tags = set(["Development",]),
+			platforms = set(),
+			project = "warthunder",
+			type = "forum",
+			created = created,
+			importance = cls.ImportanceLevel.REGULAR
 		)
 
 	def to_json(self):
@@ -174,7 +174,7 @@ class NewsEntry:
 _changelog_maintenance: bool = False
 _news_endpoint_down: bool = False
 class NewsManager:
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class LastSentIDs:
 		NEWS: int = 0
 		CHANGELOG: int = 0
@@ -206,7 +206,7 @@ class NewsManager:
 					self.fetchChangelogs(),
 					self._get_new_news(),
 					self._get_new_forum(),
-					return_exceptions=True
+					return_exceptions = True
 				)
 				if not isinstance(changelogs, BaseException):
 					latest_changelogs = await self._get_new_changelogs(changelogs)
@@ -224,7 +224,7 @@ class NewsManager:
 				("forum", latest_forum)
 			):
 				if isinstance(_result, BaseException):
-					self.__logger.exception(f"An exception occurred during {_name} fetching", exc_info=_result)
+					self.__logger.exception(f"An exception occurred during {_name} fetching", exc_info = _result)
 
 			latest_news = [] if isinstance(latest_news, BaseException) else latest_news
 			latest_changelogs = [] if isinstance(latest_changelogs, BaseException) else latest_changelogs
@@ -237,7 +237,7 @@ class NewsManager:
 			overall_news = latest_news + latest_changelogs + latest_forum
 			if latest_major_chlog:
 				overall_news.append(latest_major_chlog)
-			overall_news.sort(key=lambda x: x.created)
+			overall_news.sort(key = lambda x: x.created)
 
 			try:
 				for news in overall_news:
@@ -279,8 +279,8 @@ class NewsManager:
 		if planned_changes is not None:
 			unpinned.append(planned_changes)
 
-		pinned.sort(key=lambda x: x.created, reverse=True)
-		unpinned.sort(key=lambda x: x.created, reverse=True)
+		pinned.sort(key = lambda x: x.created, reverse = True)
+		unpinned.sort(key = lambda x: x.created, reverse = True)
 		return pinned + unpinned
 
 	#region News
@@ -346,10 +346,10 @@ class NewsManager:
 				async def processChangelog(chlog:Tag) -> NewsEntry:
 					ChLogURL:str = chlog.select_one("a.widget__link")["href"]
 					content = chlog.select_one("div.widget__content")
-					title = content.select_one("div.widget__title").get_text(strip=True)
-					anons = content.select_one("div.widget__comment").get_text(strip=True)
-					datetext = content.select_one("ul.widget__meta.widget-meta").select_one("li.widget-meta__item.widget-meta__item--right").get_text(strip=True)
-					date = datetime.strptime(datetext, "%d %B %Y").replace(tzinfo=UTC).strftime("%Y-%m-%dT%H:%M:%S%z")
+					title = content.select_one("div.widget__title").get_text(strip = True)
+					anons = content.select_one("div.widget__comment").get_text(strip = True)
+					datetext = content.select_one("ul.widget__meta.widget-meta").select_one("li.widget-meta__item.widget-meta__item--right").get_text(strip = True)
+					date = datetime.strptime(datetext, "%d %B %Y").replace(tzinfo = UTC).strftime("%Y-%m-%dT%H:%M:%S%z")
 					del datetext
 					src = chlog.select_one("div.widget__poster>img").attrs["data-src"]
 					pinned = chlog.select_one("div.widget__pin") is not None

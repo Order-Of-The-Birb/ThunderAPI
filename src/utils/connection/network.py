@@ -27,7 +27,7 @@ __active_ops_done = Event()
 __active_ops_done.set()
 __lock = Lock()
 
-_RESP_PROVIDER: Callable[[Any], Awaitable[dict[str, Any]]] | None = None
+_RESP_PROVIDER: Callable[[Any], Awaitable[Any]] | None = None
 
 #region POST
 @overload
@@ -38,7 +38,7 @@ def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str |
 def post(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
 async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
-	async with request("POST", url, return_type, resp_state=resp_state, session=session **kwargs) as resp:
+	async with request("POST", url, return_type, resp_state = resp_state, session = session, **kwargs) as resp:
 		yield resp
 #endregion
 #region GET
@@ -50,13 +50,16 @@ def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | 
 def get(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
 async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
-	async with request("GET", url, return_type, resp_state=resp_state, session=session, **kwargs) as resp:
+	async with request("GET", url, return_type, resp_state = resp_state, session = session, **kwargs) as resp:
 		yield resp
 #endregion
 #region HEAD
 @asynccontextmanager
 async def head(url:str, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
-	async with request("HEAD", url, ReturnType.BIN, resp_state=resp_state, session=session, **kwargs) as resp:
+	if _RESP_PROVIDER is not None:
+		yield await _RESP_PROVIDER(resp_state)
+		return
+	async with session.head(url, **kwargs) as resp:
 		yield resp
 #endregion
 
@@ -75,10 +78,10 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 	if session is None:
 		async with operation() as session:
 			async with session.request(method, url, **kwargs) as resp:
-				yield await handle_response(resp=resp, convert=return_type)
+				yield await handle_response(resp = resp, convert = return_type)
 				return
 	async with session.request(method, url, **kwargs) as resp:
-		yield await handle_response(resp=resp, convert=return_type)
+		yield await handle_response(resp = resp, convert = return_type)
 		return
 
 #endregion
@@ -96,7 +99,7 @@ async def start():
 		if __session is not None and not __session.closed:
 			return
 		__closing = False
-		__session = ClientSession(headers={"User-Agent": "ThunderAPI/1.0"}, cookie_jar=DummyCookieJar())
+		__session = ClientSession(headers = {"User-Agent": "ThunderAPI/1.0"}, cookie_jar = DummyCookieJar())
 
 async def close():
 	global __closing, __session

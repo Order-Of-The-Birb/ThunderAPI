@@ -170,8 +170,8 @@ class GaijinErrorCodes(Enum): # TODO: Finish documenting gaijin error codes
 
 			err = GaijinErrorCodes[ match.group(1).strip() ]
 			raise HTTPException(
-				status_code=err.value["code"],
-				detail=err.value["detail"]
+				status_code = err.value["code"],
+				detail = err.value["detail"]
 			)
 		except KeyError as e:
-			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=code) from e
+			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = code) from e

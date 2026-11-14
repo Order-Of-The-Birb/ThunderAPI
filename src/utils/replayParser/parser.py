@@ -69,7 +69,7 @@ class _ReplayHeader:
 	battleKillStreak: str
 	#endregion
 	def __init__(self, data:bytes):
-		fields = sorted(self.ReplayStructure, key=lambda f: f.value[0]) # Sort by index
+		fields = sorted(self.ReplayStructure, key = lambda f: f.value[0]) # Sort by index
 		offset = 0
 		for field in fields:
 			index, size, field_type = field.value

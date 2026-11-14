@@ -10,7 +10,7 @@ from . import shared
 
 _logger = getLogger(__name__)
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class _limit:
 	maxValue: int|float
 	minValue: int|float
@@ -30,16 +30,16 @@ class _limit:
 	def to_json(self):
 		return asdict(self)
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class Sensor:
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class Antenna:
 		angleHalfSens: float
 		sideLobesSensitivity: float
 
 		def to_json(self):
 			return asdict(self)
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class _transiversEntry:
 		type: str
 		sideLobesAttenuation: float | None
@@ -128,7 +128,7 @@ class Sensor:
 						obj[key][antenna] = entry.to_json()
 
 			return obj
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _illuminationTransmitter:
 		power: float
 		antenna: Sensor.Antenna
@@ -140,9 +140,9 @@ class Sensor:
 					obj[key] = value.to_json()
 
 			return obj
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _signalEntry:
-		@dataclass(frozen=True, slots=True)
+		@dataclass(frozen = True, slots = True)
 		class _distance:
 			presents: bool
 			minValue: float
@@ -161,7 +161,7 @@ class Sensor:
 				)
 			def to_json(self):
 				return asdict(self)
-		@dataclass(frozen=True, slots=True)
+		@dataclass(frozen = True, slots = True)
 		class _dopplerSpeed:
 			presents: bool
 			minValue: float
@@ -217,7 +217,7 @@ class Sensor:
 				if isinstance(value, (self._distance, self._dopplerSpeed)):
 					obj[key] = asdict(value)
 			return obj
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _scanPattern:
 		name: str
 		scanPatternSet: str
@@ -256,7 +256,7 @@ class Sensor:
 					obj[key] = value.to_json()
 
 			return obj
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _targetTypeId:
 		name: str
 		targetType: list[str]
@@ -269,7 +269,7 @@ class Sensor:
 			)
 		def to_json(self):
 			return asdict(self)
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _vehicleTypeId:
 		name: str
 		propulsion: dict[str, str|int]
@@ -352,7 +352,7 @@ class Sensor:
 		targetTypeId = []
 		for v in data.get("targetTypeId", []):
 			name:str = v.get("name").removeprefix("hud/")
-			if (_:=v.get("sizeRange", [])):
+			if (_: = v.get("sizeRange", [])):
 				sizeRanges[name] = _limit.from_list(_)
 			elif name in ["helicopter", "single prop", "multi prop", "single jet", "multi jet", "rocket"]:
 				vehicleTypeId.append(cls._vehicleTypeId.from_json(v))

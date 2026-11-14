@@ -8,7 +8,7 @@ import pytest_asyncio
 from src.utils.connection import Network
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse = True)
 async def _autostart_network():
 	"""Start the Network session before each test and close it afterwards."""
 	await Network.start()

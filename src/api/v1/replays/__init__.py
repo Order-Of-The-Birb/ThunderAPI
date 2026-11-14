@@ -12,16 +12,16 @@ from .backend import ReplayMode, ReplayTechType, ReplayType, search_replay
 from .models import DataModel, MatchModel, ReplayNotFoundModel, ResultsModel
 
 router = APIRouter(
-	prefix="/replay",
-	tags=["replays"],
-	responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
+	prefix = "/replay",
+	tags = ["replays"],
+	responses = {status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
 )
 
 """
 @router.get(
 	"/search",
-	summary="Searches for replays based on given parameters",
-	responses={
+	summary = "Searches for replays based on given parameters",
+	responses = {
 		status.HTTP_200_OK: {"model": SearchModel},
 		status.HTTP_403_FORBIDDEN: {"description": "The token has no associated `identity_sid` value associated, required for replay lookup. Get one from `/v1/get-sid`"},
 	}
@@ -33,50 +33,50 @@ async def search_replays(
 	user: TokenBearer,
 	uid: Annotated[
 		int,
-		Query(title="The UID of the user to search replays for")
+		Query(title = "The UID of the user to search replays for")
 	] = None,
 	nickname: Annotated[
 		str,
-		Query(title="The nickname of the user to search replays for")
+		Query(title = "The nickname of the user to search replays for")
 	] = None,
 	gameType: Annotated[
 		ReplayType,
 		Query(
-			title="The type of game to search replays for",
-			description="If not provided, will search for random battles",
-			min_length=1
+			title = "The type of game to search replays for",
+			description = "If not provided, will search for random battles",
+			min_length = 1
 		)
 	] = ReplayType.RANDOM_BATTLE,
 	techType: Annotated[
 		ReplayTechType,
 		Query(
-			title="The type of tech to search replays for",
-			description="If not provided, will search for all tech types",
-			min_length=1
+			title = "The type of tech to search replays for",
+			description = "If not provided, will search for all tech types",
+			min_length = 1
 		)
 	] = ReplayTechType.ALL,
 	mode: Annotated[
 		set[ReplayMode] | None,
 		Query(
-			title="The game modes to filter by",
-			description="If not provided, will search for all game modes",
+			title = "The game modes to filter by",
+			description = "If not provided, will search for all game modes",
 		)
 	] = None,
 	limit: Annotated[
 		int,
 		Query(
-			title="The maximum number of replays to return",
-			description="Must be between 1 and 100",
-			ge=1,
-			le=100
+			title = "The maximum number of replays to return",
+			description = "Must be between 1 and 100",
+			ge = 1,
+			le = 100
 		)
 	] = 25,
 	page: Annotated[
 		int,
 		Query(
-			title="The page of results to return",
-			description="Must be 0 or greater",
-			ge=0
+			title = "The page of results to return",
+			description = "Must be 0 or greater",
+			ge = 0
 		)
 	] = 0,
 ):
@@ -84,8 +84,8 @@ async def search_replays(
 
 @router.get(
 	"/{replayId}",
-	summary="Gets data from a specified replay",
-	responses={
+	summary = "Gets data from a specified replay",
+	responses = {
 		status.HTTP_200_OK: {"model": DataModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
@@ -97,9 +97,9 @@ async def get_replay(
 	replayId: Annotated[
 		str,
 		Path(
-			title="The replay's ID to get",
-			pattern=r"^[0-9a-fA-F]{1,16}$",
-			description="Must be given in HEX format"
+			title = "The replay's ID to get",
+			pattern = r"^[0-9a-fA-F]{1,16}$",
+			description = "Must be given in HEX format"
 		),
 	],
 ):
@@ -107,12 +107,14 @@ async def get_replay(
 
 @router.get(
 	"/{replayId}/teams",
-	summary="Gets the results from a specified replay",
-	responses={
+	summary = "Gets the results from a specified replay",
+	responses = {
 		status.HTTP_200_OK: {"model": ResultsModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
-	})
+	},
+	response_model = ResultsModel
+)
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay_teams(
 	request: faRequest,
@@ -120,9 +122,9 @@ async def get_replay_teams(
 	replayId: Annotated[
 		str,
 		Path(
-			title="The replay's ID to get",
-			pattern=r"^[0-9a-fA-F]{1,16}$",
-			description="Must be given in HEX format"
+			title = "The replay's ID to get",
+			pattern = r"^[0-9a-fA-F]{1,16}$",
+			description = "Must be given in HEX format"
 		),
 	]
 ):
@@ -130,8 +132,8 @@ async def get_replay_teams(
 
 @router.get(
 	"/{replayId}/match",
-	summary="Gets match data from a specified replay",
-	responses={
+	summary = "Gets match data from a specified replay",
+	responses = {
 		status.HTTP_200_OK: {"model": MatchModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
@@ -143,9 +145,9 @@ async def get_replay_match(
 	replayId: Annotated[
 		str,
 		Path(
-			title="The replay's ID to get",
-			pattern=r"^[0-9a-fA-F]{1,16}$",
-			description="Must be given in HEX format"
+			title = "The replay's ID to get",
+			pattern = r"^[0-9a-fA-F]{1,16}$",
+			description = "Must be given in HEX format"
 		),
 	]
 ):

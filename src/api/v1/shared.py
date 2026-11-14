@@ -9,8 +9,8 @@ import utils
 from utils import users_auth
 from utils.auth import LoginEntry
 
-security = HTTPBearer(description="Get the token from `POST /v1/login`")
-optional_security = HTTPBearer(auto_error=False)
+security = HTTPBearer(description = "Get the token from `POST /v1/login`")
+optional_security = HTTPBearer(auto_error = False)
 
 class Authentication:
 	@staticmethod
@@ -74,16 +74,23 @@ OptionalAuth =	Annotated[LoginEntry, Depends(Authentication.get_optional_auth)	]
 
 IntString = Annotated[
 	str,
-	StringConstraints(pattern=r"^\d+$"),
-	Field(description="Integer value represented as a string. Needed where large numbers appear, due to floating point errors in JSON", examples=["10016", "652677", "62762477"]),
+	StringConstraints(pattern = r"^\d+$"),
+	Field(
+		description = "Integer value represented as a string to avoid precision loss when JSON clients (JavaScript/IEEE-754) parse large 64-bit integers above 2^53 − 1.",
+		coerce_numbers_to_str = True,
+		examples = ["10016", "652677", "62762477"]
+	),
 ]
 FloatString = Annotated[
 	str,
-	StringConstraints(pattern=r"^\d+(?:\.\d+)?$"),
-	Field(description="Float value represented as a string. Needed where large numbers appear, due to floating point errors in JSON", examples=["0.005", "1.0", "4.3"]),
+	StringConstraints(pattern = r"^\d+(?:\.\d+)?$"),
+	Field(
+		description = "Floating point value represented as a string to avoid precision loss when JSON clients (JavaScript/IEEE-754) parse decimal values as binary floating point (IEEE-754 doubles).",
+		examples = ["0.005", "1.0", "4.3"]
+	),
 ]
 IpString = Annotated[
 	str,
-	StringConstraints(pattern=r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"),
-	Field(description="IP address represented as a string", examples=["0.0.0.0", "192.168.0.1", "127.0.0.1"])
+	StringConstraints(pattern = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"),
+	Field(description = "IP address represented as a string", examples = ["0.0.0.0", "192.168.0.1", "127.0.0.1"])
 ]
