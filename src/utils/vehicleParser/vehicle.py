@@ -346,7 +346,7 @@ class Vehicle:
 				data.get("crewTotalCount"),
 				data.get("doesItGiveNationBonus", False),
 				data.get("hasWeaponSlots", False),
-				tuple(_) if (_: = data.get("turretSpeed")) is not None else None,
+				tuple(_) if (_ := data.get("turretSpeed")) is not None else None,
 				data.get("showOnlyWhenBought", False)
 			)
 

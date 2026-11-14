@@ -352,7 +352,7 @@ class Sensor:
 		targetTypeId = []
 		for v in data.get("targetTypeId", []):
 			name:str = v.get("name").removeprefix("hud/")
-			if (_: = v.get("sizeRange", [])):
+			if (_ := v.get("sizeRange", [])):
 				sizeRanges[name] = _limit.from_list(_)
 			elif name in ["helicopter", "single prop", "multi prop", "single jet", "multi jet", "rocket"]:
 				vehicleTypeId.append(cls._vehicleTypeId.from_json(v))
