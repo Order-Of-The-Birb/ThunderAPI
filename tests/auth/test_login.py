@@ -13,13 +13,13 @@ group = templates.Groups.LOGIN
 
 
 async def test_login_success():
-	await run_tests("", "", tests=group.SUCCESS, func=auth.login)
+	await run_tests("", "", tests = group.SUCCESS, func = auth.login)
 
 async def test_login_failures():
-	await run_tests("", "", tests=group.FAILURE, func=auth.login)
+	await run_tests("", "", tests = group.FAILURE, func = auth.login)
 
 async def test_2fa_success():
-	await run_tests("", "", tests=group.TWO_FACTOR, func=auth.login, extra_templates={"2fa_login": "success"})
+	await run_tests("", "", tests = group.TWO_FACTOR, func = auth.login, extra_templates = {"2fa_login": "success"})
 
 async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group, func: Callable[[str], Awaitable[dict[str, Any]]], extra_templates: dict[str, str] | None = None, **kwargs):
 	if extra_templates is None:
@@ -40,7 +40,7 @@ async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group,
 		auth._RESP_PROVIDER = provider
 		expected = test.value[1]
 		if expected is not None:
-			with pytest.raises(type(expected), check=lambda x, expected=expected: type(x) is type(expected)) as exc_info:
+			with pytest.raises(type(expected), check = lambda x, expected = expected: type(x) is type(expected)) as exc_info:
 				await func(*args, **kwargs)
 			if type(expected) is HTTPException:
 				assert exc_info.value.status_code == expected.status_code

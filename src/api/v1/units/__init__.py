@@ -10,9 +10,9 @@ from utils.vehicleParser import shared
 from utils.vehicleParser.localization import Languages
 
 router = APIRouter(
-	tags=["units"],
-	responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
-	prefix="/units"
+	tags = ["units"],
+	responses = {status.HTTP_404_NOT_FOUND: {"description": "Not found"}},
+	prefix = "/units"
 )
 
 class LanguagesCompat(StrEnum):
@@ -44,8 +44,8 @@ class LanguagesCompat(StrEnum):
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def localize_unit(
     request: faRequest,
-    unit: Annotated[str, Path(description="The internal hash of the vehicle")],
-    language: Annotated[LanguagesCompat, Query(description="The language to get the localization for (e.g. en, de, fr)")] = "en"
+    unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
+    language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = "en"
 ):
 	if unit not in shared.UNIT_LOC:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found")

@@ -19,7 +19,7 @@ class User:
 	def __init__(self, login: LoginEntry):
 		self.login = login
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class Order:
 		class Type(StrEnum):
 			BUY = "buy"
@@ -31,29 +31,29 @@ class User:
 		pairId: int
 		price: float
 		timestamp: datetime
-		amount: int = field(default=1)
+		amount: int = field(default = 1)
 
 		@classmethod
 		def from_dict(cls, obj: dict[str, Any], login: LoginEntry):
 			return cls(
-				LOGIN=login,
-				market_hash=obj["market"],
-				id=int(obj["id"]),
-				type=cls.Type[obj["type"]],
-				pairId=int(obj["pairId"]),
-				price=int(obj["localPrice"])/10000,
-				timestamp=datetime.fromtimestamp(obj["time"], UTC),
-				amount=int(obj["amount"])
+				LOGIN = login,
+				market_hash = obj["market"],
+				id = int(obj["id"]),
+				type = cls.Type[obj["type"]],
+				pairId = int(obj["pairId"]),
+				price = int(obj["localPrice"])/10000,
+				timestamp = datetime.fromtimestamp(obj["time"], UTC),
+				amount = int(obj["amount"])
 			)
 
 		async def cancel(self) -> bool:
 			data = await Request.send_template(
 				self.LOGIN,
 				"cancel_order",
-				transactid=1,
-				reqstamp=int(datetime.now(UTC).timestamp()),
-				pairId=self.pairId,
-				orderId=self.id
+				transactid = 1,
+				reqstamp = int(datetime.now(UTC).timestamp()),
+				pairId = self.pairId,
+				orderId = self.id
 			)
 			if "response" in data:
 				return data["response"].get("success", False)
@@ -62,11 +62,11 @@ class User:
 		async def to_json(self):
 			SANITIZE = (
 				dictUtil.KeyRem("LOGIN", "pairId"),
-				dictUtil.KeyMod("id", convert=lambda x: str(x)),
+				dictUtil.KeyMod("id", convert = lambda x: str(x)),
 			)
 			return await dictUtil.run_all(asdict(self), SANITIZE)
 
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class InventoryItem:
 		class SellData(TypedDict):
 			item: str
@@ -96,22 +96,22 @@ class User:
 			classData: dict[str, Any] = itemData["class"][0]
 
 			return cls(
-				LOGIN=user,
-				commodity=assetData.get("commodity"),
-				description=assetData["descriptions"][0]["value"],
-				icon_url=assetData.get("icon_url"),
-				icon_url_large=assetData.get("icon_url_large"),
-				hash=assetData.get("market_hash_name"),
-				name=assetData.get("market_name"),
-				display_name=assetData.get("name"),
-				tags=assetData.get("tags", []),
-				marketable=assetData.get("marketable", False),
-				type=assetData.get("type", None),
-				name_color=assetData.get("name_color"),
-				class_name=classData["name"],
-				class_value=classData["value"],
-				ids=[int(itemData["id"]),],
-				contextid=context
+				LOGIN = user,
+				commodity = assetData.get("commodity"),
+				description = assetData["descriptions"][0]["value"],
+				icon_url = assetData.get("icon_url"),
+				icon_url_large = assetData.get("icon_url_large"),
+				hash = assetData.get("market_hash_name"),
+				name = assetData.get("market_name"),
+				display_name = assetData.get("name"),
+				tags = assetData.get("tags", []),
+				marketable = assetData.get("marketable", False),
+				type = assetData.get("type", None),
+				name_color = assetData.get("name_color"),
+				class_name = classData["name"],
+				class_value = classData["value"],
+				ids = [int(itemData["id"]),],
+				contextid = context
 			)
 
 		async def sell(self, price: float, count: int, anonymous: bool = False) -> tuple[SellData]:
@@ -163,7 +163,7 @@ class User:
 			)
 			return await dictUtil.run_all(asdict(self), SANITIZE)
 
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class MarketItem:
 		hash_name: str
 		name: str
@@ -211,9 +211,9 @@ class User:
 				name = assetData["market_name"],
 				commodity = assetData.get("commodity", False),
 				icon = assetData.get("icon_url_large", assetData.get("icon_url", None)),
-				buy_price = max((i[0] for i in ordersData.get("BUY", [])), default=0) / 10000,
+				buy_price = max((i[0] for i in ordersData.get("BUY", [])), default = 0) / 10000,
 				buy_orders = ordersData["depth"].get("BUY", 0),
-				sell_price = min((i[0] for i in ordersData.get("SELL", [])), default=0) / 10000,
+				sell_price = min((i[0] for i in ordersData.get("SELL", [])), default = 0) / 10000,
 				sell_orders = ordersData["depth"].get("SELL", 0),
 				tags = {i["category"]:i["internal_name"] for i in assetData.get("tags", [])},
 				className = classValues[0]["name"],
@@ -312,7 +312,7 @@ class User:
 			contexts = await Request.send_template(
 				self.login,
 				"GetContexts",
-				session=session
+				session = session
 			)
 			if "result" not in contexts or not contexts["result"].get("success", False):
 				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get contexts")
@@ -320,7 +320,7 @@ class User:
 				ctx_data = await Request.send_template(
 					self.login,
 					"GetContextContents",
-					session=session,
+					session = session,
 					contextid = context["id"]
 				)
 				if "result" not in ctx_data:
@@ -329,7 +329,7 @@ class User:
 					item_data = await Request.send_template(
 						self.login,
 						"GetAssetClassInfo",
-						session=session,
+						session = session,
 							class_name0 = item["class"][0]["name"],
 							class_value0 = item["class"][0]["value"]
 					)

@@ -7,19 +7,19 @@ from typing import Any, Awaitable, Callable, Coroutine
 
 _logger = getLogger(__name__)
 
-@dataclass(slots=True)
+@dataclass(slots = True)
 class Cache[T]:
 
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class Entry[T]:
 		key: str
 		obj: T
-		created: datetime = field(default_factory=lambda: datetime.now(UTC))
+		created: datetime = field(default_factory = lambda: datetime.now(UTC))
 
 	ON_EMPTY: Callable[[], Any] = lambda: ...
-	queue: deque[Entry] = field(default_factory=lambda: deque())
-	CLEANUP_AFTER: timedelta = field(default_factory=lambda: timedelta(minutes=15))
-	LOCK: asyncio.Lock = field(default_factory=lambda: asyncio.Lock())
+	queue: deque[Entry] = field(default_factory = lambda: deque())
+	CLEANUP_AFTER: timedelta = field(default_factory = lambda: timedelta(minutes = 15))
+	LOCK: asyncio.Lock = field(default_factory = lambda: asyncio.Lock())
 	async def cleanup(self):
 		now = datetime.now(UTC)
 		before_len = len(self.queue)
@@ -93,4 +93,4 @@ async def stop():
 	for task in LONG_RUNNING:
 		task.cancel()
 	runtime_task.cancel()
-	await asyncio.gather(runtime_task, *LONG_RUNNING, return_exceptions=True)
+	await asyncio.gather(runtime_task, *LONG_RUNNING, return_exceptions = True)

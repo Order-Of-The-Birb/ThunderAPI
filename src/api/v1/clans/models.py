@@ -44,7 +44,7 @@ class ApplicantModel(BaseModel):
 		offset: float
 		country: str
 		city: str
-	geo:GeolocationDataModel = Field(default=None)
+	geo:GeolocationDataModel = Field(default = None)
 
 class MemberModel(BaseModel):
 	class enumModel(BaseModel):
@@ -71,15 +71,15 @@ class LogsModel(BaseModel):
 			detail: str
 
 		class _roleChange(BaseModel):
-			old: str | None = Field(default=None, description="Previous role. Only present for role-change log entries.")
-			new: str | None = Field(default=None, description="New role. Only present for role-change log entries.")
+			old: str | None = Field(default = None, description = "Previous role. Only present for role-change log entries.")
+			new: str | None = Field(default = None, description = "New role. Only present for role-change log entries.")
 
 
 		timestamp: int
-		affected: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
+		affected: _userEntry | None = Field(default = None, exclude_if = lambda x: x is None)
 		action: _action
-		admin: _userEntry | None = Field(default=None, exclude_if=lambda x: x is None)
-		roleChange: _roleChange | None = Field(default=None, exclude_if=lambda x: x is None)
+		admin: _userEntry | None = Field(default = None, exclude_if = lambda x: x is None)
+		roleChange: _roleChange | None = Field(default = None, exclude_if = lambda x: x is None)
 
 class ClanLeaderboardModel(BaseModel):
 	class ClanStatsModel(BaseModel):
@@ -164,9 +164,9 @@ class ClanModel(BaseModel):
 	membership_req: dict | None = None
 	astat: astatModel | None = None
 	clanRewardRatingPerUser_60: dict | None = None
-	applicants: list[ApplicantModel] | None = Field(default=None, exclude_if=lambda x: x is None)
+	applicants: list[ApplicantModel] | None = Field(default = None, exclude_if = lambda x: x is None)
 
-	model_config = ConfigDict(extra="allow")
+	model_config = ConfigDict(extra = "allow")
 
 class ClanSearchResultModel(BaseModel):
 	id: int

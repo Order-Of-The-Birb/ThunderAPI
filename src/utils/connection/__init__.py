@@ -70,7 +70,7 @@ class Request:
 		user: LoginEntry | None = None,
 		host:str|None = None,
 		method:str = "POST",
-		session:ClientSession|None=None,
+		session:ClientSession|None = None,
 		response_provider: ResponseProvider | None = None
 	):
 		self.__response_provider = response_provider
@@ -108,14 +108,14 @@ class Request:
 		user:LoginEntry,
 		template: str,
 		/, *,
-		session:ClientSession|None=None,
+		session:ClientSession|None = None,
 		remove_keys: set[str] | None = None,
 		response_provider: ResponseProvider | None = None,
 		**data:str|dict[str, Any]
 	) -> "Request":
 		if remove_keys is None:
 			remove_keys = set()
-		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes=30):
+		if user.entry is not None and user.entry.timeLeft() <= timedelta(minutes = 30):
 			await user.entry.refresh()
 		if template not in TEMPLATES:
 			raise ValueError(f"Unknown template '{template}'. Available: {TEMPLATES}")
@@ -133,15 +133,15 @@ class Request:
 			raise RuntimeError(f"No action provided for template {template}")
 
 		self = cls(
-			body=body,
-			headers=headers,
-			user=user,
-			host=tpl.get("host", None),
-			method=tpl.get("method", "POST"),
-			action=action,
-			session=session,
-			template_name=template,
-			response_provider=response_provider
+			body = body,
+			headers = headers,
+			user = user,
+			host = tpl.get("host", None),
+			method = tpl.get("method", "POST"),
+			action = action,
+			session = session,
+			template_name = template,
+			response_provider = response_provider
 		)
 		await self.add_auth_headers()
 		for key, value in data.items():
@@ -158,8 +158,8 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None=None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
-		cls = await Request.from_template(user, template, session=session, remove_keys=remove_keys, response_provider=response_provider, **data)
+	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None = None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
+		cls = await Request.from_template(user, template, session = session, remove_keys = remove_keys, response_provider = response_provider, **data)
 		return await cls.send()
 
 	def replace(self, key: str, value: Any):
@@ -182,7 +182,7 @@ class Request:
 	async def add_auth_headers(self):
 		if self.user.entry is not None:
 			authTimeLeft = self.user.entry.timeLeft()
-			if authTimeLeft <= timedelta(minutes=30):
+			if authTimeLeft <= timedelta(minutes = 30):
 				await self.user.entry.refresh()
 		if "Authorization" in self.body:
 			self.body["Authorization"] = f"Bearer {self.user.jwt}"
@@ -231,7 +231,7 @@ class Request:
 			if isinstance(value, (bytes, str)):
 				continue
 			elif isinstance(value, dict):
-				kwargs["headers"][header] = "; ".join(f"{k}={v}" for k, v in value.items())
+				kwargs["headers"][header] = "; ".join(f"{k} = {v}" for k, v in value.items())
 			elif isinstance(value, list):
 				kwargs["headers"][header] = ";".join(str(i) for i in value)
 			else:

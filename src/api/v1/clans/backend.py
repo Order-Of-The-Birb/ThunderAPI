@@ -22,8 +22,8 @@ async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanI
 	response = await Request.from_template(
 		user,
 		"clan_get_leaderboard",
-		count=limit,
-		start=limit*page
+		count = limit,
+		start = limit*page
 	)
 
 	if clanId is None:
@@ -139,8 +139,8 @@ async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str
 	response = await Request.from_template(
 		user,
 		"clan_find_by_prefix",
-		count=limit,
-		start=limit*page
+		count = limit,
+		start = limit*page
 	)
 	if clanName:
 		response.headers["namePrefix"] = clanName
@@ -172,13 +172,13 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 	data = await Request.send_template(
 		user,
 		"clan_get",
-		clanId=clanId
+		clanId = clanId
 	)
 
 	SANITIZE = (
-		dictUtil.KeyMod("candidates", new_name="applicants", convert=lambda x: sanitizeApplicants(x)),
-		dictUtil.KeyMod("members", convert=lambda x: sanitizeMembers(x)),
-		dictUtil.KeyMod("_id", new_name="id"),
+		dictUtil.KeyMod("candidates", new_name = "applicants", convert = lambda x: sanitizeApplicants(x)),
+		dictUtil.KeyMod("members", convert = lambda x: sanitizeMembers(x)),
+		dictUtil.KeyMod("_id", new_name = "id"),
 		dictUtil.KeyRem(
 			"transactions",
 			"namel",
@@ -195,12 +195,12 @@ async def getClan(user: LoginEntry, clanId: int) -> ClanModel:
 
 SQB_BRACKET_TIMES = (
 	(
-		time(hour=1, minute=0, tzinfo=UTC),
-		time(hour=7, minute=0, tzinfo=UTC)
+		time(hour = 1, minute = 0, tzinfo = UTC),
+		time(hour = 7, minute = 0, tzinfo = UTC)
 	),
 	(
-		time(hour=14, minute=0, tzinfo=UTC),
-		time(hour=22, minute=0, tzinfo=UTC)
+		time(hour = 14, minute = 0, tzinfo = UTC),
+		time(hour = 22, minute = 0, tzinfo = UTC)
 	)
 )
 SQB_BRACKET_CACHE: tuple[dict[str, datetime|float]] | None = None
@@ -211,14 +211,14 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 		async with Network.get(
 			"https://forum.warthunder.com/t/season-schedule-for-squadron-battles/4446",
 			Network.ReturnType.TEXT,
-			headers={
+			headers = {
 				"User-Agent": "Thunderapi/1.0"
 			}
 		) as resp:
 			document = BeautifulSoup(resp, 'lxml')
 
 		post = document.select_one("div.topic-body.crawler-post")
-		meta = post.select_one("span.crawler-post-infos>meta[itemprop='dateModified']")
+		meta = post.select_one("span.crawler-post-infos>meta[itemprop = 'dateModified']")
 		if not meta:
 			raise RuntimeError()
 
@@ -227,7 +227,7 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 			raise RuntimeError()
 
 
-		title = document.find("meta", itemprop="headline").get("content")
+		title = document.find("meta", itemprop = "headline").get("content")
 		year = re_search(r"\([0-9\. ]+ - ([0-9]+\.[0-9]+\.[0-9]+)\)", title, IGNORECASE)
 		if not year:
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not fetch forum post title")
@@ -236,7 +236,7 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 		if end_date < datetime.now(UTC).date():
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Forum post data is outdated. Please try again later.")
 
-		post = str(document.find("div", class_="post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
+		post = str(document.find("div", class_ = "post").find_all("p")[1]).removeprefix("<p>").removesuffix("</p>").replace("<br/>","").split("\n")
 		del document
 
 		weeks = []
@@ -293,19 +293,19 @@ async def sanitizeMembers(members:dict|list):
 		members = [members,]
 
 	SANITIZATION = (
-		dictUtil.KeyMod("uid", convert=lambda x: int(x)),
-		dictUtil.KeyMod("nick", new_name="nickname"),
-		dictUtil.KeyMod("role", new_name="rank", convert=lambda x: {
+		dictUtil.KeyMod("uid", convert = lambda x: int(x)),
+		dictUtil.KeyMod("nick", new_name = "nickname"),
+		dictUtil.KeyMod("role", new_name = "rank", convert = lambda x: {
 			"name": Roles(x).name,
 			"value": x
 		}),
-		dictUtil.KeyMod("platform", convert=lambda x: {
+		dictUtil.KeyMod("platform", convert = lambda x: {
 			"name": Platforms(x).name,
 			"value": x
-		}, default=Platforms.PC.value),
-		dictUtil.KeyMod("initiator", new_name="accepted_by", convert=lambda x: int(x) if x is not None else x, default=None),
-		dictUtil.KeyMod("initiator_nick", new_name="accepted_by_nick", default=None),
-		dictUtil.KeyMod("date", new_name="joined_at")
+		}, default = Platforms.PC.value),
+		dictUtil.KeyMod("initiator", new_name = "accepted_by", convert = lambda x: int(x) if x is not None else x, default = None),
+		dictUtil.KeyMod("initiator_nick", new_name = "accepted_by_nick", default = None),
+		dictUtil.KeyMod("date", new_name = "joined_at")
 	)
 
 	for i, member in enumerate(members):
@@ -335,11 +335,11 @@ async def sanitizeApplicants(applicants:dict|list|None):
 			return None
 
 	SANITIZATION = (
-		dictUtil.KeyMod("uid", convert=lambda x: int(x)),
-		dictUtil.KeyMod("nick", new_name="nickname"),
-		dictUtil.KeyMod("comments", new_name="comment", default=""),
-		dictUtil.KeyMod("date", new_name="timestamp"),
-		dictUtil.KeyMod("ip", new_name="geo", convert=_ip_to_geo)
+		dictUtil.KeyMod("uid", convert = lambda x: int(x)),
+		dictUtil.KeyMod("nick", new_name = "nickname"),
+		dictUtil.KeyMod("comments", new_name = "comment", default = ""),
+		dictUtil.KeyMod("date", new_name = "timestamp"),
+		dictUtil.KeyMod("ip", new_name = "geo", convert = _ip_to_geo)
 	)
 
 	for i, applicant in enumerate(applicants):

@@ -81,8 +81,8 @@ async def lifespan(app: FastAPI):
 			async with Network.get(
 				"https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk",
 				Network.ReturnType.BIN,
-				timeout=5,
-				session=session
+				timeout = 5,
+				session = session
 			) as _resp:
 				content = Decompress(_resp)["production"]
 		except Exception:
@@ -91,8 +91,8 @@ async def lifespan(app: FastAPI):
 				async with Network.get(
 					"https://public-configs.warthunder.com/production/network.blk",
 					Network.ReturnType.BIN,
-					timeout=5,
-					session=session
+					timeout = 5,
+					session = session
 				) as _resp:
 					content = Decompress(_resp)["production"]
 			except Exception:
@@ -125,20 +125,20 @@ async def lifespan(app: FastAPI):
 
 debug = int(getenv("DEBUG_MODE", "0")) == 1
 app = FastAPI(
-	title="ThunderAPI",
-	description="API to retrieve War Thunder data.",
-	version="1.0.0",
-	openapi_tags=tags_metadata,
-	lifespan=lifespan,
-	redoc_url=None,
-	docs_url=None,
-	responses={
+	title = "ThunderAPI",
+	description = "API to retrieve War Thunder data.",
+	version = "1.0.0",
+	openapi_tags = tags_metadata,
+	lifespan = lifespan,
+	redoc_url = None,
+	docs_url = None,
+	responses = {
 		status.HTTP_401_UNAUTHORIZED: {"description": "User token was not found, user is not authenticated or login expired"}
 	},
-	contact={
+	contact = {
 		"discord": "https://discord.gg/wsn9Wcqqym",
 	},
-	debug=debug
+	debug = debug
 )
 
 #region Rate Limiter
@@ -147,7 +147,7 @@ app.add_exception_handler(
 	RateLimitExceeded,
 	lambda request, exc: (
 		logging.warning(f"Rate limit exceeded for {get_remote_address(request)}"),
-		JSONResponse({"detail": "Rate limit exceeded"}, status_code=status.HTTP_429_TOO_MANY_REQUESTS)
+		JSONResponse({"detail": "Rate limit exceeded"}, status_code = status.HTTP_429_TOO_MANY_REQUESTS)
 	)[1]
 )
 #endregion
@@ -157,7 +157,7 @@ app.include_router(router)
 app.add_middleware(SlowAPIMiddleware)
 
 #region Modify OpenAPI schema
-@dataclass(slots=True)
+@dataclass(slots = True)
 class WebSocketInfo:
 	tags: list[str]
 	summary: str
@@ -177,11 +177,11 @@ def custom_openapi():
 		return app.openapi_schema
 
 	openapi_schema = get_openapi(
-		title=app.title,
-		version=app.version,
-		description=app.description,
-		routes=app.routes,
-		tags=app.openapi_tags,
+		title = app.title,
+		version = app.version,
+		description = app.description,
+		routes = app.routes,
+		tags = app.openapi_tags,
 	)
 
 	for ep_path in openapi_schema["paths"].values():
@@ -212,17 +212,17 @@ app.openapi = custom_openapi
 
 #region Modify Documentation page
 swagger_docs = None
-@app.get("/docs", include_in_schema=False)
-@app.get("/", include_in_schema=False)
+@app.get("/docs", include_in_schema = False)
+@app.get("/", include_in_schema = False)
 def custom_swagger_ui():
 	global swagger_docs
 	if swagger_docs:
 		return HTMLResponse(swagger_docs)
 
 	page = get_swagger_ui_html(
-		openapi_url=app.openapi_url,
-		title=f"{app.title} - Swagger UI",
-		swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+		openapi_url = app.openapi_url,
+		title = f"{app.title} - Swagger UI",
+		swagger_ui_parameters = {"defaultModelsExpandDepth": -1},
 	)
 
 	html = page.body.decode("utf-8")
@@ -240,7 +240,7 @@ def custom_swagger_ui():
 def main():
 	# region Logging
 
-	LOGS_DIR.mkdir(mode=0o755, exist_ok=True, parents=True)
+	LOGS_DIR.mkdir(mode = 0o755, exist_ok = True, parents = True)
 
 	#region Handler and Formatter
 	def log_namer(default_name:str):
@@ -248,9 +248,9 @@ def main():
 		filename = path.basename(default_name)
 		_, _, date = filename.rpartition(".")
 		return path.join(dirname, f"{date}.log")
-	handler = TimedRotatingFileHandler(LOGS_DIR / "latest.log", when="midnight", interval=1, utc=True, backupCount=5)
+	handler = TimedRotatingFileHandler(LOGS_DIR / "latest.log", when = "midnight", interval = 1, utc = True, backupCount = 5)
 	handler.suffix = "%Y-%m-%d"
-	formatter = logging.Formatter("%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+	formatter = logging.Formatter("%(asctime)s:%(name)-30s:%(funcName)-15s:%(lineno)-3d:%(levelname)-7s:%(message)s", datefmt = "%Y-%m-%d %H:%M:%S")
 	handler.setFormatter(formatter)
 	handler.namer = log_namer
 	logger.addHandler(handler)
@@ -292,7 +292,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host=HOST, port=PORT, forwarded_allow_ips="*" if PROXIED else None)
+		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = "*" if PROXIED else None)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:

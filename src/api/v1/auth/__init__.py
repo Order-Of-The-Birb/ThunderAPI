@@ -15,15 +15,15 @@ from utils.helper import dtToTimestamp
 from .models import Login, LoginToken
 
 router = APIRouter(
-	tags=["authentication"],
-	responses={status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
+	tags = ["authentication"],
+	responses = {status.HTTP_404_NOT_FOUND: {"description": "Not found"}}
 )
 
 @router.post(
 	"/login",
-	summary="Get a token to use in other endpoints",
-	description="You can use this token for the endpoints. If given user has 2FA enabled, they must provide the 2FA code along with their credentials through either `Gaijin pass` or the `/v1/answer-2fa` endpoint. If you generated a token that hasn't expired yet, the endpoint will just overwrite the previous token.",
-	responses={
+	summary = "Get a token to use in other endpoints",
+	description = "You can use this token for the endpoints. If given user has 2FA enabled, they must provide the 2FA code along with their credentials through either `Gaijin pass` or the `/v1/answer-2fa` endpoint. If you generated a token that hasn't expired yet, the endpoint will just overwrite the previous token.",
+	responses = {
 		status.HTTP_200_OK: {"model": Login.LoginResponse},
 		status.HTTP_206_PARTIAL_CONTENT: {"model":Login.Fail2FAResponse, "description": "The account has 2FA enabled. Go through the 2FA process and call this endpoint again."},
 		status.HTTP_408_REQUEST_TIMEOUT: {"description": "Account has Two Factor Authentication, and authentication timed out"},
@@ -34,7 +34,7 @@ router = APIRouter(
 async def login_post(
 	request: Request,
 	email: Annotated[EmailStr, Form()],
-	password: Annotated[str, Form(min_length=6, max_length=64, json_schema_extra={"format": "password"})]
+	password: Annotated[str, Form(min_length = 6, max_length = 64, json_schema_extra = {"format": "password"})]
 ):
 	token, uidHint = await users_auth.login(email, password)
 
@@ -42,13 +42,13 @@ async def login_post(
 		"status": "OK",
 		"token": token,
 		"user_id": uidHint
-	}, status_code=status.HTTP_200_OK)
+	}, status_code = status.HTTP_200_OK)
 
 @router.post(
 	"/refresh-token",
-	summary="Refresh your token so it stays alive for longer. This is essentially a 'No op', just to keep the token active.",
-	description="If you are cached it will refresh the token. The game generally refreshes the token every 30 minutes. Returns an UNIX timestamp of the new token expiry",
-	responses={
+	summary = "Refresh your token so it stays alive for longer. This is essentially a 'No op', just to keep the token active.",
+	description = "If you are cached it will refresh the token. The game generally refreshes the token every 30 minutes. Returns an UNIX timestamp of the new token expiry",
+	responses = {
 		status.HTTP_200_OK: {"model": LoginToken.LoginTokenResponse, "description": "Token refreshed successfully"},
 		status.HTTP_404_NOT_FOUND: {"model": LoginToken.LoginFailResponse, "description": "Invalid token provided. The token is either expired or invalid."},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."}
@@ -67,14 +67,14 @@ async def login_token(
 
 @router.post(
 	"/answer-2fa",
-	summary="Provide 2FA code to finish login in case of a 2FA account without gaijin pass"
+	summary = "Provide 2FA code to finish login in case of a 2FA account without gaijin pass"
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def answer_2fa(
 	request: Request,
-	email: Annotated[EmailStr, Form(title="The email address for the account")],
-	password: Annotated[str, Form(title="The password of the account, used as a sort of protection")],
-	code: Annotated[int, Form(title="The 2FA code")]
+	email: Annotated[EmailStr, Form(title = "The email address for the account")],
+	password: Annotated[str, Form(title = "The password of the account, used as a sort of protection")],
+	code: Annotated[int, Form(title = "The 2FA code")]
 ) -> None:
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
@@ -87,7 +87,7 @@ async def answer_2fa(
 
 @router.delete(
 	"/remove",
-	summary="Removes your login entry from our system"
+	summary = "Removes your login entry from our system"
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def remove_login(

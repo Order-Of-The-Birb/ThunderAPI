@@ -23,7 +23,7 @@ async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnM
 			"pilotIcon",
 			"frame"
 		),
-		dictUtil.KeyMod("nick", new_name="username")
+		dictUtil.KeyMod("nick", new_name = "username")
 	)
 	for k in dict(data):
 		data[k] = await dictUtil.run_all(data.pop(k), SANITIZE)
@@ -42,10 +42,10 @@ async def get_user(user:LoginEntry, userid: int):
 		userId = userid
 	)
 	SANITIZE = (
-		dictUtil.KeyMod("userid", new_name="id", convert=lambda x: int(x)),
-		dictUtil.KeyMod("userstat", new_name="statistics"),
-		dictUtil.KeyMod("lastDay", new_name="last_login", convert=lambda x: datetime.fromtimestamp(x, UTC).date()),
-		dictUtil.KeyMod("registerDay", new_name="registered_at", convert=lambda x: datetime.fromtimestamp(x, UTC)),
+		dictUtil.KeyMod("userid", new_name = "id", convert = lambda x: int(x)),
+		dictUtil.KeyMod("userstat", new_name = "statistics"),
+		dictUtil.KeyMod("lastDay", new_name = "last_login", convert = lambda x: datetime.fromtimestamp(x, UTC).date()),
+		dictUtil.KeyMod("registerDay", new_name = "registered_at", convert = lambda x: datetime.fromtimestamp(x, UTC)),
 		dictUtil.KeyRem(
 			"shcType",
 			"background",
@@ -102,9 +102,9 @@ async def get_user(user:LoginEntry, userid: int):
 		dictUtil.KeyRem("was_in_session"),
 		# No clue how this calculates to battles,
 		# These numbers are different from the in-game "battles" values
-		dictUtil.KeyMod("flyouts", new_name="respawns"),
-		dictUtil.KeyMod("wp_total", new_name="total_sl"),
-		dictUtil.KeyMod("online_exp_total", new_name="total_rp")
+		dictUtil.KeyMod("flyouts", new_name = "respawns"),
+		dictUtil.KeyMod("wp_total", new_name = "total_sl"),
+		dictUtil.KeyMod("online_exp_total", new_name = "total_rp")
 	)
 
 	data["userstat"] = await dictUtil.KeyRem("new").run(data["userstat"])
@@ -113,9 +113,9 @@ async def get_user(user:LoginEntry, userid: int):
 		for vehicle, v_data in m_data.items():
 			m_data[vehicle] = await dictUtil.run_all(v_data, VEHICLE_SANITIZE)
 		data["userstat"][mode] = m_data
-	data["userstat"] = await dictUtil.KeyMod("simulation", new_name="simulator").run(data["userstat"])
+	data["userstat"] = await dictUtil.KeyMod("simulation", new_name = "simulator").run(data["userstat"])
 	for mode in data["summary"]:
-		data["summary"][mode] = await dictUtil.KeyMod("hardcore", new_name="simulator").run(data["summary"][mode])
+		data["summary"][mode] = await dictUtil.KeyMod("hardcore", new_name = "simulator").run(data["summary"][mode])
 
 	data = await dictUtil.run_all(data, SANITIZE)
 

@@ -15,10 +15,10 @@ from .sensor import Sensor
 from .weapon import Weapon
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen = True, slots = True)
 class VehiclePaths:
 	vehicle_id:str
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class Images:
 		techtree: Path
 		statcard: Path
@@ -62,7 +62,7 @@ class Vehicle:
 	release_date:datetime
 	sensors: list[str]
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _weapon:
 		"""A shorter, less computationally intensive weapon class. Holds less data"""
 		id: str
@@ -98,7 +98,7 @@ class Vehicle:
 		def to_json(self):
 			return asdict(self)
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _defaultPreset:
 		id: str
 		totalDamage: int
@@ -140,7 +140,7 @@ class Vehicle:
 			return obj
 	default_presets: tuple[_defaultPreset] | None = None
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _pylonData:
 		index: int
 		weapons: tuple[dict[str, Vehicle._weapon|int|dict[str, int]]]
@@ -190,7 +190,7 @@ class Vehicle:
 			}
 	pylon_configurations: tuple[_pylonData]
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _computer:
 		gun_ccip: bool
 		turret_ccip: bool
@@ -210,9 +210,9 @@ class Vehicle:
 			return asdict(self)
 	computer:_computer
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _nightvision:
-		@dataclass(frozen=True, slots=True)
+		@dataclass(frozen = True, slots = True)
 		class entry:
 			resolution: tuple[int, int]
 			generation: str
@@ -233,7 +233,7 @@ class Vehicle:
 			return obj
 	night_vision: _nightvision
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _preset:
 		name: str = None
 		weapons: tuple[Weapon] = ()
@@ -243,7 +243,7 @@ class Vehicle:
 			_["weapons"] = tuple([i.to_json() for i in self.weapons])
 			return _
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _modification:
 		id: str
 		prevModification: str | None
@@ -268,9 +268,9 @@ class Vehicle:
 			return asdict(self)
 	modifications:tuple[_modification]
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class _wpcost:
-		@dataclass(frozen=True, slots=True)
+		@dataclass(frozen = True, slots = True)
 		class _GamemodesSplit:
 			arcade: float
 			realistic: float
@@ -346,7 +346,7 @@ class Vehicle:
 				data.get("crewTotalCount"),
 				data.get("doesItGiveNationBonus", False),
 				data.get("hasWeaponSlots", False),
-				tuple(_) if (_:=data.get("turretSpeed")) is not None else None,
+				tuple(_) if (_: = data.get("turretSpeed")) is not None else None,
 				data.get("showOnlyWhenBought", False)
 			)
 
@@ -360,7 +360,7 @@ class Vehicle:
 			return obj
 	economy: _wpcost
 
-	@dataclass(frozen=True, slots=True)
+	@dataclass(frozen = True, slots = True)
 	class Localization:
 		language: str
 		short: str

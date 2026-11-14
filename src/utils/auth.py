@@ -61,18 +61,18 @@ if not USERS_DB.MACHINE_ID.exists():
 else:
 	_MACHINE_ID = USERS_DB.MACHINE_ID.read_text().strip()
 
-@dataclass(slots=True)
+@dataclass(slots = True)
 class _pending2FA:
 	password_hash: str
 	requestId: str
 	userId: int
 	password: str
 	types: set[Literal["WTR", "GaijinPass", "Email"]]
-	expires: datetime = field(default_factory=lambda: datetime.now(UTC) + timedelta(minutes=15))
+	expires: datetime = field(default_factory = lambda: datetime.now(UTC) + timedelta(minutes = 15))
 	code: str = None
 	await_task: Task = None
-	provided: Event = field(default_factory=lambda: Event())
-	login: Event = field(default_factory=lambda: Event())
+	provided: Event = field(default_factory = lambda: Event())
+	login: Event = field(default_factory = lambda: Event())
 	auth_data: dict[str, Any] = None
 	login_data: dict[str, Any] = None
 
@@ -81,7 +81,7 @@ class _pending2FA:
 _PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
 _RESP_PROVIDER : Callable[[Any], Awaitable[dict[str, Any]]] | None = None
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots = True, frozen = True)
 class LoginEntry:
 	jwt: str
 	token: str
@@ -93,7 +93,7 @@ class UserAuth:
 	_auth_used_cache = {}
 	_auth_used_lock = Lock()
 
-	@dataclass(slots=True)
+	@dataclass(slots = True)
 	class Entry: # Short lived data class with some helper methods
 		_parent: UserAuth
 
@@ -105,7 +105,7 @@ class UserAuth:
 		uidHint: int # uidHint value for refresh and other auth calls
 		email:str # For contact purposes
 		requests_count: int = 0 # For token statistics (and to find abuse)
-		__saved:dict[str, str|int|datetime] = field(default_factory=dict) # Saved to file state, used for comparing what to change
+		__saved:dict[str, str|int|datetime] = field(default_factory = dict) # Saved to file state, used for comparing what to change
 
 		@classmethod
 		async def from_hash(cls, parent:"UserAuth", hash:str):
@@ -135,7 +135,7 @@ class UserAuth:
 			jwt = parent._dec(str(row[t.JWT]))
 			self = cls(
 				hashed = str(row[t.HASH]),
-				jwt=jwt,
+				jwt = jwt,
 				expires = datetime.fromtimestamp(int(row[t.EXPIRES]), UTC),
 				user_token = parent._dec(str(row[t.USER_TOKEN])),
 				last_used = datetime.fromtimestamp(int(row[t.LAST_USED]), UTC),
@@ -165,8 +165,8 @@ class UserAuth:
 			async with Network.operation() as session:
 				async with session.post(
 					"https://auth.gaijinent.com/login_token.php",
-					data={"token": self.user_token},
-					headers={
+					data = {"token": self.user_token},
+					headers = {
 						"User-Agent": "ThunderAPI/1.0",
 						"Content-Type": "application/x-www-form-urlencoded"
 					}
@@ -179,7 +179,7 @@ class UserAuth:
 					return
 				raise AuthenticationError(status.HTTP_400_BAD_REQUEST, f"An error occurred during authentication: {content}")
 
-			self.expires = datetime.now(UTC) + timedelta(seconds=int(content["token_exp"]))
+			self.expires = datetime.now(UTC) + timedelta(seconds = int(content["token_exp"]))
 
 			if "jwt" in content:
 				self.jwt = content["jwt"]
@@ -189,14 +189,14 @@ class UserAuth:
 		def timeLeft(self) -> timedelta:
 			return self.expires - datetime.now(UTC)
 		def usedWithin(self, minutes:int) -> bool:
-			return self.last_used > (datetime.now(UTC) - timedelta(minutes=minutes))
+			return self.last_used > (datetime.now(UTC) - timedelta(minutes = minutes))
 		async def getSquadronId(self) -> int|None:
 			from utils.connection import Request
 			loginEntry = self.getEntry()
 			userEntry = (await Request.send_template(
 				loginEntry,
 				"get_users_terse_info",
-				usersList=str(self.uidHint)
+				usersList = str(self.uidHint)
 			)).get(str(self.uidHint))
 
 			if userEntry is None:
@@ -208,8 +208,8 @@ class UserAuth:
 			squadronData = await Request.send_template(
 				loginEntry,
 				"clan_find_by_prefix",
-				namePrefix=userEntry["clanName"],
-				tagPrefix=userEntry["clanTag"]
+				namePrefix = userEntry["clanName"],
+				tagPrefix = userEntry["clanTag"]
 			)
 			if "clan" in squadronData:
 				clans = squadronData["clan"]
@@ -304,14 +304,14 @@ class UserAuth:
 						{schema.tokens.LAST_USED} = ?
 					WHERE {schema.tokens.EMAIL} = ?;
 					""",
-					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
+					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds = int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], dtToTimestamp(datetime.now(UTC)), email)
 				)
 			else:
 				await cur.execute(f"""
 					INSERT INTO {schema.tokens.t()}
 					({schema.tokens.HASH}, {schema.tokens.JWT}, {schema.tokens.EXPIRES}, {schema.tokens.USER_TOKEN}, {schema.tokens.UID}, {schema.tokens.EMAIL}, {schema.tokens.LAST_USED})
 					VALUES ({', '.join(["?" for i in range(7)])})""",
-					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds=int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
+					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds = int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
 				)
 		return raw, data["user_id"]
 
@@ -397,7 +397,7 @@ class UserAuth:
 		if self.__autorefresh_job is None:
 			self.__autorefresh_job = scheduler.add_job(
 				self._refresh,
-				IntervalTrigger(minutes=10)
+				IntervalTrigger(minutes = 10)
 			)
 		if not scheduler.running:
 			scheduler.start()
@@ -409,19 +409,19 @@ class UserAuth:
 			self.__autorefresh_job = None
 
 	async def _init_db(self):
-		USERS_DB.DB.parent.mkdir(parents=True, exist_ok=True)
+		USERS_DB.DB.parent.mkdir(parents = True, exist_ok = True)
 
 		if USERS_DB.DB.exists():
 			if int(getenv("DEBUG_MODE", "0")) == 1:
-				USERS_DB.DB.chmod(mode=0o644)
+				USERS_DB.DB.chmod(mode = 0o644)
 			else:
-				USERS_DB.DB.chmod(mode=0o600)
+				USERS_DB.DB.chmod(mode = 0o600)
 			return
 
 		if int(getenv("DEBUG_MODE", "0")) == 1:
-			USERS_DB.DB.touch(mode=0o644)
+			USERS_DB.DB.touch(mode = 0o644)
 		else:
-			USERS_DB.DB.touch(mode=0o600)
+			USERS_DB.DB.touch(mode = 0o600)
 
 		try:
 			async with connect(USERS_DB.DB) as con:
@@ -468,7 +468,7 @@ class ServerAuth:
 
 		self.REFRESH_JOB = scheduler.add_job(
 			self.__refresh,
-			IntervalTrigger(minutes=45)
+			IntervalTrigger(minutes = 45)
 		)
 
 		if not scheduler.running:
@@ -489,13 +489,13 @@ class ServerAuth:
 	async def __refresh(self):
 		if self.__EXP < datetime.now(UTC):
 			return await self.__login()
-		elif (datetime.now(UTC) + timedelta(minutes=50)) < self.__EXP: # 5 extra minutes for buffer
+		elif (datetime.now(UTC) + timedelta(minutes = 50)) < self.__EXP: # 5 extra minutes for buffer
 			return
 		async with Network.post(
 			"https://auth.gaijinent.com/login_token.php",
 			Network.ReturnType.JSON,
-			data={"token": self._TOKEN},
-			headers={
+			data = {"token": self._TOKEN},
+			headers = {
 				"User-Agent": "ThunderAPI/1.0",
 				"Content-Type": "application/x-www-form-urlencoded"
 			}
@@ -509,7 +509,7 @@ class ServerAuth:
 
 		if "jwt" in content:
 			self._JWT = content["jwt"]
-		self.__EXP = datetime.now(UTC) + timedelta(seconds=content["token_exp"])
+		self.__EXP = datetime.now(UTC) + timedelta(seconds = content["token_exp"])
 
 	async def __login(self):
 		try:
@@ -528,7 +528,7 @@ class ServerAuth:
 		self._JWT = data["jwt"]
 		self._TOKEN = data["token"]
 		self._UID = data["user_id"]
-		self.__EXP = datetime.now(UTC) + timedelta(seconds=data["token_exp"])
+		self.__EXP = datetime.now(UTC) + timedelta(seconds = data["token_exp"])
 
 async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 	tries = 0
@@ -548,27 +548,27 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 				data = await _RESP_PROVIDER("await_2fa")
 			else:
 				try:
-					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60, session=session) as r:
-						data = await Network.handle_response(r, Network.ReturnType.JSON)
+					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId = {data['requestId']}&userId = {data['userId']}", timeout = 60, session = session) as r:
+						data = r
 				except HTTPException:
 					if _RESP_PROVIDER is not None:
 						data = await _RESP_PROVIDER("init")
 					else:
 						async with Network.post(
 							"https://auth.gaijinent.com/login.php",
-							data={
+							data = {
 								"login": email,
 								"password": entry.password,
 								"game": "wt",
 								"client": _MACHINE_ID
 							},
-							headers={
+							headers = {
 								"Content-Type": "application/x-www-form-urlencoded",
 								"User-Agent": "ThunderAPI/1.0"
 							},
-							session=session
+							session = session
 						) as r:
-							data = await Network.handle_response(r, Network.ReturnType.JSON)
+							data = r
 					entry.requestId = data["requestId"]
 					tries += 1
 					continue
@@ -600,7 +600,7 @@ async def _login_2fa(email: str):
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
 			Network.ReturnType.JSON,
-			data={
+			data = {
 				"login": email,
 				"password": entry.password,
 				"game": "wt",
@@ -608,7 +608,7 @@ async def _login_2fa(email: str):
 				"requestId": entry.auth_data["Request"],
 				"client": _MACHINE_ID
 			},
-			headers={
+			headers = {
 				"Content-Type": "application/x-www-form-urlencoded",
 				"User-Agent": "ThunderAPI/1.0"
 			}
@@ -621,7 +621,7 @@ async def login(email: str, password: str, /):
 	if email in _PENDING_2FA:
 		e = _PENDING_2FA[email]
 		try:
-			await wait_for(e.login.wait(), timeout=60)
+			await wait_for(e.login.wait(), timeout = 60)
 		except TimeoutError as err:
 			raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA timed out") from err
 		if e.login_data["status"] == "2STEPERROR":
@@ -637,13 +637,13 @@ async def login(email: str, password: str, /):
 		else:
 			async with session.post(
 				"https://auth.gaijinent.com/login.php",
-				data={
+				data = {
 					"login": email,
 					"password": password,
 					"game": "wt",
 					"client": _MACHINE_ID
 				},
-				headers={
+				headers = {
 					"Content-Type": "application/x-www-form-urlencoded",
 					"User-Agent": "ThunderAPI/1.0"
 				}
@@ -661,11 +661,11 @@ async def login(email: str, password: str, /):
 				two_factor_types.add("WTR")
 
 			_PENDING_2FA[email] = _pending2FA(
-				password_hash= md5(password.encode()).hexdigest(),
-				requestId= data['requestId'],
-				userId= data["userId"],
-				types= two_factor_types,
-				password=password
+				password_hash =  md5(password.encode()).hexdigest(),
+				requestId =  data['requestId'],
+				userId =  data["userId"],
+				types =  two_factor_types,
+				password = password
 			)
 
 			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
