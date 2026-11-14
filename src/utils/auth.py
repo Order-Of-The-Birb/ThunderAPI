@@ -79,6 +79,7 @@ class _pending2FA:
 	def check_password(self, password: str):
 		return self.password_hash == md5(password.encode()).hexdigest()
 _PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
+_RESP_PROVIDER : Callable[[Any], Awaitable[dict[str, Any]]] | None = None
 
 @dataclass(slots=True, frozen=True)
 class LoginEntry:
@@ -87,8 +88,6 @@ class LoginEntry:
 	uidHint: int
 
 	entry: UserAuth.Entry | None = None
-
-type ResponseProvider = Callable[[Any], Awaitable[dict[str, Any]]]
 
 class UserAuth:
 	_auth_used_cache = {}
@@ -285,9 +284,9 @@ class UserAuth:
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
 
-	async def login(self, email:str, password:str|None = None, /, *, response_provider: ResponseProvider | None = None) -> tuple[str, int]:
+	async def login(self, email:str, password:str|None = None, /) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
-		data = await login(email, password, response_provider=response_provider)
+		data = await login(email, password)
 
 		async with self._transaction() as cur:
 			schema = dbSchema
@@ -487,7 +486,7 @@ class ServerAuth:
 		except AttributeError:
 			return
 
-	async def __refresh(self, *, response_provider: ResponseProvider | None = None):
+	async def __refresh(self):
 		if self.__EXP < datetime.now(UTC):
 			return await self.__login()
 		elif (datetime.now(UTC) + timedelta(minutes=50)) < self.__EXP: # 5 extra minutes for buffer
@@ -499,8 +498,7 @@ class ServerAuth:
 			headers={
 				"User-Agent": "ThunderAPI/1.0",
 				"Content-Type": "application/x-www-form-urlencoded"
-			},
-			response_provider=response_provider
+			}
 		) as r:
 			content = r
 
@@ -513,9 +511,9 @@ class ServerAuth:
 			self._JWT = content["jwt"]
 		self.__EXP = datetime.now(UTC) + timedelta(seconds=content["token_exp"])
 
-	async def __login(self, *, response_provider: ResponseProvider | None = None):
+	async def __login(self):
 		try:
-			data = await login(self.__EMAIL, self.__PASS, response_provider=response_provider)
+			data = await login(self.__EMAIL, self.__PASS)
 		except HTTPException as e:
 			if e.status_code == status.HTTP_206_PARTIAL_CONTENT:
 				entry = _PENDING_2FA[self.__EMAIL]
@@ -523,7 +521,7 @@ class ServerAuth:
 					entry.code = await to_thread(input, "Please provide the 2FA code: ")
 					entry.provided.set()
 				await entry.provided.wait()
-				data = await login(self.__EMAIL, self.__PASS, response_provider=response_provider)
+				data = await login(self.__EMAIL, self.__PASS)
 			else:
 				raise
 
@@ -532,7 +530,7 @@ class ServerAuth:
 		self._UID = data["user_id"]
 		self.__EXP = datetime.now(UTC) + timedelta(seconds=data["token_exp"])
 
-async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider | None = None) -> dict[str, str|int] | None:
+async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 	tries = 0
 	success = False
 	entry = _PENDING_2FA.get(email)
@@ -546,15 +544,15 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 
 	async with Network.operation() as session:
 		while not success and tries < 10:
-			if response_provider is not None:
-				data = await response_provider("await_2fa")
+			if _RESP_PROVIDER is not None:
+				data = await _RESP_PROVIDER("await_2fa")
 			else:
 				try:
-					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60) as r:
+					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60, ) as r:
 						data = await Network.handle_response(r, Network.ReturnType.JSON)
 				except Network.NetworkError:
-					if response_provider is not None:
-						data = await response_provider("init")
+					if _RESP_PROVIDER is not None:
+						data = await _RESP_PROVIDER("init")
 					else:
 						async with session.post(
 							"https://auth.gaijinent.com/login.php",
@@ -588,15 +586,15 @@ async def _await_2fa_code(email:str, /, *, response_provider: ResponseProvider |
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
 
 	entry.auth_data = data
-	return await _login_2fa(email, response_provider=response_provider)
+	return await _login_2fa(email)
 
-async def _login_2fa(email: str, *, response_provider: ResponseProvider | None = None):
+async def _login_2fa(email: str):
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "2FA Entry not found")
 	entry = _PENDING_2FA[email]
 	await entry.provided.wait()
-	if response_provider is not None:
-		entry.login_data = await response_provider("2fa_login")
+	if _RESP_PROVIDER is not None:
+		entry.login_data = await _RESP_PROVIDER("2fa_login")
 	else:
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
@@ -612,14 +610,13 @@ async def _login_2fa(email: str, *, response_provider: ResponseProvider | None =
 			headers={
 				"Content-Type": "application/x-www-form-urlencoded",
 				"User-Agent": "ThunderAPI/1.0"
-			},
-			response_provider=response_provider
+			}
 		) as r:
 			entry.login_data = r
 	_PENDING_2FA.pop(email, None)
 	entry.login.set()
 
-async def login(email: str, password: str, /, *, response_provider: ResponseProvider | None = None):
+async def login(email: str, password: str, /):
 	if email in _PENDING_2FA:
 		e = _PENDING_2FA[email]
 		try:
@@ -634,8 +631,8 @@ async def login(email: str, password: str, /, *, response_provider: ResponseProv
 
 	async with Network.operation() as session:
 
-		if response_provider is not None:
-			data = await response_provider("init")
+		if _RESP_PROVIDER is not None:
+			data = await _RESP_PROVIDER("init")
 		else:
 			async with session.post(
 				"https://auth.gaijinent.com/login.php",
@@ -670,7 +667,7 @@ async def login(email: str, password: str, /, *, response_provider: ResponseProv
 				password=password
 			)
 
-			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email, response_provider=response_provider))
+			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
 			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
 
 		if data["status"] == "LOGINERROR":
