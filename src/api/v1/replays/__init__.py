@@ -9,7 +9,7 @@ from api.v1.shared import ServerBearer, TokenBearer
 from utils.replayParser import Replay
 
 from .backend import ReplayMode, ReplayTechType, ReplayType, search_replay
-from .models import DataModel, ReplayNotFoundModel, ResultsModel
+from .models import DataModel, MatchModel, ReplayNotFoundModel, ResultsModel
 
 router = APIRouter(
 	prefix="/replay",
@@ -132,7 +132,7 @@ async def get_replay_teams(
 	"/{replayId}/match",
 	summary="Gets match data from a specified replay",
 	responses={
-		status.HTTP_200_OK: {"model": ResultsModel},
+		status.HTTP_200_OK: {"model": MatchModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
 	})

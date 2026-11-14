@@ -6,8 +6,8 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
+from utils.vehicleParser import shared
 from utils.vehicleParser.localization import Languages
-from utils.vehicleParser.shared import UNIT_LOC
 
 router = APIRouter(
 	tags=["units"],
@@ -47,15 +47,15 @@ async def localize_unit(
     unit: Annotated[str, Path(description="The internal hash of the vehicle")],
     language: Annotated[LanguagesCompat, Query(description="The language to get the localization for (e.g. en, de, fr)")] = "en"
 ):
-	if unit not in UNIT_LOC:
+	if unit not in shared.UNIT_LOC:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found")
 	if language not in Languages.__members__:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found")
 	lang = Languages[language.value]
-	if lang.value not in UNIT_LOC[unit]["short"] or lang.value not in UNIT_LOC[unit]["shop"]:
+	if lang.value not in shared.UNIT_LOC[unit]["short"] or lang.value not in shared.UNIT_LOC[unit]["shop"]:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Localization not found for vehicle")
 	return_dict = {
-		"short": UNIT_LOC[unit]["short"][lang.value],
-		"long": UNIT_LOC[unit]["shop"][lang.value]
+		"short": shared.UNIT_LOC[unit]["short"][lang.value],
+		"long": shared.UNIT_LOC[unit]["shop"][lang.value]
 	}
 	return return_dict

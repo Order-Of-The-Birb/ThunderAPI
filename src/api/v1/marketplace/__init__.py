@@ -73,7 +73,7 @@ async def getInventory(
 	inv = await User(user).inventory()
 	return [
 		await i.to_json()
-		for i in inv
+		for i in inv.values()
 	]
 
 @router.get(

@@ -141,14 +141,15 @@ class User:
 					contextid = self.contextid
 				)
 				self.ids.remove(id)
-				if resp.get("response", {}).get("success", False):
-					soldItems.append({
-						"item": str(id),
-						"success": "response" in resp and resp["response"].get("success", False),
-						"price": price/10000,
-						"seller_gets": seller_should_get/10000
-					})
+				success = resp.get("response", {}).get("success", False)
+				if success:
 					sold += 1
+				soldItems.append({
+					"item": str(id),
+					"success": success,
+					"price": price/10000,
+					"seller_gets": seller_should_get/10000
+				})
 
 				if sold >= count:
 					break
@@ -244,7 +245,7 @@ class User:
 
 			items = {}
 			for item in data:
-				items[item[""]] = User.MarketItem.from_dict(item)
+				items[item["hash_name"]] = User.MarketItem.from_dict(item)
 			return tuple(items)
 
 		@staticmethod
