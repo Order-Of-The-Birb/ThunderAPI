@@ -1,7 +1,7 @@
-from aiohttp import ClientResponseError
 from asyncio import sleep
 from logging import getLogger
 
+from aiohttp import ClientResponseError
 from fastapi import HTTPException, status
 
 import utils.cache as Cache
