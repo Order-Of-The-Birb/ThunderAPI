@@ -548,13 +548,13 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 				data = await _RESP_PROVIDER("await_2fa")
 			else:
 				try:
-					async with session.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60, ) as r:
+					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout=60, session=session) as r:
 						data = await Network.handle_response(r, Network.ReturnType.JSON)
-				except Network.NetworkError:
+				except HTTPException:
 					if _RESP_PROVIDER is not None:
 						data = await _RESP_PROVIDER("init")
 					else:
-						async with session.post(
+						async with Network.post(
 							"https://auth.gaijinent.com/login.php",
 							data={
 								"login": email,
@@ -565,7 +565,8 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 							headers={
 								"Content-Type": "application/x-www-form-urlencoded",
 								"User-Agent": "ThunderAPI/1.0"
-							}
+							},
+							session=session
 						) as r:
 							data = await Network.handle_response(r, Network.ReturnType.JSON)
 					entry.requestId = data["requestId"]

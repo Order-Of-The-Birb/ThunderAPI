@@ -27,48 +27,53 @@ __active_ops_done = Event()
 __active_ops_done.set()
 __lock = Lock()
 
-type ResponseProvider = Callable[[Any], Awaitable[dict[str, Any]]]
+_RESP_PROVIDER: Callable[[Any], Awaitable[dict[str, Any]]] | None = None
 
 #region POST
 @overload
-def post(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def post(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def post(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def post(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
-	async with request("POST", url, return_type, response_provider=response_provider, resp_state=resp_state, **kwargs) as resp:
+async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+	async with request("POST", url, return_type, resp_state=resp_state, session=session **kwargs) as resp:
 		yield resp
 #endregion
 #region GET
 @overload
-def get(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def get(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def get(url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def get(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
-	async with request("GET", url, return_type, response_provider=response_provider, resp_state=resp_state, **kwargs) as resp:
+async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+	async with request("GET", url, return_type, resp_state=resp_state, session=session, **kwargs) as resp:
 		yield resp
 #endregion
 #region Request
 @overload
-def request(method: str, url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def request(method: str, url:str, return_type: Literal[ReturnType.TEXT], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def request(method: str, url:str, return_type: Literal[ReturnType.BIN], /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON, /, *, response_provider: ResponseProvider | None = None, resp_state: str | None = None, **kwargs):
-	async with operation() as session:
-		if response_provider is not None:
-			yield await response_provider(resp_state)
-		else:
+async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+	if _RESP_PROVIDER is not None:
+		yield await _RESP_PROVIDER(resp_state)
+		return
+	if session is None:
+		async with operation() as session:
 			async with session.request(method, url, **kwargs) as resp:
-				resp.raise_for_status()
 				yield await handle_response(resp=resp, convert=return_type)
+				return
+	async with session.request(method, url, **kwargs) as resp:
+		yield await handle_response(resp=resp, convert=return_type)
+		return
+
 #endregion
 @asynccontextmanager
 async def operation():
@@ -106,6 +111,7 @@ async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.BIN]
 @overload
 async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.TEXT]) -> str: ...
 async def handle_response(resp:ClientResponse, convert:ReturnType) -> dict[str, Any]|bytes|str:
+	resp.raise_for_status()
 	content = await resp.read()
 
 	if content.startswith(b"!ERROR"):
