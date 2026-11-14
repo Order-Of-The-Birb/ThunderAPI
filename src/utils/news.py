@@ -316,7 +316,8 @@ class NewsManager:
 			for i, item in enumerate(news):
 				if item.id != self._sentIDs.NEWS:
 					continue
-				self.__logger.debug("News have been posted since last check")
+				if i != 0:
+					self.__logger.debug("News have been posted since last check")
 				self._sentIDs.NEWS = news[0].id
 				return news[:i]
 
@@ -409,7 +410,8 @@ class NewsManager:
 		for i, item in enumerate(changelogs):
 			if item.id != self._sentIDs.CHANGELOG:
 				continue
-			self.__logger.debug("Changelogs have been posted since last check")
+			if i != 0:
+				self.__logger.debug("Changelogs have been posted since last check")
 			self._sentIDs.CHANGELOG = changelogs[0].id
 			return changelogs[:i]
 

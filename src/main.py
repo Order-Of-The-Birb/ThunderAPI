@@ -75,24 +75,27 @@ async def lifespan(app: FastAPI):
 
 	#region Gaijin servers config init
 	content = {}
-	try:
-		async with Network.get(
-			"https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk",
-			Network.ReturnType.BIN,
-			timeout=5
-		) as _resp:
-			content = Decompress(_resp)["production"]
-	except Exception:
-		logger.warning("Failed to fetch server from first server, trying secondary server")
+	async with Network.operation() as session:
 		try:
 			async with Network.get(
-				"https://public-configs.warthunder.com/production/network.blk",
+				"https://public-configs-warthunder-gcore.cdn.gaijin.net/production/network.blk",
 				Network.ReturnType.BIN,
-				timeout=5
+				timeout=5,
+				session=session
 			) as _resp:
 				content = Decompress(_resp)["production"]
 		except Exception:
-			pass
+			logger.warning("Failed to fetch server from first server, trying secondary server")
+			try:
+				async with Network.get(
+					"https://public-configs.warthunder.com/production/network.blk",
+					Network.ReturnType.BIN,
+					timeout=5,
+					session=session
+				) as _resp:
+					content = Decompress(_resp)["production"]
+			except Exception:
+				pass
 	if not content:
 		logger.warning("Failed to fetch server list, using default server list")
 		content = loads(DEFAULT_NETWORK_CFG.read_text())
