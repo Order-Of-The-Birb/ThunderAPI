@@ -137,7 +137,9 @@ async def get_replay_teams(
 		status.HTTP_200_OK: {"model": MatchModel},
 		status.HTTP_404_NOT_FOUND: {"model": ReplayNotFoundModel, "description": "Replay not found"},
 		status.HTTP_425_TOO_EARLY: {"description": "Replay probably hasn't ended yet, since it isn't properly parseable yet"}
-	})
+	},
+	response_model = MatchModel
+)
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay_match(
 	request: faRequest,

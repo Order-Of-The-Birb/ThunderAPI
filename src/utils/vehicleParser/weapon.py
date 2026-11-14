@@ -49,7 +49,7 @@ class Weapon:
 				getMultipleKeys(data, "bombName", "bulletName"),
 				getMultipleKeys(data, "bombType", "bulletType"),
 				data.get("caliber"),
-				_[0] if isinstance(_: = data.get("mass"), list) else _,
+				_[0] if isinstance(_ := data.get("mass"), list) else _,
 				getMultipleKeys(data, "maxSpeedInWater", "speed", "maxSpeed"),
 				getMultipleKeys(data, "distToLive", "maxDistance"),
 				data.get("explosiveType"),
