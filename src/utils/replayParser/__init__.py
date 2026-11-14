@@ -1,3 +1,4 @@
+from aiohttp import ClientResponseError
 from asyncio import sleep
 from logging import getLogger
 
@@ -36,39 +37,41 @@ class Replay(dict):
 				wait_time = 1
 				while True:
 					url = f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl"
-					async with session.head(url) as r:
-						if r.status == 429:
+					try:
+						async with Network.head(url, session=session) as r:
+							wrpl_num += 1
+					except ClientResponseError as e:
+						if e.status == 429:
 							if wait_time == 60:
-								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.")
+								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.") from e
 							await sleep(wait_time)
 							wait_time = min(wait_time * 2, 60) # Exponential backoff, max 60 seconds
 							continue
 						wait_time = 1 # Reset wait time on successful request
-						if r.status == 404:
+						if e.status == 404:
 							if wrpl_num == 0:
-								raise HTTPException(404, detail="Replay could not be found")
+								raise HTTPException(404, detail="Replay could not be found") from e
 							wrpl_num -= 1
 							break
 
-						if r.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error")
+						if e.status >= 400:
+							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error") from e
 
-						wrpl_num += 1
 				while True:
-					async with session.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl") as r:
-						if r.status == 429:
+					try:
+						async with Network.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl", Network.ReturnType.BIN, session=session) as r:
+							return await ReplayParser.from_replay(r)
+					except ClientResponseError as e:
+						if e.status == 429:
 							if wait_time == 60:
-								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.")
+								raise HTTPException(429, detail="Replay server rate limit exceeded. Please try again later.") from e
 
 							await sleep(wait_time)
 							wait_time = min(wait_time * 2, 60) # Exponential backoff, max 60 seconds
 							continue
+						if e.status >= 400:
+							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error") from e
 
-						if r.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Replay server gave an error")
-
-						data = await r.read()
-						return await ReplayParser.from_replay(data)
 
 		#endregion
 		#region Parse gaijin JSON to proper JSON
