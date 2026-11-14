@@ -53,6 +53,13 @@ async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_sta
 	async with request("GET", url, return_type, resp_state=resp_state, session=session, **kwargs) as resp:
 		yield resp
 #endregion
+#region HEAD
+@asynccontextmanager
+async def head(url:str, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+	async with request("HEAD", url, ReturnType.BIN, resp_state=resp_state, session=session, **kwargs) as resp:
+		yield resp
+#endregion
+
 #region Request
 @overload
 def request(method: str, url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
