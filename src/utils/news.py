@@ -60,13 +60,12 @@ class NewsEntry:
 	def from_json(cls, data:dict[str, Any]):
 		tags = set(data.get('tags', []))
 		title:str = data["title"]
-		while len(title.strip()) > 0 and title.strip()[0] == "[":
-			tag = re.search(r"\[([A-z]+)\]", title, re.IGNORECASE)
-			if tag is not None:
-				title = re.sub(r"\[([A-z]+)\]", "", title, count=1, flags=re.IGNORECASE)
-				tags.add(tag.group(1))
-			else:
-				raise RuntimeError(f"Somehow the first character is still '[' in \"{title}\", with no tags left")
+		for tag in re.finditer(r"\[([A-z ]+)\]", title, re.IGNORECASE):
+			tags.add(tag.group(1))
+			title = title.replace(f"[{tag.group(1)}]", "", 1)
+		title = title.strip()
+		if len(title) > 0 and title[0] == "[":
+			raise RuntimeError(f"Somehow the first character is still '[' in \"{title}\", with no tags left")
 
 		self = cls(
 			id = int(data['id']),
@@ -203,14 +202,16 @@ class NewsManager:
 			latest_major_chlog: NewsEntry | None = None
 			latest_forum: list[NewsEntry] = []
 			try:
-				changelogs = await self.fetchChangelogs()
-				latest_news, latest_changelogs, latest_major_chlog, latest_forum = await asyncio.gather(
+				changelogs, latest_news, latest_forum = await asyncio.gather(
+					self.fetchChangelogs(),
 					self._get_new_news(),
-					self._get_new_changelogs(changelogs),
-					self._get_major_changelog(changelogs),
 					self._get_new_forum(),
 					return_exceptions=True
 				)
+				if not isinstance(changelogs, BaseException):
+					latest_changelogs = await self._get_new_changelogs(changelogs)
+					latest_major_chlog = await self._get_major_changelog(changelogs)
+
 			except asyncio.CancelledError:
 				raise
 			except Exception:
@@ -233,44 +234,18 @@ class NewsManager:
 			if latest_news or latest_changelogs or latest_major_chlog or latest_forum:
 				await Cache.get("news").clear()
 
+			overall_news = latest_news + latest_changelogs + latest_forum
+			if latest_major_chlog:
+				overall_news.append(latest_major_chlog)
+			overall_news.sort(key=lambda x: x.created)
+
 			try:
-				if latest_news:
-					self.__logger.debug("News have been posted since last check")
-					for news in latest_news:
-						await self.websocket_mgr.broadcast(news.to_json())
+				for news in overall_news:
+					await self.websocket_mgr.broadcast(news.to_json())
 			except asyncio.CancelledError:
 				raise
 			except Exception:
 				self.__logger.exception("An exception occurred during news processing")
-
-			try:
-				if latest_changelogs:
-					self.__logger.debug("Changelogs have been posted since last check")
-					for news in latest_changelogs:
-						await self.websocket_mgr.broadcast(news.to_json())
-			except asyncio.CancelledError:
-				raise
-			except Exception:
-				self.__logger.exception("An exception occurred during changelogs processing")
-
-			try:
-				if latest_major_chlog:
-					self.__logger.debug("New major update changelog posted")
-					await self.websocket_mgr.broadcast(latest_major_chlog.to_json())
-			except asyncio.CancelledError:
-				raise
-			except Exception:
-				self.__logger.exception("An exception occurred during changelogs processing")
-
-			try:
-				if latest_forum:
-					self.__logger.debug("New planned battle rating changes posted")
-					for post in latest_forum:
-						await self.websocket_mgr.broadcast(post.to_json())
-			except asyncio.CancelledError:
-				raise
-			except Exception:
-				self.__logger.exception("An exception occurred during forum processing")
 
 			await sleep(self.__calcDelay())
 
@@ -339,9 +314,11 @@ class NewsManager:
 				return []
 
 			for i, item in enumerate(news):
-				if item.id == self._sentIDs.NEWS:
-					self._sentIDs.NEWS = news[0].id
-					return news[:i]
+				if item.id != self._sentIDs.NEWS:
+					continue
+				self.__logger.debug("News have been posted since last check")
+				self._sentIDs.NEWS = news[0].id
+				return news[:i]
 
 			# None of the news have been posted yet
 			self._sentIDs.NEWS = news[0].id
@@ -414,6 +391,7 @@ class NewsManager:
 			return None
 
 		if majorChLog.id != self._sentIDs.MAJOR_CHANGELOG:
+			self.__logger.debug("New major update changelog posted")
 			self._sentIDs.MAJOR_CHANGELOG = majorChLog.id
 			return majorChLog
 
@@ -429,9 +407,11 @@ class NewsManager:
 			return []
 
 		for i, item in enumerate(changelogs):
-			if item.id == self._sentIDs.CHANGELOG:
-				self._sentIDs.CHANGELOG = changelogs[0].id
-				return changelogs[:i]
+			if item.id != self._sentIDs.CHANGELOG:
+				continue
+			self.__logger.debug("Changelogs have been posted since last check")
+			self._sentIDs.CHANGELOG = changelogs[0].id
+			return changelogs[:i]
 
 		# None of the changelogs have been posted yet
 		self._sentIDs.CHANGELOG = changelogs[0].id
@@ -495,6 +475,8 @@ class NewsManager:
 			self._sentIDs.PLANNED_BR_CHANGES = ids[0]
 			return []
 		entries = await asyncio.gather(*(NewsEntry.from_forum(i) for i in new))
+
+		self.__logger.debug("New planned battle rating changes posted")
 		self._sentIDs.PLANNED_BR_CHANGES = ids[0]
 		return entries
 	#endregion

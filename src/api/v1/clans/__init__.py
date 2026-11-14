@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from os import getenv
 
 from fastapi import APIRouter, Form, HTTPException, Path, Query, status
@@ -305,18 +305,20 @@ async def get_current_bracket(
 	for start, end in SQB_BRACKET_TIMES:
 		start_dt = datetime.combine(rn.date(), start, UTC)
 		end_dt = datetime.combine(rn.date(), end, UTC)
-		if start_dt <= rn <= end_dt:
+		if (start_dt <= rn <= end_dt) or (start_dt > rn):
 			return {
 				"bracket": bracket,
 				"start": start_dt,
 				"end": end_dt
 			}
-		if start_dt > rn:
-			return {
-				"bracket": bracket,
-				"start": start_dt,
-				"end": end_dt
-			}
+	next_start = datetime.combine(rn.date() + timedelta(days=1), SQB_BRACKET_TIMES[0][0], UTC)
+	next_end = datetime.combine(rn.date() + timedelta(days=1), SQB_BRACKET_TIMES[0][1], UTC)
+	if next_start <= bracket["end"]:
+		return {
+			"bracket": bracket,
+			"start": next_start,
+			"end": next_end
+		}
 	return {
 		"bracket": bracket
 	}
