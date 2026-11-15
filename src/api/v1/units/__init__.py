@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 from api.shared import limiter
 from utils.vehicleParser import shared
 from utils.vehicleParser.localization import Languages
+
 from .models import LocalizationModel
 
 router = APIRouter(
