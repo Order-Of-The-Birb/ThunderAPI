@@ -12,7 +12,7 @@ from pandas import read_csv
 
 from config import VEHICLES
 
-from .. import cache as Cache
+from utils import cache as Cache
 
 if TYPE_CHECKING:
 	from .sensor import Sensor
@@ -133,20 +133,36 @@ def referenceToPath(reference:str) -> Path:
 		reference += ".blk"
 	return GAMEFILES / "aces.vromfs.bin_u" / (reference.lower().replace("blk", "blkx"))
 
-def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
+def _load_unit_loc() -> dict[str, dict[Literal["short", "long"], dict[str, str]]]:
 	df = read_csv(DataLocations.VEHICLE_LOC, delimiter = ";", encoding = "utf-8")
 	df.set_index("<ID|readonly|noverify>", inplace = True)
-	unit_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
+	unit_loc: dict[str, dict[Literal["short", "long"], dict[str, str]]] = {}
 	for idx, row in df.to_dict(orient = "index").items():
 		base, _, variant = str(idx).rpartition("_")
 		if variant == "0":
 			key = "short"
 		elif variant == "shop":
-			key = "shop"
+			key = "long"
 		else:
 			continue
 		unit_loc.setdefault(base, {})[key] = row
 	return unit_loc
+def _load_weapon_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
+	df = read_csv(DataLocations.WEAPON_LOC, delimiter = ";", encoding = "utf-8")
+	df.set_index("<ID|readonly|noverify>", inplace = True)
+	weapon_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
+	for idx, row in df.to_dict(orient = "index").items():
+		idx = str(idx)
+		if not idx.startswith("weapons/"):
+			continue
+		if idx.endswith("/short"):
+			base = idx.removesuffix("/short").removeprefix("weapons/")
+			key = "short"
+		else:
+			base = idx.removeprefix("weapons/")
+			key = "shop"
+		weapon_loc.setdefault(base, {})[key] = row
+	return weapon_loc
 async def update_gamefiles():
 	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
 	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
@@ -167,8 +183,7 @@ async def update_gamefiles():
 
 	UNIT_LOC = await asyncio.to_thread(_load_unit_loc)
 
-	WEAPON_LOC = await asyncio.to_thread(read_csv, DataLocations.WEAPON_LOC, delimiter = ";", encoding = "utf-8")
-	WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace = True)
+	WEAPON_LOC = await asyncio.to_thread(_load_weapon_loc)
 
 	MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
 	MOD_LOC.set_index("<ID|readonly|noverify>", inplace = True)
@@ -184,8 +199,11 @@ WPCOST: dict[str, dict[str, Any]] = {}
 VEHICLE_DATA: dict[str, dict[str, Any]] = {}
 LOC_META: dict[str, str | list[str] | dict] = {}
 UNIT_LOC: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
-WEAPON_LOC: Any = None
+WEAPON_LOC: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
 MOD_LOC: Any = None
 weapon_cache: dict[str, Weapon] = {}
 sensor_cache: dict[str, Sensor] = {}
 vehicle_cache: dict[str, Vehicle] = {}
+
+def convert_to_br(economicRank: int) -> float:
+	return round(economicRank / 3, 1) + 1
