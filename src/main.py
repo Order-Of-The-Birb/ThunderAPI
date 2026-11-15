@@ -103,8 +103,10 @@ async def lifespan(app: FastAPI):
 	_populate_serverlist(content)
 	del content
 	#endregion
-
-	await vpShared.update_gamefiles()
+	try:
+		await vpShared.update_gamefiles()
+	except Exception:
+		logger.exception("An error occurred when trying to update the vehicle files")
 
 	Cache.LONG_RUNNING = (
 		asyncio.create_task(newsManager.mainloop()),

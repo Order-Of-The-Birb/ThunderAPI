@@ -126,7 +126,7 @@ class User:
 			if len(self.ids) < count:
 				raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Requested selling {count} items, but user only has {len(self.ids)} items in their inventory")
 
-			for id in list(self.ids):
+			for id in list(self.ids)[:count]:
 				resp = await Request.send_template(
 					self.LOGIN,
 					"cln_market_sell",
@@ -140,9 +140,9 @@ class User:
 					privateMode = anonymous,
 					contextid = self.contextid
 				)
-				self.ids.remove(id)
 				success = resp.get("response", {}).get("success", False)
 				if success:
+					self.ids.remove(id)
 					sold += 1
 				soldItems.append({
 					"item": str(id),
@@ -150,9 +150,6 @@ class User:
 					"price": price/10000,
 					"seller_gets": seller_should_get/10000
 				})
-
-				if sold >= count:
-					break
 
 			return tuple(soldItems)
 
@@ -246,10 +243,10 @@ class User:
 			items = {}
 			for item in data:
 				items[item["hash_name"]] = User.MarketItem.from_dict(item)
-			return tuple(items)
+			return items
 
 		@staticmethod
-		async def get(user: LoginEntry, itemHash: str) -> User.MarketItem | None:
+		async def get(user: LoginEntry, itemHash: str) -> User.MarketItem:
 			hashData = await Request.send_template(
 				user,
 				"cln_market_get_asset_class",

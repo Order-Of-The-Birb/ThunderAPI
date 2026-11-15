@@ -39,18 +39,16 @@ class LanguagesCompat(StrEnum):
 	vi = "vi"
 
 @router.get(
-    "/{unit}/localization"
+	"/{unit}/localization"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def localize_unit(
-    request: faRequest,
-    unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
-    language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = "en"
+	request: faRequest,
+	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
+	language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = "en"
 ):
 	if unit not in shared.UNIT_LOC:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found")
-	if language not in Languages.__members__:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Language not found")
 	lang = Languages[language.value]
 	if lang.value not in shared.UNIT_LOC[unit]["short"] or lang.value not in shared.UNIT_LOC[unit]["shop"]:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Localization not found for vehicle")

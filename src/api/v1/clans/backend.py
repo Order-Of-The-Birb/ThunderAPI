@@ -27,7 +27,7 @@ async def getLeaderboard(user: LoginEntry, limit: int = 20, page: int = 0, clanI
 	)
 
 	if clanId is None:
-		response.headers.pop("clanId", Network)
+		response.headers.pop("clanId", None)
 	else:
 		response.replace("count", 1)
 		response.replace("start", 0)
