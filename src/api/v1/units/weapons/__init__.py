@@ -1,12 +1,12 @@
-from api.v1.units.parser.localization import Languages, LanguagesCompat
-from fastapi import Request as faRequest
-from fastapi import APIRouter, status
-from api.shared import limiter
-from typing_extensions import Annotated
-from fastapi import APIRouter, HTTPException, Path, Query, status
-from api.v1.units.parser import shared, weapon
 from os import getenv
 
+from fastapi import APIRouter, HTTPException, Path, Query, status
+from fastapi import Request as faRequest
+from typing_extensions import Annotated
+
+from api.shared import limiter
+from api.v1.units.parser import shared
+from api.v1.units.parser.localization import Languages, LanguagesCompat
 
 router = APIRouter(
 	tags = ["units"],

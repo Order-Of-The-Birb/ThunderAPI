@@ -21,13 +21,13 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
+from api.v1.units.parser import shared as vpShared
 from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, PROXIED, SWAGGER_CSS, SWAGGER_JS
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
 from utils.connection.blk_utils import Decompress
 from utils.geo import update_db
-from api.v1.units.parser import shared as vpShared
 
 logger = logging.getLogger()
 

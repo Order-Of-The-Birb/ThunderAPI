@@ -1,7 +1,5 @@
-from enum import StrEnum
 from os import getenv
 
-from fastapi import Request as faRequest
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from fastapi import Request as faRequest
 from typing_extensions import Annotated
@@ -9,8 +7,9 @@ from typing_extensions import Annotated
 from api.shared import limiter
 from api.v1.units.parser import shared, vehicle
 from api.v1.units.parser.localization import Languages, LanguagesCompat
+
 from .backend import get_vehicle
-from .models import VehicleStats
+from .models import VehicleModel, VehicleStatsModel
 
 router = APIRouter(
 	tags = ["units"],
@@ -22,7 +21,7 @@ router = APIRouter(
 	"/{unit}/localization"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def localize_unit(
+async def unit_localization(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 	language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = LanguagesCompat.en
@@ -42,7 +41,7 @@ async def localize_unit(
 	"/{unit}/economy"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_economy(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> vehicle.Vehicle._wpcost:
@@ -52,7 +51,7 @@ async def unit(
 	"/{unit}/computer"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_computer(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> vehicle.Vehicle._computer:
@@ -62,7 +61,7 @@ async def unit(
 	"/{unit}/presets/defaults"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_default_presets(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> tuple[vehicle.Vehicle._defaultPreset, ...] | None:
@@ -72,7 +71,7 @@ async def unit(
 	"/{unit}/nvd"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_nvd(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> vehicle.Vehicle._nightvision:
@@ -82,7 +81,7 @@ async def unit(
 	"/{unit}/sensors"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_sensors(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> list[str]:
@@ -92,21 +91,32 @@ async def unit(
 	"/{unit}/stats"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_stats(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
-) -> VehicleStats:
+) -> VehicleStatsModel:
 	return (await get_vehicle(unit)).vehicle_stats
 
 @router.get(
 	"/{unit}/pylon_config"
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
-async def unit(
+async def unit_pylons(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
 ) -> tuple[vehicle.Vehicle._pylonData, ...]:
 	return (await get_vehicle(unit)).pylon_configurations
+
+@router.get(
+	"/{unit}/modifications"
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
+async def unit_mods(
+	request: faRequest,
+	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
+) -> tuple[vehicle.Vehicle._modification, ...]:
+	return (await get_vehicle(unit)).modifications
+
 
 @router.get(
 	"/{unit}/"
@@ -115,5 +125,5 @@ async def unit(
 async def unit(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
-) -> VehicleStats:
+) -> VehicleModel:
 	return (await get_vehicle(unit)).to_json()
