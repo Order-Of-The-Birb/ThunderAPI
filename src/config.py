@@ -15,7 +15,7 @@ class _usersDB:
 	INIT_SQL = Path(__file__).parent / "utils" / "users_create.sql"
 
 USERS_DB = _usersDB()
-VEHICLES = DATA_DIR / "vehicles"
+GAMEFILES = DATA_DIR / "gamefiles"
 
 class _geoLitePaths:
 	DB = DATA_DIR / "GeoLite2-City.mmdb"
