@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from typing_extensions import Annotated, Doc
 
 from src.utils import auth
-from src.utils.connection import network
+from utils.connection import network
 
 from . import templates
 
