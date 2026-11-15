@@ -51,6 +51,7 @@ def get_vehicle_paths(vehicle_id: str) -> VehiclePaths|None:
 		vehiclePath,
 		tuple(vtype.PRESETS.rglob(fr"{vehicle_id}_*.blkx"))
 	)
+
 class Vehicle:
 	version: Version
 	identifier: str
@@ -66,8 +67,8 @@ class Vehicle:
 	class _weapon:
 		"""A shorter, less computationally intensive weapon class. Holds less data"""
 		id: str
-		totalMass: int
-		totalCount: int
+		totalMass: int | None
+		totalCount: int | None
 		damage: int|None
 		weaponmask: int
 		reqModification: str|None = None
@@ -101,11 +102,11 @@ class Vehicle:
 	@dataclass(frozen = True, slots = True)
 	class _defaultPreset:
 		id: str
-		totalDamage: int
-		mass: int|None
-		ammoCount: int|None
+		totalDamage: int | None
+		mass: int | None
+		ammoCount: int | None
 		hasCountermeasures: bool
-		mass_per_sec: int
+		mass_per_sec: float
 		weaponmask: int
 		weapons: dict[str, dict[str, Vehicle._weapon|int]]
 
@@ -251,10 +252,11 @@ class Vehicle:
 		tier: int | None
 		effects: dict[str, float]
 		modClass: str | None
+		increases_br_by: float
 		extras: dict[str, Any]
 		@classmethod
 		def from_json(cls, mod_id: str, data: dict[str, Any]):
-			extras = {k:v for k, v in data.items() if k not in ["prevModification","reqModification","tier","effects","modClass"]}
+			extras = {k:v for k, v in data.items() if k not in ["prevModification","reqModification","tier","effects","modClass","addMrank"]}
 			return cls(
 				mod_id,
 				data.get("prevModification"),
@@ -262,6 +264,7 @@ class Vehicle:
 				data.get("tier"),
 				data.get("effects", {}),
 				data.get("modClass"),
+				round(data.get("addMrank", 0) / 3, 1),
 				extras
 			)
 		def to_json(self):
@@ -408,11 +411,15 @@ class Vehicle:
 	@classmethod
 	async def from_id(cls, vehicle_id: str):
 		await shared.check_update()
+		if vehicle_id in shared.vehicle_cache:
+			return shared.vehicle_cache[vehicle_id]
 		paths = get_vehicle_paths(vehicle_id)
 		if paths is None:
 			return None
 		data: dict[str, Any] = await asyncio.to_thread(loads, await asyncio.to_thread(paths.vehicleData.read_text))
-		return cls(paths, data)
+		self = cls(paths, data)
+		shared.vehicle_cache[vehicle_id] = self
+		return self
 
 	@staticmethod
 	def convert_country(country_code: str) -> str:
@@ -599,12 +606,12 @@ class Vehicle:
 			langs.update(loc.to_json())
 		obj = {
 			"id": self.identifier,
-			"data_version": self.version,
+			"data_version": str(self.version),
 			"economy": self.economy.to_json(),
 			"modifications": [i.to_json() for i in self.modifications],
 			"nightvision": self.night_vision.to_json(),
 			"computers": self.computer.to_json(),
-			"release_date": self.release_date,
+			"release_date": self.release_date.isoformat(),
 			"type": self.type,
 			"subtypes": self.subtypes,
 			"operator": self.operator,

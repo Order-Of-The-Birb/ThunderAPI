@@ -3,7 +3,7 @@ from logging import getLogger
 from time import perf_counter
 
 from . import shared
-from . vehicle import Vehicle
+from .vehicle import Vehicle
 
 _logger = getLogger(__name__)
 

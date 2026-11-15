@@ -11,11 +11,9 @@ from packaging.version import Version
 from pandas import read_csv
 
 from config import GAMEFILES
-
 from utils import cache as Cache
 
 if TYPE_CHECKING:
-	from .sensor import Sensor
 	from .vehicle import Vehicle
 	from .weapon import Weapon
 
@@ -162,11 +160,24 @@ def _load_weapon_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str
 			key = "shop"
 		weapon_loc.setdefault(base, {})[key] = row
 	return weapon_loc
-def _load_sensor_loc() -> dict[str, str]:
+def _load_mod_loc() -> dict[str, dict[Literal["name", "desc"], dict[str, str]]]:
+	mod_loc: dict[str, dict[Literal["name", "desc"], dict[str, str]]] = {}
+	df = read_csv(DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
+	df.set_index("<ID|readonly|noverify>", inplace = True)
+	for idx, row in df.to_dict(orient = "index").items():
+		idx = str(idx)
+		parts = tuple(idx.split("/", 3))
+		if len(parts) < 2 or parts[0] != "modification" or parts[1] == "category":
+			continue
 
-	pass
+		if len(parts) > 2 and parts[2] == "desc":
+			key = "desc"
+		else:
+			key = "name"
+		mod_loc.setdefault(parts[1], {})[key] = row
+	return mod_loc
 async def update_gamefiles():
-	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
+	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, vehicle_cache
 	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
 		return
 	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
@@ -187,13 +198,10 @@ async def update_gamefiles():
 
 	WEAPON_LOC = await asyncio.to_thread(_load_weapon_loc)
 
-	MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
-	MOD_LOC.set_index("<ID|readonly|noverify>", inplace = True)
+	MOD_LOC = await asyncio.to_thread(_load_mod_loc)
 
 	weapon_cache = {}
-	sensor_cache = {}
 	vehicle_cache = {}
-
 
 VERSION: Version | None = None
 CACHED_VALIDITY_UNTIL: int = 0
@@ -202,9 +210,8 @@ VEHICLE_DATA: dict[str, dict[str, Any]] = {}
 LOC_META: dict[str, str | list[str] | dict] = {}
 UNIT_LOC: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
 WEAPON_LOC: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
-MOD_LOC: Any = None
+MOD_LOC: dict[str, dict[Literal["name", "desc"]]] = {}
 weapon_cache: dict[str, Weapon] = {}
-sensor_cache: dict[str, Sensor] = {}
 vehicle_cache: dict[str, Vehicle] = {}
 
 def convert_to_br(economicRank: int) -> float:
