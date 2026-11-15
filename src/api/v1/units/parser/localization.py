@@ -1,6 +1,5 @@
 from enum import StrEnum
 
-
 class Languages(StrEnum):
 	en = "<English>"
 	fr = "<French>"
@@ -24,4 +23,26 @@ class Languages(StrEnum):
 	zh_cn = "<HChinese>"
 	vi = "<Vietnamese>"
 
-
+class LanguagesCompat(StrEnum):
+	"""Compatibility enum for FastAPI to interface with `Languages`"""
+	en = "en"
+	fr = "fr"
+	it = "it"
+	de = "de"
+	es = "es"
+	ru = "ru"
+	pl = "pl"
+	cs = "cs"
+	tr = "tr"
+	zh = "zh"
+	ja = "ja"
+	pt = "pt"
+	uk = "uk"
+	sr = "sr"
+	hu = "hu"
+	kr = "kr"
+	be = "be"
+	ro = "ro"
+	zh_tw = "zh_tw"
+	zh_cn = "zh_cn"
+	vi = "vi"
