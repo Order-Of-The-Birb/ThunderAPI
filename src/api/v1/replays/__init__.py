@@ -5,7 +5,7 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.shared import ServerBearer, TokenBearer
+from api.v1.shared import TokenBearer
 from utils.replayParser import Replay
 
 from .backend import ReplayMode, ReplayTechType, ReplayType, search_replay

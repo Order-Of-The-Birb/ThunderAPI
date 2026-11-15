@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, Request, WebSocket, status
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.shared import IpString, ServerBearer
+from api.v1.shared import IpString
 from utils import newsManager
 from utils.news import NewsEntry
 

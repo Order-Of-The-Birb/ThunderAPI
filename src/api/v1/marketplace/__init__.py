@@ -1,3 +1,4 @@
+from decimal import Decimal
 from os import getenv
 
 from fastapi import APIRouter, HTTPException, Path, Query, status
@@ -227,14 +228,14 @@ async def view_item(
 async def sell_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description = "The item's hash value")],
-	price: Annotated[float, Query(description = "The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge = 0.1, le = 2000)],
+	price: Annotated[Decimal, Query(description = "The price in GJN to sell for (Includes gaijin's fee, not the value you get)", ge = 0.1, le = 2000, decimal_places=2)],
 	count: Annotated[int, Query(description = "The amount to sell at once", gt = 0)] = 1,
 	anonymous: Annotated[bool, Query(description = "Appear as an anonymous seller")] = False
 ):
 	inventoryItems = await User(user).inventory()
 	if itemHash not in inventoryItems:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
-	return await inventoryItems[itemHash].sell(price = price, count = count, anonymous = anonymous)
+	return await inventoryItems[itemHash].sell(price = float(price), count = count, anonymous = anonymous)
 
 @router.post(
 	"/{itemHash}/buy",
@@ -251,11 +252,11 @@ async def sell_item(
 async def buy_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(description = "The item's hash value")],
-	price: Annotated[float, Query(description = "The price in GJN to buy for", ge = 0.1, le = 2000)],
+	price: Annotated[Decimal, Query(description = "The price in GJN to buy for", ge = 0.1, le = 2000, decimal_places=2)],
 	count: Annotated[int, Query(description = "The amount to buy", gt = 0)] = 1,
 	anonymous: Annotated[bool, Query(description = "Appear as an anonymous buyer")] = False
 ):
-	return await User(user).buy(item_hash = itemHash, price = price, count = count, anonymous = anonymous)
+	return await User(user).buy(item_hash = itemHash, price = float(price), count = count, anonymous = anonymous)
 
 @router.get(
 	"/{itemHash}",

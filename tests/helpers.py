@@ -1,13 +1,15 @@
 from collections.abc import Awaitable, Callable
+from contextlib import asynccontextmanager
 from typing import Any, Iterable
 
 import pytest
 from fastapi import HTTPException
 from typing_extensions import Annotated, Doc
+
 from utils.connection import network
-from contextlib import asynccontextmanager
 
 from . import templates
+
 
 @asynccontextmanager
 async def response_provider(provider):

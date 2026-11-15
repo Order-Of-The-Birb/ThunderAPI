@@ -59,4 +59,6 @@ async def localize_unit(
 		"short": shared.UNIT_LOC[unit]["short"][lang.value],
 		"long": shared.UNIT_LOC[unit]["shop"][lang.value]
 	}
+	if return_dict["short"] is None or return_dict["long"] is None:
+		raise HTTPException(status.HTTP_404_NOT_FOUND, "Localization not found for vehicle")
 	return return_dict
