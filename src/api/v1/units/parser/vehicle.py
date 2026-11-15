@@ -451,8 +451,8 @@ class Vehicle:
 		if entry is None:
 			self.localizations = tuple()
 			return
-		long_line = entry["shop"]
-		short_line = entry["short"]
+		short_line = entry.get("short") or entry.get("shop") or {}
+		long_line = entry.get("shop") or entry.get("short") or {}
 		languages = shared.LOC_META["text_translation"]["lang"]
 		for lang in languages:
 			localizations.append(self.Localization(
