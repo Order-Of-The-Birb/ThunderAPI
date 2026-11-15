@@ -29,10 +29,10 @@ REMOTE_VERSION_URL = "https://raw.githubusercontent.com/gszabi99/War-Thunder-Dat
 class DataLocations:
 	@dataclass(frozen = True, slots = True)
 	class VehicleData:
-		DATA:Path
-		IMAGE:Path
-		PRESETS:Path
-		SENSORS:Path
+		DATA: Path
+		IMAGE: Path
+		PRESETS: Path
+		SENSORS: Path
 
 	TT_IMAGES = GAMEFILES / "atlases.vromfs.bin_u" / "units"
 	AIR_DATA: VehicleData = VehicleData(
@@ -128,7 +128,7 @@ async def check_update():
 	VERSION = new_ver
 	await Cache.get("units").clear()
 
-def referenceToPath(reference:str) -> Path:
+def referenceToPath(reference: str) -> Path:
 	if not reference.endswith(".blk"):
 		reference += ".blk"
 	return GAMEFILES / "aces.vromfs.bin_u" / (reference.lower().replace("blk", "blkx"))
@@ -163,6 +163,9 @@ def _load_weapon_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str
 			key = "shop"
 		weapon_loc.setdefault(base, {})[key] = row
 	return weapon_loc
+def _load_sensor_loc() -> dict[str, str]:
+
+	pass
 async def update_gamefiles():
 	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
 	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):

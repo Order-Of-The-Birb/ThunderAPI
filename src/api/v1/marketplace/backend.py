@@ -75,23 +75,23 @@ class User:
 			seller_gets: float
 
 		LOGIN: LoginEntry
-		commodity:bool
+		commodity: bool
 		description: str
 		icon_url: str
 		icon_url_large: str
 		hash: str
 		name: str
-		display_name:str
+		display_name: str
 		tags: list[dict[str, str|int]]
 		type: str
 		marketable: bool
 		name_color: str
 		class_name: str
 		class_value: int
-		ids:list[int]
+		ids: list[int]
 		contextid: int
 		@classmethod
-		def from_json(cls, data:dict[str, Any], user: LoginEntry, itemData: dict[str, Any], context: int):
+		def from_json(cls, data: dict[str, Any], user: LoginEntry, itemData: dict[str, Any], context: int):
 			assetData: dict[str, Any] = data["result"]["asset"]
 			classData: dict[str, Any] = itemData["class"][0]
 
@@ -173,10 +173,10 @@ class User:
 		className: str
 		classValue: str
 		@classmethod
-		def from_dict(cls, data:dict[str, Any]):
+		def from_dict(cls, data: dict[str, Any]):
 			tags = {}
 			for tag in data["tags"]:
-				tag:str
+				tag: str
 				if tag.count(":") != 1:
 					raise RuntimeError(f"Somehow item {data["hash_name"]}'s tag '{tag}' has more than 1 separator")
 				key, value = tag.split(":")
@@ -201,7 +201,7 @@ class User:
 				classValue = data["asset_class"][0]["value"]
 			)
 		@classmethod
-		def from_assetdata(cls, assetData:dict[str, Any], ordersData: dict[str, Any], classValues: dict[str, str]):
+		def from_assetdata(cls, assetData: dict[str, Any], ordersData: dict[str, Any], classValues: dict[str, str]):
 			return cls(
 				hash_name = assetData["market_hash_name"],
 				name = assetData["market_name"],
@@ -235,7 +235,7 @@ class User:
 				text = name
 			)
 			if "response" in data:
-				data:list[dict[str, Any]] = data["response"]["assets"]
+				data: list[dict[str, Any]] = data["response"]["assets"]
 			else:
 				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get item data")
 
@@ -303,7 +303,7 @@ class User:
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to get balance")
 
 	async def inventory(self) -> dict[str, InventoryItem]:
-		items:dict[str, User.InventoryItem] = {}
+		items: dict[str, User.InventoryItem] = {}
 		async with Network.operation() as session:
 			contexts = await Request.send_template(
 				self.login,
@@ -367,7 +367,7 @@ class User:
 			}
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "Failed to put up buy order")
 
-	async def get_asset_class(self, hash:str) -> list[dict[str, str|IntString]]:
+	async def get_asset_class(self, hash: str) -> list[dict[str, str|IntString]]:
 		return await Request.send_template(
 			self.login,
 			"cln_market_get_asset_class",

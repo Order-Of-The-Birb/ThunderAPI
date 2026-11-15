@@ -44,7 +44,7 @@ class ApplicantModel(BaseModel):
 		offset: float
 		country: str
 		city: str
-	geo:GeolocationDataModel = Field(default = None)
+	geo: GeolocationDataModel = Field(default = None)
 
 class MemberModel(BaseModel):
 	class enumModel(BaseModel):

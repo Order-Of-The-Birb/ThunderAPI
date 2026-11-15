@@ -6,9 +6,9 @@ from typing import Any, Callable
 from fastapi import HTTPException
 
 
-def dtToTimestamp(dt:datetime) -> int:
+def dtToTimestamp(dt: datetime) -> int:
 	return int(dt.timestamp())
-def dtToTimestampMs(dt:datetime) -> int:
+def dtToTimestampMs(dt: datetime) -> int:
 	return int(dt.timestamp()*1000)
 
 class AuthenticationError(HTTPException):
@@ -32,7 +32,7 @@ class dictUtil:
 		value: Any | Callable[[dict[str, Any]], Any]
 		force: bool
 
-		def __init__(self, key: str, value: Any | Callable[[dict[str, Any]], Any], /, *, force:bool = False):
+		def __init__(self, key: str, value: Any | Callable[[dict[str, Any]], Any], /, *, force: bool = False):
 			self.key = key
 			self.value = value
 			self.force = force
@@ -80,7 +80,7 @@ class dictUtil:
 			return obj
 
 	@staticmethod
-	async def run_all(obj: dict[str, Any], changes:Iterable[KeyMod|KeyRem|KeyAdd|None]):
+	async def run_all(obj: dict[str, Any], changes: Iterable[KeyMod|KeyRem|KeyAdd|None]):
 		for change in changes:
 			if change is None:
 				continue
@@ -96,7 +96,7 @@ class dictUtil:
 			return await value
 		return value
 
-def getMultipleKeys(obj:dict, *keys:str, default:Any = None, raise_on_missing:bool = False):
+def getMultipleKeys(obj: dict, *keys: str, default: Any = None, raise_on_missing: bool = False):
 	for key in keys:
 		if key in obj:
 			return obj[key]

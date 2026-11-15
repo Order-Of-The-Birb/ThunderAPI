@@ -33,7 +33,7 @@ class Decompress(dict):
 			raise RuntimeError(f"wt_ext_cli failed to unpack (exit code {unpacked.returncode})")
 		super().__init__(loads(unpacked.stdout))
 	@classmethod
-	async def async_init(cls, data:bytes):
+	async def async_init(cls, data: bytes):
 		return await to_thread(cls, data)
 
 	@staticmethod
@@ -104,7 +104,7 @@ class Compress(bytes):
 		return bytes.__new__(cls, cls.convert(data, algo))
 
 	@classmethod
-	async def async_init(cls, data:dict, algo: Algorithm|str|None = Algorithm.NONE):
+	async def async_init(cls, data: dict, algo: Algorithm|str|None = Algorithm.NONE):
 		return await to_thread(cls, data, algo)
 
 	def as_bytes(self):

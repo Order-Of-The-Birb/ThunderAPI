@@ -68,9 +68,9 @@ class Request:
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
 		user: LoginEntry | None = None,
-		host:str|None = None,
-		method:str = "POST",
-		session:ClientSession|None = None,
+		host: str|None = None,
+		method: str = "POST",
+		session: ClientSession|None = None,
 		response_provider: ResponseProvider | None = None
 	):
 		self.__response_provider = response_provider
@@ -105,13 +105,13 @@ class Request:
 	@classmethod
 	async def from_template(
 		cls,
-		user:LoginEntry,
+		user: LoginEntry,
 		template: str,
 		/, *,
-		session:ClientSession|None = None,
+		session: ClientSession|None = None,
 		remove_keys: set[str] | None = None,
 		response_provider: ResponseProvider | None = None,
-		**data:str|dict[str, Any]
+		**data: str|dict[str, Any]
 	) -> "Request":
 		if remove_keys is None:
 			remove_keys = set()
@@ -158,7 +158,7 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None = None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data:str|dict[str, Any]) -> dict:
+	async def send_template(user: LoginEntry, template: str, /, *, session: ClientSession|None = None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data: str|dict[str, Any]) -> dict:
 		cls = await Request.from_template(user, template, session = session, remove_keys = remove_keys, response_provider = response_provider, **data)
 		return await cls.send()
 

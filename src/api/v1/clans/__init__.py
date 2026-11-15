@@ -135,7 +135,7 @@ async def accept_applicant(
 	request: faRequest,
 	user: TokenBearer,
 	userId: gaijinUserId,
-	role:RolesDisplay = RolesDisplay.PRIVATE
+	role: RolesDisplay = RolesDisplay.PRIVATE
 ):
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:

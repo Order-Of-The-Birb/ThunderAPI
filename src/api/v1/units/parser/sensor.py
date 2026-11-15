@@ -16,13 +16,13 @@ class _limit:
 	minValue: int|float
 
 	@classmethod
-	def from_values(cls, value1:int|float, value2:int|float):
+	def from_values(cls, value1: int|float, value2: int|float):
 		return cls(
 			max(value1, value2),
 			min(value1, value2)
 		)
 	@classmethod
-	def from_list(cls, data:list[int|float]|None):
+	def from_list(cls, data: list[int|float]|None):
 		if data is None:
 			return
 		return cls.from_values(max(data), min(data))
@@ -53,7 +53,7 @@ class Sensor:
 		antenna: Sensor.Antenna | dict[str, Sensor.Antenna]
 		visibilityType: Literal["infraRed", "radarIntercept", "optic"]
 		@classmethod
-		def from_json(cls, _type:str, data:dict[str, float|int]):
+		def from_json(cls, _type: str, data: dict[str, float|int]):
 			if "power" in data:
 				power = data["power"]
 			elif "pulsePower" in data:
@@ -68,7 +68,7 @@ class Sensor:
 				bands = []
 
 			if ("receiver" in data):
-				receiver:dict[str, float|dict] = data["receiver"]
+				receiver: dict[str, float|dict] = data["receiver"]
 				rcs = receiver.get("rcs", None)
 				ranges = {}
 				for k, v in receiver.items():
@@ -150,7 +150,7 @@ class Sensor:
 			width: float | None
 
 			@classmethod
-			def from_json(cls, data:dict[str, Any]|None) -> Sensor._signalEntry._distance | None:
+			def from_json(cls, data: dict[str, Any]|None) -> Sensor._signalEntry._distance | None:
 				if data is None:
 					return
 				return cls(
@@ -170,7 +170,7 @@ class Sensor:
 			width: float
 
 			@classmethod
-			def from_json(cls, data:dict[str, Any]|None) -> Sensor._signalEntry._dopplerSpeed | None:
+			def from_json(cls, data: dict[str, Any]|None) -> Sensor._signalEntry._dopplerSpeed | None:
 				if data is None:
 					return
 				if not data["presents"]:
@@ -197,7 +197,7 @@ class Sensor:
 		extras: dict[str, Any]
 
 		@classmethod
-		def from_json(cls, _type:str, data:dict[str, Any]):
+		def from_json(cls, _type: str, data: dict[str, Any]):
 			return cls(
 				_type,
 				data.get("groundClutter", True),
@@ -233,7 +233,7 @@ class Sensor:
 		rowMajor: bool
 
 		@classmethod
-		def from_data(cls, name: str, data:dict[str, Any], scanPatternSet:str):
+		def from_data(cls, name: str, data: dict[str, Any], scanPatternSet: str):
 			return cls(
 				name,
 				scanPatternSet,
@@ -262,7 +262,7 @@ class Sensor:
 		targetType: list[str]
 
 		@classmethod
-		def from_json(cls, data:dict[str, Any]):
+		def from_json(cls, data: dict[str, Any]):
 			return cls(
 				data.get("name"),
 				data.get("targetType")
@@ -275,7 +275,7 @@ class Sensor:
 		propulsion: dict[str, str|int]
 
 		@classmethod
-		def from_json(cls, data:dict[str, Any]):
+		def from_json(cls, data: dict[str, Any]):
 			return cls (
 				data.get("name"),
 				data.get("targetPropulsion")
@@ -284,14 +284,14 @@ class Sensor:
 		def to_json(self):
 			return asdict(self)
 
-	type:str
-	name:str
+	type: str
+	name: str
 	displayName: str
-	maxTargets:int
+	maxTargets: int
 	transivers: tuple[_transiversEntry]
 	illuminationTransmitter: _illuminationTransmitter | None
 	signals: tuple[_signalEntry]
-	signals_track:bool | None
+	signals_track: bool | None
 	scopeRangeSets: dict[str, tuple[float]]
 	scanPatterns: tuple[_scanPattern]
 	targetTypeId: tuple[_targetTypeId]
@@ -299,7 +299,7 @@ class Sensor:
 	sizeRanges: dict[str, _limit]
 
 	@classmethod
-	async def from_id(cls, sensor:str):
+	async def from_id(cls, sensor: str):
 		for path in shared.DataLocations.SENSOR_DATA.rglob(f"{sensor}.blkx"):
 			return await cls.from_path(path)
 		_logger.error(f"Could not find sensor '{sensor}'")
@@ -351,7 +351,7 @@ class Sensor:
 		vehicleTypeId = []
 		targetTypeId = []
 		for v in data.get("targetTypeId", []):
-			name:str = v.get("name").removeprefix("hud/")
+			name: str = v.get("name").removeprefix("hud/")
 			if (_ := v.get("sizeRange", [])):
 				sizeRanges[name] = _limit.from_list(_)
 			elif name in ["helicopter", "single prop", "multi prop", "single jet", "multi jet", "rocket"]:

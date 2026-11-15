@@ -17,7 +17,7 @@ from .weapon import Weapon
 
 @dataclass(frozen = True, slots = True)
 class VehiclePaths:
-	vehicle_id:str
+	vehicle_id: str
 	@dataclass(frozen = True, slots = True)
 	class Images:
 		techtree: Path
@@ -25,11 +25,11 @@ class VehiclePaths:
 	images: Images
 	vehicleData: Path
 	presets: tuple[Path]
-def get_vehicle_paths(vehicle_id:str) -> VehiclePaths|None:
-	def ext(text:str, ext:Literal["png", "blkx"]): return text+"."+ext
+def get_vehicle_paths(vehicle_id: str) -> VehiclePaths|None:
+	def ext(text: str, ext: Literal["png", "blkx"]): return text+"."+ext
 
 	#region Vehicle type assessment
-	vtype:shared.DataLocations.VehicleData|None = None
+	vtype: shared.DataLocations.VehicleData|None = None
 	if ((_ := shared.DataLocations.AIR_DATA).DATA / ext(vehicle_id, "blkx")).exists():
 		vtype = _
 	elif ((_ := shared.DataLocations.GROUND_DATA).DATA / ext(vehicle_id, "blkx")).exists():
@@ -59,7 +59,7 @@ class Vehicle:
 	operator: str
 	tags: list[str]
 	vehicle_stats: dict[str, float]
-	release_date:datetime
+	release_date: datetime
 	sensors: list[str]
 
 	@dataclass(frozen = True, slots = True)
@@ -75,7 +75,7 @@ class Vehicle:
 		guidance: str|None = None
 
 		@classmethod
-		def from_json(cls, id:str, data:dict[str, Any]):
+		def from_json(cls, id: str, data: dict[str, Any]):
 			guidance = getMultipleKeys(data, "aamGuidanceType", "atgmVisibilityType", "guidedBombVisibilityType")
 			if guidance == "default":
 				if "aamGuidanceType" in data:
@@ -110,7 +110,7 @@ class Vehicle:
 		weapons: dict[str, dict[str, Vehicle._weapon|int]]
 
 		@classmethod
-		def from_json(cls, key:str, data:dict[str, Any], full_weapon_data:dict[str, dict[str, Any]]):
+		def from_json(cls, key: str, data: dict[str, Any], full_weapon_data: dict[str, dict[str, Any]]):
 			if any(key.startswith(i) for i in ["rocketguns", "containers", "bombguns", "equipment", "drop_tank", "custom_presets"]):
 				raise RuntimeError(f"Invalid key for default preset: {key}")
 			weapons = {}
@@ -146,7 +146,7 @@ class Vehicle:
 		weapons: tuple[dict[str, Vehicle._weapon|int|dict[str, int]]]
 
 		@classmethod
-		def from_json(cls, data:dict[str, int|dict[str, int]], all_data:dict[str, Any]):
+		def from_json(cls, data: dict[str, int|dict[str, int]], all_data: dict[str, Any]):
 			index = data.get("index")
 			if (index is None):
 				raise LookupError("No index value for pylon")
@@ -208,7 +208,7 @@ class Vehicle:
 
 		def to_json(self):
 			return asdict(self)
-	computer:_computer
+	computer: _computer
 
 	@dataclass(frozen = True, slots = True)
 	class _nightvision:
@@ -253,7 +253,7 @@ class Vehicle:
 		modClass: str | None
 		extras: dict[str, Any]
 		@classmethod
-		def from_json(cls, mod_id:str, data:dict[str, Any]):
+		def from_json(cls, mod_id: str, data: dict[str, Any]):
 			extras = {k:v for k, v in data.items() if k not in ["prevModification","reqModification","tier","effects","modClass"]}
 			return cls(
 				mod_id,
@@ -266,7 +266,7 @@ class Vehicle:
 			)
 		def to_json(self):
 			return asdict(self)
-	modifications:tuple[_modification]
+	modifications: tuple[_modification]
 
 	@dataclass(frozen = True, slots = True)
 	class _wpcost:
@@ -278,7 +278,7 @@ class Vehicle:
 			realistic_ground: float|None = None
 			simulator_ground: float|None = None
 			@classmethod
-			def from_json(cls, data:dict[str, Any], base:str):
+			def from_json(cls, data: dict[str, Any], base: str):
 				if base == "economicRank":
 					return cls(
 						float(shared.convert_to_br(data[f"{base}Arcade"])),
@@ -320,12 +320,12 @@ class Vehicle:
 		requiredUnit: str | None
 		crewCount: int | None
 		givesNationBonus: bool
-		has_customizable_weapons:bool
+		has_customizable_weapons: bool
 		turretSpeed: tuple[int, int] | None
 		hideUnlessOwned: bool
 
 		@classmethod
-		def from_json(cls, data:dict[str, Any]):
+		def from_json(cls, data: dict[str, Any]):
 			return cls(
 				data["value"],
 				data.get("reqExp", 0),
@@ -386,8 +386,8 @@ class Vehicle:
 
 	def __init__(
 		self,
-		vehicle_paths:VehiclePaths,
-		data:dict[str, Any]
+		vehicle_paths: VehiclePaths,
+		data: dict[str, Any]
 	):
 		self.identifier = vehicle_paths.vehicle_id
 		self.version = shared.VERSION
@@ -406,16 +406,16 @@ class Vehicle:
 		self.techtree_image = vehicle_paths.images.techtree
 
 	@classmethod
-	async def from_id(cls, vehicle_id:str):
+	async def from_id(cls, vehicle_id: str):
 		await shared.check_update()
 		paths = get_vehicle_paths(vehicle_id)
 		if paths is None:
 			return None
-		data:dict[str, Any] = await asyncio.to_thread(loads, await asyncio.to_thread(paths.vehicleData.read_text))
+		data: dict[str, Any] = await asyncio.to_thread(loads, await asyncio.to_thread(paths.vehicleData.read_text))
 		return cls(paths, data)
 
 	@staticmethod
-	def convert_country(country_code:str) -> str:
+	def convert_country(country_code: str) -> str:
 		return country_code.removeprefix("country_")
 
 	async def get_sensors(self) -> tuple[Sensor]:
@@ -464,11 +464,11 @@ class Vehicle:
 		self.localizations = tuple(localizations)
 
 	def _parse_unittags(self):
-		vehicleDataEntry:dict[str, str|dict] = shared.VEHICLE_DATA.get(self.identifier)
+		vehicleDataEntry: dict[str, str|dict] = shared.VEHICLE_DATA.get(self.identifier)
 		if (vehicleDataEntry is None):
 			return
 		self.vehicle_stats = vehicleDataEntry.get("Shop")
-		tags:dict[str, bool] = vehicleDataEntry["tags"]
+		tags: dict[str, bool] = vehicleDataEntry["tags"]
 
 		self.type = vehicleDataEntry["type"]
 		for tag in tags:
@@ -529,7 +529,7 @@ class Vehicle:
 		)
 
 		#region NVDs
-		tmp:dict[str, list[dict[str, Any]]] = data.get("nightVision", {})
+		tmp: dict[str, list[dict[str, Any]]] = data.get("nightVision", {})
 		for k, v in tmp.items():
 			if "ir" in k.lower():
 				tmp[k]["generation"] = IR_VISION_GENERATIONS.get(tuple(v["resolution"]), "Unknown")
@@ -583,7 +583,7 @@ class Vehicle:
 					self.sensors.append(shared.referenceToPath(blkname).name.removesuffix(".blkx"))
 			else:
 				for sensor in sensorsData["sensor"]:
-					blkname:str = sensor.get("blk")
+					blkname: str = sensor.get("blk")
 					if blkname is None:
 						continue
 					self.sensors.append(shared.referenceToPath(blkname).name.removesuffix(".blkx"))
