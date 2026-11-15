@@ -26,7 +26,7 @@ class _ReplayHeader:
 		environment = (auto(), ByteSizes.char * 128, str)
 		visibility = (auto(), ByteSizes.char * 32, str)
 		rezOffset = (auto(), ByteSizes.u32, int)
-		diff = (auto(), ByteSizes.difficulty, '_Difficulty')
+		diff = (auto(), ByteSizes.difficulty, "_Difficulty")
 		_pad1 = (auto(), ByteSizes.padding * 35, None)
 		sessionType = (auto(), ByteSizes.u32, int)
 		_pad2 = (auto(), ByteSizes.padding * 4, None)
@@ -74,12 +74,12 @@ class _ReplayHeader:
 		for field in fields:
 			index, size, field_type = field.value
 
-			if field_type == '_Difficulty':
+			if field_type == "_Difficulty":
 				value = self._Difficulty(data[offset])
 			elif field_type is str:
-				value = data[offset:offset+size].split(b'\x00')[0].decode('ascii')
+				value = data[offset:offset+size].split(b"\x00")[0].decode("ascii")
 			elif field_type is int:
-				value = int.from_bytes(data[offset:offset+size.value], 'little')
+				value = int.from_bytes(data[offset:offset+size.value], "little")
 			elif field_type is None: # Padding
 				offset += size
 				continue

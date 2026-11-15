@@ -17,14 +17,14 @@ _logger = getLogger(__name__)
 class Decompress(dict):
 	def __init__(self, data: bytes):
 		decompressed = None
-		if b'BZh' in data[:20]:
+		if b"BZh" in data[:20]:
 			decompressed = self.bzip_decompress_try(data)
 		if decompressed is None:
 			decompressed = self.lz4_decompress_try(data)
 
 		payload = decompressed or data
 		unpacked = run_process(
-			[str(WT_EXT_CLI), 'unpack_raw_blk', '--stdin', '--stdout', '--format', 'Json'],
+			[str(WT_EXT_CLI), "unpack_raw_blk", "--stdin", "--stdout", "--format", "Json"],
 			input = payload,
 			capture_output = True,
 			timeout = 60,
@@ -37,21 +37,21 @@ class Decompress(dict):
 		return await to_thread(cls, data)
 
 	@staticmethod
-	def lz4_decompress_try(data) -> None|bytes:
+	def lz4_decompress_try(data) -> bytes | None:
 		if len(data) < 4:
 			return None
 
 		candidates = []
 
 		# Standard lz4 frame with 0x4C marker byte
-		if data[:1] == b'\x4c':
+		if data[:1] == b"\x4c":
 			if len(data) < 5:
 				return None
-			candidates.append(("marker+size", struct.unpack('>I', data[1:5])[0], data[5:]))
+			candidates.append(("marker+size", struct.unpack(">I", data[1:5])[0], data[5:]))
 
 		# Game wire format: [4-byte BE uncompressed size][raw lz4hc block]
 		if not candidates:
-			be_size = struct.unpack('>I', data[:4])[0]
+			be_size = struct.unpack(">I", data[:4])[0]
 			# Sanity check: decompressed size should be between 100 and 100MB
 			if 100 <= be_size <= 100 * 1024 * 1024 and len(data) > 4:
 				candidates.append(("be-size prefix", be_size, data[4:]))
@@ -66,8 +66,8 @@ class Decompress(dict):
 		return None
 
 	@staticmethod
-	def bzip_decompress_try(data) -> None|bytes:
-		offset = data[:20].find(b'BZh')
+	def bzip_decompress_try(data) -> bytes | None:
+		offset = data[:20].find(b"BZh")
 		if offset == -1:
 			offset = 0
 
@@ -120,46 +120,46 @@ class Compress(bytes):
 				continue
 
 			if isinstance(value, bool):
-				lines.append(f'{key}:b = {str(value).lower()}')
+				lines.append(f"{key}:b = {str(value).lower()}")
 			elif isinstance(value, int):
-				lines.append(f'{key}:i = {value}')
+				lines.append(f"{key}:i = {value}")
 			elif isinstance(value, float):
 				# Format float to avoid scientific notation for whole numbers
 				if value == int(value) and abs(value) < 1e15:
-					lines.append(f'{key}:i = {int(value)}')
+					lines.append(f"{key}:i = {int(value)}")
 				else:
-					lines.append(f'{key}:r = {value}')
+					lines.append(f"{key}:r = {value}")
 			elif isinstance(value, str):
-				escaped = value.replace('\\', '\\\\').replace('"', '\\"')
+				escaped = value.replace("\\", "\\\\").replace('"', '\\"')
 				lines.append(f'{key}:t = "{escaped}"')
 			elif isinstance(value, list):
 				# Serialize list as comma-separated string in quotes
 				items = []
 				for item in value:
 					if isinstance(item, str):
-						items.append(item.replace('\\', '\\\\').replace('"', '\\"'))
+						items.append(item.replace("\\", "\\\\").replace('"', '\\"'))
 					else:
 						items.append(str(item))
-				joined = ', '.join(items)
+				joined = ", ".join(items)
 				lines.append(f'{key}:t = "{joined}"')
 			else:
 				_logger.warning(f'Skipping key "{key}" with unsupported type {type(value).__name__}')
 
-		blkx_text = ('\n'.join(lines) + '\n').encode("utf-8")
+		blkx_text = ("\n".join(lines) + "\n").encode("utf-8")
 
 		result = run_process(
-			[str(BINBLK), '-', '-', '-b'],
+			[str(BINBLK), "-", "-", "-b"],
 			input = blkx_text,
 			capture_output = True,
 			timeout = 60
 		)
 		if result.returncode != 0:
-			stderr_msg = result.stderr.decode('utf-8', errors = 'replace').strip()
-			raise RuntimeError(f'binBlk failed: {stderr_msg}')
+			stderr_msg = result.stderr.decode("utf-8", errors = "replace").strip()
+			raise RuntimeError(f"binBlk failed: {stderr_msg}")
 
 		if algo == Compress.Algorithm.LZ4:
-			compressed = lz4compress(result.stdout, mode = 'high_compression', store_size = False)
-			return struct.pack('>I', len(result.stdout)) + compressed
+			compressed = lz4compress(result.stdout, mode = "high_compression", store_size = False)
+			return struct.pack(">I", len(result.stdout)) + compressed
 		elif algo == Compress.Algorithm.BZIP:
 			return bzcompress(result.stdout)
 		elif algo == Compress.Algorithm.NONE or algo is None:

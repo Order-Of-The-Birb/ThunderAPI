@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from asyncio import Event, Lock, Task, get_running_loop, to_thread, wait_for
-from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -79,7 +78,6 @@ class _pending2FA:
 	def check_password(self, password: str):
 		return self.password_hash == md5(password.encode()).hexdigest()
 _PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
-_RESP_PROVIDER : Callable[[Any], Awaitable[dict[str, Any]]] | None = None
 
 @dataclass(slots = True, frozen = True)
 class LoginEntry:
@@ -544,15 +542,15 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 
 	async with Network.operation() as session:
 		while not success and tries < 10:
-			if _RESP_PROVIDER is not None:
-				data = await _RESP_PROVIDER("await_2fa")
+			if Network._RESP_PROVIDER is not None:
+				data = await Network._RESP_PROVIDER("await_2fa")
 			else:
 				try:
-					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId = {data['requestId']}&userId = {data['userId']}", timeout = 60, session = session) as r:
+					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout = 60, session = session) as r:
 						data = r
 				except HTTPException:
-					if _RESP_PROVIDER is not None:
-						data = await _RESP_PROVIDER("init")
+					if Network._RESP_PROVIDER is not None:
+						data = await Network._RESP_PROVIDER("init")
 					else:
 						async with Network.post(
 							"https://auth.gaijinent.com/login.php",
@@ -594,8 +592,8 @@ async def _login_2fa(email: str):
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "2FA Entry not found")
 	entry = _PENDING_2FA[email]
 	await entry.provided.wait()
-	if _RESP_PROVIDER is not None:
-		entry.login_data = await _RESP_PROVIDER("2fa_login")
+	if Network._RESP_PROVIDER is not None:
+		entry.login_data = await Network._RESP_PROVIDER("2fa_login")
 	else:
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
@@ -632,8 +630,8 @@ async def login(email: str, password: str, /):
 
 	async with Network.operation() as session:
 
-		if _RESP_PROVIDER is not None:
-			data = await _RESP_PROVIDER("init")
+		if Network._RESP_PROVIDER is not None:
+			data = await Network._RESP_PROVIDER("init")
 		else:
 			async with session.post(
 				"https://auth.gaijinent.com/login.php",
@@ -662,7 +660,7 @@ async def login(email: str, password: str, /):
 
 			_PENDING_2FA[email] = _pending2FA(
 				password_hash =  md5(password.encode()).hexdigest(),
-				requestId =  data['requestId'],
+				requestId =  data["requestId"],
 				userId =  data["userId"],
 				types =  two_factor_types,
 				password = password

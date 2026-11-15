@@ -3,21 +3,21 @@ ENGINE_SPEED_AB_MUL_TANK = 1.101
 ENGINE_SPEED_AB_MUL_SHIP = 1.222
 ENGINE_SPEED_AB_MUL_AIR = 1.037
 
-CANNON_TYPE = 'bullet'
-ROCKET_TYPE = 'rocketGun'
-TORPEDO_TYPE = 'torpedoGun'
-BOMB_TYPE = 'bombGun'
-BOOSTER_TYPE = 'boosterGun'
-CONTAINER_TYPE = 'container'
-EXTFUELTANK_TYPE = 'fuelTankGun'
+CANNON_TYPE = "bullet"
+ROCKET_TYPE = "rocketGun"
+TORPEDO_TYPE = "torpedoGun"
+BOMB_TYPE = "bombGun"
+BOOSTER_TYPE = "boosterGun"
+CONTAINER_TYPE = "container"
+EXTFUELTANK_TYPE = "fuelTankGun"
 
-CANNON_NAME = 'cannon'
-ROCKET_NAME = 'rocket'
-TORPEDO_NAME = 'torpedo'
-BOMB_NAME = 'bomb'
-BOOSTER_NAME = 'payload'
-CONTAINER_NAME = 'container'
-EXTFUELTANK_NAME = 'payload'
+CANNON_NAME = "cannon"
+ROCKET_NAME = "rocket"
+TORPEDO_NAME = "torpedo"
+BOMB_NAME = "bomb"
+BOOSTER_NAME = "payload"
+CONTAINER_NAME = "container"
+EXTFUELTANK_NAME = "payload"
 
 THERMAL_VISION_GENERATIONS: dict = {
     (500, 300): "GEN1",
@@ -35,9 +35,9 @@ IR_VISION_GENERATIONS: dict = {
     (1920, 1080): "GEN3+",
 }
 
-GROUND_TYPES: set[str] = {'light_tank', 'medium_tank', 'heavy_tank', 'tank_destroyer', 'spaa'}
-AIR_TYPES: set[str] = {'fighter', 'assault', 'bomber', 'helicopter'}
-SEA_TYPES: set[str] = {'destroyer', 'submarine_chaser', 'cruiser', 'battleship', 'gun_boat', 'torpedo_boat', 'torpedo_gun_boat', 'naval_ferry_barge'}
+GROUND_TYPES: set[str] = {"light_tank", "medium_tank", "heavy_tank", "tank_destroyer", "spaa"}
+AIR_TYPES: set[str] = {"fighter", "assault", "bomber", "helicopter"}
+SEA_TYPES: set[str] = {"destroyer", "submarine_chaser", "cruiser", "battleship", "gun_boat", "torpedo_boat", "torpedo_gun_boat", "naval_ferry_barge"}
 
 AIR_TYPES2: set[str] = {"attack_helicopter", "utility_helicopter", "fighter", "assault", "bomber"}
 GROUND_TYPES2: set[str] = {"tank", "light_tank", "medium_tank", "heavy_tank", "tank_destroyer", "spaa", "lbv", "mbv", "hbv", "exoskeleton"}

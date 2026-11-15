@@ -105,7 +105,7 @@ class Replay(dict):
 		_ = resultsData.body
 		for user in _["player"]:
 
-			if user["userId"] == '-1':
+			if user["userId"] == "-1":
 				continue
 
 			user:dict[str, str|int|bool]
@@ -130,7 +130,7 @@ class Replay(dict):
 					"score": user.get("score", 0),
 					"awardDamage": user.get("awardDamage", 0),
 					"missileEvades": user.get("missileEvades", 0),
-					"ammoInterceptions": user.get("shellIntgerceptions", 0)
+					"ammoInterceptions": user.get("shellIntgerceptions", 0) # Intentionally set to "shellIntgerceptions"
 				},
 				"lineup" : {}
 			}

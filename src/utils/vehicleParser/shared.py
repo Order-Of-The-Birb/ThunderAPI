@@ -96,7 +96,6 @@ async def setup():
 			shell = True,
 			cwd = GAMEFILES
 		)
-	pass
 async def check_git():
 	git_ver = await asyncio.to_thread(
 		run,

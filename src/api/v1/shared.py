@@ -86,6 +86,7 @@ FloatString = Annotated[
 	StringConstraints(pattern = r"^\d+(?:\.\d+)?$"),
 	Field(
 		description = "Floating point value represented as a string to avoid precision loss when JSON clients (JavaScript/IEEE-754) parse decimal values as binary floating point (IEEE-754 doubles).",
+		coerce_numbers_to_str = True,
 		examples = ["0.005", "1.0", "4.3"]
 	),
 ]

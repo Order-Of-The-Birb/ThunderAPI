@@ -5,12 +5,12 @@ import sys
 
 
 def read_input_bytes(input_file):
-    with open(input_file, 'rb') as f:
+    with open(input_file, "rb") as f:
         raw_data = f.read()
 
-    stripped = b''.join(raw_data.split())
+    stripped = b"".join(raw_data.split())
     try:
-        decoded = bytes.fromhex(stripped.decode('ascii'))
+        decoded = bytes.fromhex(stripped.decode("ascii"))
     except (ValueError, UnicodeDecodeError):
         return raw_data
 
@@ -28,17 +28,17 @@ def decompress_lz4(data, force=False):
         return None
 
     candidates = []
-    if data[:1] == b'\x4c':
+    if data[:1] == b"\x4c":
         if len(data) < 5:
             print("[-] LZ4 marker found, but the file is too short to contain a size header.")
             return None
 
         # First byte is the compression marker. The next 4 bytes are the expected size.
-        candidates.append(("marker+size", struct.unpack('>I', data[1:5])[0], data[5:]))
+        candidates.append(("marker+size", struct.unpack(">I", data[1:5])[0], data[5:]))
     elif force:
         # Forced LZ4 handles files without the 4C marker by treating the first 4 bytes
         # as the expected decompressed size.
-        candidates.append(("size-header", struct.unpack('>I', data[:4])[0], data[4:]))
+        candidates.append(("size-header", struct.unpack(">I", data[:4])[0], data[4:]))
     else:
         return None
 
@@ -52,7 +52,7 @@ def decompress_lz4(data, force=False):
     return None
 
 def decompress_bzip(data, force=False):
-    offset = data.find(b'BZh') if force else data[:20].find(b'BZh')
+    offset = data.find(b"BZh") if force else data[:20].find(b"BZh")
     if offset == -1:
         if not force:
             return None
@@ -76,7 +76,7 @@ def decompress_file(input_file, output_file, force=None):
         print("[*] Forcing bzip decompression")
         decompressed = decompress_bzip(all_data, force=True)
     else:
-        if b'BZh' in all_data[:20]:
+        if b"BZh" in all_data[:20]:
             decompressed = decompress_bzip(all_data)
         if decompressed is None:
             decompressed = decompress_lz4(all_data, force=True)
@@ -84,7 +84,7 @@ def decompress_file(input_file, output_file, force=None):
     if decompressed is None:
         return False
 
-    with open(output_file, 'wb') as f_out:
+    with open(output_file, "wb") as f_out:
         f_out.write(decompressed)
 
     print(f"[+] Success! File saved to {output_file}")

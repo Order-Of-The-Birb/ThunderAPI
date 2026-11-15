@@ -83,7 +83,7 @@ async def answer_2fa(
 		_PENDING_2FA[email].provided.set()
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
-	... # TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
+	# TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
 
 @router.delete(
 	"/remove",

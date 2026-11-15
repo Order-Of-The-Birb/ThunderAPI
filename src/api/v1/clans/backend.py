@@ -215,7 +215,7 @@ async def get_sqb_brackets() -> tuple[dict[str, datetime|float]]:
 				"User-Agent": "Thunderapi/1.0"
 			}
 		) as resp:
-			document = BeautifulSoup(resp, 'lxml')
+			document = BeautifulSoup(resp, "lxml")
 
 		post = document.select_one("div.topic-body.crawler-post")
 		meta = post.select_one("span.crawler-post-infos>meta[itemprop = 'dateModified']")
