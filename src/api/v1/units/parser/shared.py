@@ -133,16 +133,16 @@ def referenceToPath(reference:str) -> Path:
 		reference += ".blk"
 	return GAMEFILES / "aces.vromfs.bin_u" / (reference.lower().replace("blk", "blkx"))
 
-def _load_unit_loc() -> dict[str, dict[Literal["short", "long"], dict[str, str]]]:
+def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
 	df = read_csv(DataLocations.VEHICLE_LOC, delimiter = ";", encoding = "utf-8")
 	df.set_index("<ID|readonly|noverify>", inplace = True)
-	unit_loc: dict[str, dict[Literal["short", "long"], dict[str, str]]] = {}
+	unit_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
 	for idx, row in df.to_dict(orient = "index").items():
 		base, _, variant = str(idx).rpartition("_")
 		if variant == "0":
 			key = "short"
 		elif variant == "shop":
-			key = "long"
+			key = "shop"
 		else:
 			continue
 		unit_loc.setdefault(base, {})[key] = row
