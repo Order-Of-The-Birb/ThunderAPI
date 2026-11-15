@@ -62,10 +62,14 @@ class Weapon:
 
 	@classmethod
 	async def from_id(cls, weapon: str):
+		if weapon in shared.weapon_cache:
+			return shared.weapon_cache[weapon]
 		for i in ["drop_tank","rocketguns","containers","bombguns","equipment"]:
 			weapon = weapon.removeprefix(i+"_")
 		for path in shared.DataLocations.WEAPON_DATA.rglob(f"{weapon}.blkx"):
-			return await cls.from_path(path)
+			self = await cls.from_path(path)
+			shared.weapon_cache[weapon] = self
+			return self
 		_logger.error(f"Could not find weapon '{weapon}'")
 		return None
 
