@@ -45,7 +45,7 @@ class LanguagesCompat(StrEnum):
 async def localize_unit(
 	request: faRequest,
 	unit: Annotated[str, Path(description = "The internal hash of the vehicle")],
-	language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = "en"
+	language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = LanguagesCompat.en
 ):
 	if unit not in shared.UNIT_LOC:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found")

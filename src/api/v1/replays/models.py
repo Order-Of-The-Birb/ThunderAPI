@@ -91,7 +91,12 @@ class ResultsModel(BaseModel):
 					}
 				}]
 			)
-			maxBr: float = Field(description = "Maximum battle rating of the user's lineup", examples = [6.7, 8.0, 9.7])
+			maxBr: float = Field(
+				default = None,
+				exclude_if = lambda x: x is None,
+				description = "Maximum battle rating of the user's lineup",
+				examples = [6.7, 8.0, 9.7]
+			)
 		clanTag: str | None = Field(
 			default = None,
 			exclude_if = lambda x: x is None,

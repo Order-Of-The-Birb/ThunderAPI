@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from asyncio import Event, Lock, Task, get_running_loop, to_thread, wait_for
+from aiohttp import ClientResponseError
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -548,7 +549,10 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 				try:
 					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout = 60, session = session) as r:
 						data = r
-				except HTTPException:
+				except (HTTPException, ClientResponseError) as e:
+					if isinstance(e, ClientResponseError):
+						_logger.exception(f"2FA Flow failed with HTTP {e.status}")
+
 					if Network._RESP_PROVIDER is not None:
 						data = await Network._RESP_PROVIDER("init")
 					else:

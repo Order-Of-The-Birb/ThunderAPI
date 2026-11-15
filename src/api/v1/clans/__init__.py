@@ -302,23 +302,27 @@ async def get_current_bracket(
 	bracket = await current_sqb_br()
 
 	rn = datetime.now(UTC)
-	for start, end in SQB_BRACKET_TIMES:
-		start_dt = datetime.combine(rn.date(), start, UTC)
-		end_dt = datetime.combine(rn.date(), end, UTC)
-		if (start_dt <= rn <= end_dt) or (start_dt > rn):
-			return {
-				"bracket": bracket,
-				"start": start_dt,
-				"end": end_dt
-			}
-	next_start = datetime.combine(rn.date() + timedelta(days = 1), SQB_BRACKET_TIMES[0][0], UTC)
-	next_end = datetime.combine(rn.date() + timedelta(days = 1), SQB_BRACKET_TIMES[0][1], UTC)
-	if next_start <= bracket["end"]:
-		return {
-			"bracket": bracket,
-			"start": next_start,
-			"end": next_end
-		}
+	date = max(rn.date(), bracket["start"].date())
+	last_date = bracket["end"].date()
+
+	while date <= last_date:
+		for start, end in SQB_BRACKET_TIMES:
+			start_dt = datetime.combine(date, start, UTC)
+			end_dt = datetime.combine(date, end, UTC)
+			if start_dt <= rn <= end_dt:
+				return {
+					"bracket": bracket,
+					"start": start_dt,
+					"end": end_dt
+				}
+			if start_dt > rn:
+				return {
+					"bracket": bracket,
+					"start": start_dt,
+					"end": end_dt
+				}
+		date += timedelta(days = 1)
+
 	return {
 		"bracket": bracket
 	}
