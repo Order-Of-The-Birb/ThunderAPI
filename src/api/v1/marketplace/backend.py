@@ -117,8 +117,8 @@ class User:
 		async def sell(self, price: float, count: int, anonymous: bool = False) -> tuple[SellData]:
 			agree_stamp = dtToTimestampMs(datetime.now(UTC))
 
-			seller_should_get = int((price*0.85)*10000)
-			price = int(price*10000)
+			seller_should_get = int(round((price*0.85)*10000, -2))
+			price = int(round(price*10000, -2))
 
 			soldItems = []
 			sold = 0

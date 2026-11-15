@@ -91,7 +91,7 @@ class ResultsModel(BaseModel):
 					}
 				}]
 			)
-			maxBr: float = Field(
+			maxBr: float | None = Field(
 				default = None,
 				exclude_if = lambda x: x is None,
 				description = "Maximum battle rating of the user's lineup",
