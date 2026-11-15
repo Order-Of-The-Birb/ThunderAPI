@@ -138,7 +138,7 @@ class Vehicle:
 						obj["weapons"][id][key] = value.to_json()
 
 			return obj
-	default_presets: tuple[_defaultPreset] | None = None
+	default_presets: tuple[_defaultPreset, ...] | None = None
 
 	@dataclass(frozen = True, slots = True)
 	class _pylonData:
@@ -279,6 +279,14 @@ class Vehicle:
 			simulator_ground: float|None = None
 			@classmethod
 			def from_json(cls, data:dict[str, Any], base:str):
+				if base == "economicRank":
+					return cls(
+						float(shared.convert_to_br(data[f"{base}Arcade"])),
+						float(shared.convert_to_br(data[f"{base}Historical"])),
+						float(shared.convert_to_br(data[f"{base}Simulation"])) if f"{base}Simulation" in data else None,
+						float(shared.convert_to_br(data[f"{base}TankHistorical"])) if f"{base}TankHistorical" in data else None,
+						float(shared.convert_to_br(data[f"{base}TankSimulation"])) if f"{base}TankSimulation" in data else None
+					)
 				return cls(
 					float(data[f"{base}Arcade"]),
 					float(data[f"{base}Historical"]),
@@ -403,7 +411,6 @@ class Vehicle:
 		paths = get_vehicle_paths(vehicle_id)
 		if paths is None:
 			return None
-			raise LookupError(f"Could not find vehicle '{vehicle_id}'")
 		data:dict[str, Any] = await asyncio.to_thread(loads, await asyncio.to_thread(paths.vehicleData.read_text))
 		return cls(paths, data)
 

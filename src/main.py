@@ -27,7 +27,7 @@ from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
 from utils.connection.blk_utils import Decompress
 from utils.geo import update_db
-from utils.vehicleParser import shared as vpShared
+from api.v1.units.parser import shared as vpShared
 
 logger = logging.getLogger()
 
