@@ -10,7 +10,7 @@ from orjson import loads
 from packaging.version import Version
 from pandas import read_csv
 
-from config import VEHICLES
+from config import GAMEFILES
 
 from utils import cache as Cache
 
@@ -21,7 +21,6 @@ if TYPE_CHECKING:
 
 _logger = getLogger(__name__)
 
-GAMEFILES = VEHICLES / "gamefiles"
 GAMEFILES.mkdir(exist_ok = True, parents = True)
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/refs/heads/master/version"
