@@ -3,14 +3,14 @@ from typing import Any, Iterable
 
 import pytest
 from fastapi import HTTPException
+from typing_extensions import Annotated, Doc
 
 from src.utils import auth
+from src.utils.connection import network
 
 from . import templates
 
 group = templates.Groups.LOGIN
-
-
 
 async def test_login_success():
 	await run_tests("", "", tests = group.SUCCESS, func = auth.login)
@@ -21,7 +21,13 @@ async def test_login_failures():
 async def test_2fa_success():
 	await run_tests("", "", tests = group.TWO_FACTOR, func = auth.login, extra_templates = {"2fa_login": "success"})
 
-async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group, func: Callable[[str], Awaitable[dict[str, Any]]], extra_templates: dict[str, str] | None = None, **kwargs):
+async def run_tests(
+	*args,
+	tests: Iterable[templates._Group] | templates._Group,
+	func: Callable[[str], Awaitable[dict[str, Any]]],
+	extra_templates: Annotated[dict[str, str] | None, Doc("`Key-Value` pair of `Status-Template`")] = None,
+	**kwargs
+):
 	if extra_templates is None:
 		extra_templates = {}
 	if isinstance(tests, templates._Group):
@@ -37,7 +43,7 @@ async def run_tests(*args, tests: Iterable[templates._Group] | templates._Group,
 			return templ[extra_templates[state]]
 		raise FileNotFoundError(f"State `{state}` not found in template '{templ}'")
 	for test in tests:
-		auth._RESP_PROVIDER = provider
+		network._RESP_PROVIDER = provider
 		expected = test.value[1]
 		if expected is not None:
 			with pytest.raises(type(expected), check = lambda x, expected = expected: type(x) is type(expected)) as exc_info:

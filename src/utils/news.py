@@ -35,7 +35,7 @@ class NewsEntry:
 	title:str # Title
 	link:str # URL
 	pinned:bool
-	images:list['Image'] # Attached images
+	images:list["Image"] # Attached images
 	tags:set[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
 	platforms:set[Literal["pc", "ps4", "ps5"]] # Affected platforms
 	project:str # Game (100% of the time War Thunder with different version numbers)
@@ -58,7 +58,7 @@ class NewsEntry:
 			return asdict(self)
 	@classmethod
 	def from_json(cls, data:dict[str, Any]):
-		tags = set(data.get('tags', []))
+		tags = set(data.get("tags", []))
 		title:str = data["title"]
 		for tag in re.finditer(r"\[([A-z ]+)\]", title, re.IGNORECASE):
 			tags.add(tag.group(1))
@@ -68,17 +68,17 @@ class NewsEntry:
 			raise RuntimeError(f"Somehow the first character is still '[' in \"{title}\", with no tags left")
 
 		self = cls(
-			id = int(data['id']),
-			anons = data['anons'],
+			id = int(data["id"]),
+			anons = data["anons"],
 			title = title.strip(),
-			link = data['link'],
-			pinned = data.get('pinned', False),
-			images = [cls.Image.from_json(i) for i in data['images']],
+			link = data["link"],
+			pinned = data.get("pinned", False),
+			images = [cls.Image.from_json(i) for i in data["images"]],
 			tags = tags,
-			platforms = set(data.get('platforms', [])),
-			project = data.get('project', "warthunder_en"),
-			type = data['type'],
-			created = datetime.strptime(data['created'], "%Y-%m-%dT%H:%M:%S%z")
+			platforms = set(data.get("platforms", [])),
+			project = data.get("project", "warthunder_en"),
+			type = data["type"],
+			created = datetime.strptime(data["created"], "%Y-%m-%dT%H:%M:%S%z")
 		)
 		self.importance = self._getImportance()
 		return self
@@ -339,7 +339,7 @@ class NewsManager:
 					self.__logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
 
-				parsed = BeautifulSoup(resp, 'lxml')
+				parsed = BeautifulSoup(resp, "lxml")
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
 					raise RuntimeError("Less, than 2 changelogs found (somehow)")

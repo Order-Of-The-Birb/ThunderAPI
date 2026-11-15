@@ -473,7 +473,7 @@ class Vehicle:
 				self.tags.append(tag)
 
 		release = vehicleDataEntry.get("releaseDate", "1970-01-01 00:00:00")
-		if release == '':
+		if release == "":
 			release = "1970-01-01 00:00:00"
 		self.release_date = datetime.fromisoformat(release)
 
@@ -568,7 +568,7 @@ class Vehicle:
 		#region Sensors
 		sensorsData = data.get("sensors", {"sensor":[]})
 		if not isinstance(sensorsData, dict):
-			raise RuntimeError("Sensors entry not a dict")
+			raise TypeError("Sensors entry not a dict")
 		if "sensor" in sensorsData:
 			if isinstance(sensorsData["sensor"], dict):
 				blkname = sensorsData["sensor"].get("blk")
@@ -585,7 +585,6 @@ class Vehicle:
 		#endregion
 
 		self.modifications = tuple([self._modification.from_json(k, v) for k,v in data.get("modifications", {}).items()])
-		pass
 
 	def to_json(self):
 		langs = {}
