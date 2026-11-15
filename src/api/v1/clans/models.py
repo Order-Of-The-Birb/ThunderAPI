@@ -36,7 +36,7 @@ class Platforms(Enum):
 	XBOX = 12
 
 class ApplicantModel(BaseModel):
-	uid: int
+	uid: IntString
 	nickname: str
 	timestamp: int
 	comment: str

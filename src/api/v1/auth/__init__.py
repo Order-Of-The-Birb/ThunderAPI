@@ -67,7 +67,8 @@ async def login_token(
 
 @router.post(
 	"/answer-2fa",
-	summary = "Provide 2FA code to finish login in case of a 2FA account without gaijin pass"
+	summary = "Provide 2FA code to finish login in case of a 2FA account without gaijin pass",
+	response_model=None
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def answer_2fa(
@@ -75,7 +76,7 @@ async def answer_2fa(
 	email: Annotated[EmailStr, Form(title = "The email address for the account")],
 	password: Annotated[str, Form(title = "The password of the account, used as a sort of protection")],
 	code: Annotated[int, Form(title = "The 2FA code")]
-) -> None:
+):
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
 	if _PENDING_2FA[email].check_password(password):
@@ -87,13 +88,14 @@ async def answer_2fa(
 
 @router.delete(
 	"/remove",
-	summary = "Removes your login entry from our system"
+	summary = "Removes your login entry from our system",
+	response_model=GenericEmptyResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def remove_login(
 	request: Request,
 	user: TokenBearer
-) -> GenericEmptyResponse:
+):
 	if (await users_auth.remove_entry(user.entry)):
 		return JSONResponse({"success": True})
 	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")
