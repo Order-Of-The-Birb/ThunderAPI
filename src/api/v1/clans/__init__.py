@@ -15,7 +15,7 @@ from api.v1.clans.backend import (
 	getLogs,
 	searchClan,
 )
-from api.v1.models import SuccessEmptyDict, GenericEmptyResponse
+from api.v1.models import GenericEmptyResponse, SuccessEmptyDict
 from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
 from utils.connection import Request
 
