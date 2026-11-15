@@ -6,12 +6,12 @@ from pydantic import EmailStr
 from typing_extensions import Annotated
 
 from api.shared import limiter
+from api.v1.models import GenericEmptyResponse
 from api.v1.shared import TokenBearer
 from utils import users_auth
 from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 
-from api.v1.models import GenericEmptyResponse
 from .models import Login, LoginToken
 
 router = APIRouter(
