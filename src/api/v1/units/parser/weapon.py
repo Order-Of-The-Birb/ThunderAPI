@@ -42,7 +42,7 @@ class Weapon:
 		explosive_mass: float | None = 0.0
 
 		@classmethod
-		def from_json(cls, data:dict[str, Any]) -> Weapon._ammo | None:
+		def from_json(cls, data: dict[str, Any]) -> Weapon._ammo | None:
 			if not data:
 				return
 			return cls(
@@ -61,7 +61,7 @@ class Weapon:
 	ammo: tuple[_ammo] = tuple()
 
 	@classmethod
-	async def from_id(cls, weapon:str):
+	async def from_id(cls, weapon: str):
 		for i in ["drop_tank","rocketguns","containers","bombguns","equipment"]:
 			weapon = weapon.removeprefix(i+"_")
 		for path in shared.DataLocations.WEAPON_DATA.rglob(f"{weapon}.blkx"):
@@ -70,7 +70,7 @@ class Weapon:
 		return None
 
 	@classmethod
-	async def from_path(cls, weapon:Path):
+	async def from_path(cls, weapon: Path):
 
 		self = cls()
 
@@ -115,7 +115,7 @@ class Weapon:
 		shared.weapon_cache[".".join(weapon.name.split(".")[:-1])] = self
 		return self
 
-	def _get_ammo(self, key:str, data:dict[str, Any]):
+	def _get_ammo(self, key: str, data: dict[str, Any]):
 		ammo_list = []
 		for k in data.keys():
 			raw_ammo = None

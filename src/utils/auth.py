@@ -102,12 +102,12 @@ class UserAuth:
 		user_token: str # User token
 		last_used: datetime # Used for invalidating old tokens
 		uidHint: int # uidHint value for refresh and other auth calls
-		email:str # For contact purposes
+		email: str # For contact purposes
 		requests_count: int = 0 # For token statistics (and to find abuse)
-		__saved:dict[str, str|int|datetime] = field(default_factory = dict) # Saved to file state, used for comparing what to change
+		__saved: dict[str, str|int|datetime] = field(default_factory = dict) # Saved to file state, used for comparing what to change
 
 		@classmethod
-		async def from_hash(cls, parent:"UserAuth", hash:str):
+		async def from_hash(cls, parent: "UserAuth", hash: str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
 				SELECT *
@@ -118,7 +118,7 @@ class UserAuth:
 					return None
 				return await cls.from_row(parent, row)
 		@classmethod
-		async def from_email(cls, parent:"UserAuth", email:str):
+		async def from_email(cls, parent: "UserAuth", email: str):
 			async with parent._transaction() as cur:
 				row = await cur.execute(f"""
 				SELECT *
@@ -129,7 +129,7 @@ class UserAuth:
 					return None
 				return await cls.from_row(parent, row)
 		@classmethod
-		async def from_row(cls, parent:"UserAuth", row:Row):
+		async def from_row(cls, parent: "UserAuth", row: Row):
 			t = dbSchema.tokens
 			jwt = parent._dec(str(row[t.JWT]))
 			self = cls(
@@ -187,7 +187,7 @@ class UserAuth:
 
 		def timeLeft(self) -> timedelta:
 			return self.expires - datetime.now(UTC)
-		def usedWithin(self, minutes:int) -> bool:
+		def usedWithin(self, minutes: int) -> bool:
 			return self.last_used > (datetime.now(UTC) - timedelta(minutes = minutes))
 		async def getSquadronId(self) -> int|None:
 			from utils.connection import Request
@@ -223,7 +223,7 @@ class UserAuth:
 			return None
 
 		async def _write_values(self):
-			changed:dict[str, int|str] = {}
+			changed: dict[str, int|str] = {}
 
 			for key, value in self.to_json().items():
 				if self.__saved[key] == value:
@@ -257,14 +257,14 @@ class UserAuth:
 				t.EXPIRES: self.expires,
 				t.USER_TOKEN: self.user_token,
 				t.LAST_USED: self.last_used,
-				t.UID:self.uidHint,
-				t.EMAIL:self.email,
-				t.REQUESTS_CNT:self.requests_count,
+				t.UID: self.uidHint,
+				t.EMAIL: self.email,
+				t.REQUESTS_CNT: self.requests_count,
 			}
 
 			return obj
 
-	__autorefresh_job:Job = None
+	__autorefresh_job: Job = None
 
 	def __init__(self):
 
@@ -279,11 +279,11 @@ class UserAuth:
 
 		_logger.debug("User Token Cache initialized")
 
-	async def get(self, token:str):
+	async def get(self, token: str):
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
 
-	async def login(self, email:str, password:str|None = None, /) -> tuple[str, int]:
+	async def login(self, email: str, password: str|None = None, /) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
 		data = await login(email, password)
 
@@ -365,10 +365,10 @@ class UserAuth:
 	def _generate_hash(self) -> tuple[str, str]:
 		raw_token = token_urlsafe(32)
 		return raw_token, sha256(raw_token.encode()).hexdigest()
-	def _hash_token(self, raw_token:str) -> str:
+	def _hash_token(self, raw_token: str) -> str:
 		return sha256(raw_token.encode()).hexdigest()
 
-	def _enc(self, value:str) -> str:
+	def _enc(self, value: str) -> str:
 		return self.__fernet.encrypt(value.encode()).decode()
 	def _dec(self, value: str) -> str:
 		return self.__fernet.decrypt(value.encode()).decode()
@@ -529,7 +529,7 @@ class ServerAuth:
 		self._UID = data["user_id"]
 		self.__EXP = datetime.now(UTC) + timedelta(seconds = data["token_exp"])
 
-async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
+async def _await_2fa_code(email: str, /) -> dict[str, str|int] | None:
 	tries = 0
 	success = False
 	entry = _PENDING_2FA.get(email)

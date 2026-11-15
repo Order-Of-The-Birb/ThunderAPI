@@ -20,7 +20,7 @@ class Replay(dict):
 	def __init__(self):
 		super().__init__({})
 	@classmethod
-	async def get(cls, replay_id:int|str):
+	async def get(cls, replay_id: int|str):
 		self = cls()
 		if isinstance(replay_id, str):
 			replay_id = int(replay_id, 16) # Forces lowercase hex
@@ -108,7 +108,7 @@ class Replay(dict):
 			if user["userId"] == "-1":
 				continue
 
-			user:dict[str, str|int|bool]
+			user: dict[str, str|int|bool]
 			add_obj = {
 				"clanTag": user.get("clanTag", None),
 				"nickname": user["name"],

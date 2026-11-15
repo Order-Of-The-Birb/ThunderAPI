@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class SuccessEmptyDict(BaseModel):
-	status:Literal["success"] = "success"
+	status: Literal["success"] = "success"
 class GenericEmptyResponse(BaseModel):
 	"""Basic `{"success":true}` response"""
 	success: bool

@@ -45,7 +45,7 @@ class _ReplayHeader:
 	class _Difficulty:
 		unk_nib: int # 4 bits
 		difficulty: int # 4 bits
-		def __init__(self, byte:int):
+		def __init__(self, byte: int):
 			self.unk_nib = byte >> 4
 			self.difficulty = byte & 0x0F
 	#region header fields
@@ -68,7 +68,7 @@ class _ReplayHeader:
 	battleClass: str
 	battleKillStreak: str
 	#endregion
-	def __init__(self, data:bytes):
+	def __init__(self, data: bytes):
 		fields = sorted(self.ReplayStructure, key = lambda f: f.value[0]) # Sort by index
 		offset = 0
 		for field in fields:
@@ -91,7 +91,7 @@ class ReplayParser:
 	header: _ReplayHeader
 	body: dict[str, Any]
 	@classmethod
-	async def from_replay(cls, replay:bytes):
+	async def from_replay(cls, replay: bytes):
 		self = cls()
 
 		self.header = _ReplayHeader(replay)

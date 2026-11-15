@@ -245,7 +245,7 @@ def main():
 	LOGS_DIR.mkdir(mode = 0o755, exist_ok = True, parents = True)
 
 	#region Handler and Formatter
-	def log_namer(default_name:str):
+	def log_namer(default_name: str):
 		dirname = path.dirname(default_name)
 		filename = path.basename(default_name)
 		_, _, date = filename.rpartition(".")

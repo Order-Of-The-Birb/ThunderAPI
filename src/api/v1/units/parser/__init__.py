@@ -10,7 +10,7 @@ _logger = getLogger(__name__)
 async def getAllVehicleIDs() -> tuple[str, ...]:
 	await shared.update_gamefiles()
 	return [k for k in shared.WPCOST.keys() if k != "economicRankMax"]
-async def processVehicles(*vehicle_ids:str) -> tuple[Vehicle, ...]:
+async def processVehicles(*vehicle_ids: str) -> tuple[Vehicle, ...]:
 	await shared.update_gamefiles()
 	start_time = perf_counter()
 	vehicle_entries = []
