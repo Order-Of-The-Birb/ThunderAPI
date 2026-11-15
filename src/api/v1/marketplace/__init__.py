@@ -37,7 +37,8 @@ async def cancel_order(
 
 @router.get(
 	"/orders/{orderId}",
-	summary = "Gets information about an order"
+	summary = "Gets information about an order",
+	response_model=Models.OrderModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_order(
@@ -82,20 +83,21 @@ async def getInventory(
 @router.get(
 	"/balance",
 	summary = "Gets the account's balance",
-	response_model=float
+	response_model=Models.BalanceModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_balance(
 	request: faRequest, user: TokenBearer
 ):
-	return await User(user).balance()
+	return {"balance": await User(user).balance()}
 
 @router.get(
 	"/search",
 	summary = "Searches the marketplace for a given item",
 	responses = {
 		status.HTTP_200_OK: {"model": list[Models.ItemModel]}
-	}
+	},
+	response_model=list[Models.ItemModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def searchItem(
@@ -175,7 +177,7 @@ async def get_item_orders(
 @router.get(
 	"/{itemHash}/view",
 	summary = "Views the item ingame",
-	response_model=bool
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def view_item(
@@ -209,7 +211,7 @@ async def view_item(
 		user,
 		"market_view_item2"
 	)
-	return resp.get("status") == "ok"
+	return {"success": resp.get("status") == "ok"}
 
 @router.post(
 	"/{itemHash}/sell",
@@ -218,7 +220,8 @@ async def view_item(
 		status.HTTP_200_OK: {"description": "Sell order has successfully been placed", "model": list[Models.SellModel]},
 		status.HTTP_400_BAD_REQUEST: {"description": "Count is too high"},
 		status.HTTP_404_NOT_FOUND: {"description": "Item could not be found in the inventory"}
-	}
+	},
+	response_model=list[Models.SellModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def sell_item(

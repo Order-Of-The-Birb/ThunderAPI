@@ -8,6 +8,7 @@ from typing_extensions import Annotated
 from api.shared import limiter
 from utils.vehicleParser import shared
 from utils.vehicleParser.localization import Languages
+from .models import LocalizationModel
 
 router = APIRouter(
 	tags = ["units"],
@@ -39,7 +40,8 @@ class LanguagesCompat(StrEnum):
 	vi = "vi"
 
 @router.get(
-	"/{unit}/localization"
+	"/{unit}/localization",
+	response_model=LocalizationModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "units")
 async def localize_unit(

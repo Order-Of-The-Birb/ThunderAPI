@@ -28,7 +28,8 @@ router = APIRouter(
 		status.HTTP_206_PARTIAL_CONTENT: {"model":Login.Fail2FAResponse, "description": "The account has 2FA enabled. Go through the 2FA process and call this endpoint again."},
 		status.HTTP_408_REQUEST_TIMEOUT: {"description": "Account has Two Factor Authentication, and authentication timed out"},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."},
-	}
+	},
+	response_model=Login.LoginResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_post(
@@ -52,7 +53,8 @@ async def login_post(
 		status.HTTP_200_OK: {"model": LoginToken.LoginTokenResponse, "description": "Token refreshed successfully"},
 		status.HTTP_401_UNAUTHORIZED: {"model": LoginToken.LoginFailResponse, "description": "Invalid token provided. The token is either expired or invalid."},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."}
-	}
+	},
+	response_model=LoginToken.LoginTokenResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_token(
