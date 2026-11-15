@@ -6,7 +6,6 @@ from pydantic import EmailStr
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.models import GenericEmptyResponse
 from api.v1.shared import TokenBearer
 from utils import users_auth
 from utils.auth import _PENDING_2FA
@@ -50,7 +49,7 @@ async def login_post(
 	description = "If you are cached it will refresh the token. The game generally refreshes the token every 30 minutes. Returns an UNIX timestamp of the new token expiry",
 	responses = {
 		status.HTTP_200_OK: {"model": LoginToken.LoginTokenResponse, "description": "Token refreshed successfully"},
-		status.HTTP_404_NOT_FOUND: {"model": LoginToken.LoginFailResponse, "description": "Invalid token provided. The token is either expired or invalid."},
+		status.HTTP_401_UNAUTHORIZED: {"model": LoginToken.LoginFailResponse, "description": "Invalid token provided. The token is either expired or invalid."},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."}
 	}
 )
@@ -84,16 +83,3 @@ async def answer_2fa(
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	# TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
-
-@router.delete(
-	"/remove",
-	summary = "Removes your login entry from our system"
-)
-@limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
-async def remove_login(
-	request: Request,
-	user: TokenBearer
-) -> GenericEmptyResponse:
-	if (await users_auth.remove_entry(user)):
-		return JSONResponse({"success": True})
-	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")

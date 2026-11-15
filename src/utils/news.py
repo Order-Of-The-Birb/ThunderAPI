@@ -13,7 +13,6 @@ from bs4 import BeautifulSoup, Tag
 import utils.cache as Cache
 import utils.connection.network as Network
 from utils.connection.websocket import WebsocketManager
-from utils.helper import dtToTimestamp
 
 fasterUpdate = (
 	time(hour = 11, minute = 0, tzinfo = UTC), # Start
@@ -132,7 +131,7 @@ class NewsEntry:
 
 	def to_json(self):
 		obj = asdict(self)
-		obj["created"] = dtToTimestamp(self.created)
+		obj["created"] = self.created.isoformat()
 		obj["importance"] = int(self.importance)
 		obj["platforms"] = list(self.platforms)
 		obj["tags"] = list(self.tags)

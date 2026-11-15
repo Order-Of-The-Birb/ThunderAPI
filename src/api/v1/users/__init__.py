@@ -2,7 +2,6 @@ from os import getenv
 
 from fastapi import APIRouter, Path, Query, status
 from fastapi import Request as faRequest
-from fastapi.responses import JSONResponse
 from typing_extensions import Annotated
 
 from api.shared import limiter
@@ -124,5 +123,4 @@ async def get_users_search(
 		maxCount = limit
 	)
 
-	terseInfo = await get_terse(user, *list(response.keys()))
-	return JSONResponse(terseInfo)
+	return await get_terse(user, *list(response.keys()))
