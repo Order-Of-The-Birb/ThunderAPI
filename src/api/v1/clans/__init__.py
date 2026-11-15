@@ -157,7 +157,7 @@ async def accept_applicant(
 @router.post(
 	"/reject/{userId}",
 	responses = {
-		status.HTTP_200_OK: {"model": SuccessEmptyDict, "description":"Successfully rejected user"},
+		status.HTTP_200_OK: {"model": GenericEmptyResponse, "description":"Successfully rejected user"},
 		status.HTTP_404_NOT_FOUND: {"description":"Applicant could not be found"},
 		status.HTTP_403_FORBIDDEN: {"description":"You do not have permission to reject applicants"}
 	},
@@ -187,7 +187,7 @@ async def reject_applicant(
 	summary = "Set a member's role",
 	description = "Requires `Deputy` or `Commander` level in squadron",
 	responses = {
-		status.HTTP_200_OK: {"model": SuccessEmptyDict},
+		status.HTTP_200_OK: {"model": GenericEmptyResponse},
 		status.HTTP_403_FORBIDDEN: {"description": "You do not have the required permissions"}
 	},
 	response_model=GenericEmptyResponse
@@ -200,12 +200,13 @@ async def change_role(
 	role: Annotated[RolesDisplay, Query(title = "The role to assign")],
 ):
 	role = Roles[role.name]
-	return await Request.send_template(
+	data = await Request.send_template(
 		user,
 		"clan_change_member_role",
 		userid = userId,
 		role = role.value
 	)
+	return {"success": data.get("status") == "success"}
 
 @router.post(
 	"/kick/{userId}",
@@ -226,7 +227,7 @@ async def kick_member(
 		userid = userId,
 		comments = reason
 	)
-	return data
+	return {"success": data.get("status") == "success"}
 
 @router.get(
 	"/logs/{clanId}",
@@ -302,8 +303,7 @@ async def get_clan_leaderboard_position(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_brackets(
-	request: faRequest,
-	user: ServerBearer
+	request: faRequest
 ):
 	return await get_sqb_brackets()
 
@@ -315,8 +315,7 @@ async def get_brackets(
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def get_current_bracket(
-	request: faRequest,
-	user: ServerBearer
+	request: faRequest
 ):
 	bracket = await current_sqb_br()
 

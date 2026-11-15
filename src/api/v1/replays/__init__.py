@@ -95,7 +95,6 @@ async def search_replays(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay(
 	request: faRequest,
-	user: ServerBearer,
 	replayId: Annotated[
 		str,
 		Path(
@@ -120,7 +119,6 @@ async def get_replay(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay_teams(
 	request: faRequest,
-	user: ServerBearer,
 	replayId: Annotated[
 		str,
 		Path(
@@ -145,7 +143,6 @@ async def get_replay_teams(
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "replays")
 async def get_replay_match(
 	request: faRequest,
-	user: ServerBearer,
 	replayId: Annotated[
 		str,
 		Path(

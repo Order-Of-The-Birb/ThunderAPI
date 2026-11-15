@@ -19,7 +19,7 @@ router = APIRouter(
 @router.get("/latestGameVersion", summary = "Get latest game version", response_model=IpString)
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
 async def get_latest_game_ver(
-	request: Request, user: ServerBearer,
+	request: Request,
 	branch: Annotated[Literal["dev", "dev-stable"], Query(title = "The game version to get")] = None,
 ):
 	return await getLatestGameVer(branch)
@@ -31,7 +31,7 @@ async def get_latest_game_ver(
 	response_model=list[NewsEntry]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "general")
-async def get_news(request: Request, user: ServerBearer):
+async def get_news(request: Request):
 	return await newsManager.fetch()
 
 @router.websocket(
