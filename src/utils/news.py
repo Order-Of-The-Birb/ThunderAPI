@@ -29,25 +29,25 @@ class NewsEntry:
 		MINOR = 1
 		EVENT = 2
 		MAJOR = 3
-	id:int
-	anons:str # Short description
-	title:str # Title
-	link:str # URL
-	pinned:bool
-	images:list["Image"] # Attached images
-	tags:set[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
-	platforms:set[Literal["pc", "ps4", "ps5"]] # Affected platforms
-	project:str # Game (100% of the time War Thunder with different version numbers)
-	type:Literal["news", "changelog", "forum"] # Article Type
-	created:datetime # Article Creation Time
-	importance:ImportanceLevel = ImportanceLevel.REGULAR
+	id: int
+	anons: str # Short description
+	title: str # Title
+	link: str # URL
+	pinned: bool
+	images: list["Image"] # Attached images
+	tags: set[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
+	platforms: set[Literal["pc", "ps4", "ps5"]] # Affected platforms
+	project: str # Game (100% of the time War Thunder with different version numbers)
+	type: Literal["news", "changelog", "forum"] # Article Type
+	created: datetime # Article Creation Time
+	importance: ImportanceLevel = ImportanceLevel.REGULAR
 	@dataclass(slots = True)
 	class Image:
 		src: str
 		width: int
 		height: int
 		@classmethod
-		def from_json(cls, data:dict[str, Any]):
+		def from_json(cls, data: dict[str, Any]):
 			return cls(
 				src = data["src"],
 				width = int(data["width"]),
@@ -56,9 +56,9 @@ class NewsEntry:
 		def to_json(self):
 			return asdict(self)
 	@classmethod
-	def from_json(cls, data:dict[str, Any]):
+	def from_json(cls, data: dict[str, Any]):
 		tags = set(data.get("tags", []))
-		title:str = data["title"]
+		title: str = data["title"]
 		for tag in re.finditer(r"\[([A-z ]+)\]", title, re.IGNORECASE):
 			tags.add(tag.group(1))
 			title = title.replace(f"[{tag.group(1)}]", "", 1)
@@ -184,7 +184,7 @@ class NewsManager:
 	_CHANGELOG_URL = "https://warthunder.com/en/game/changelog/"
 	__logger: Logger
 	_sentIDs: LastSentIDs
-	task:asyncio.Task
+	task: asyncio.Task
 	websocket_mgr: WebsocketManager
 
 	def __init__(self):
@@ -286,7 +286,7 @@ class NewsManager:
 	async def fetchNews(self) -> list[NewsEntry]:
 		"""Gets all the latest news"""
 		global _news_endpoint_down
-		news:list[NewsEntry] = []
+		news: list[NewsEntry] = []
 		try:
 			async with Network.get(
 				self._API_URL,
@@ -342,8 +342,8 @@ class NewsManager:
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
 					raise RuntimeError("Less, than 2 changelogs found (somehow)")
-				async def processChangelog(chlog:Tag) -> NewsEntry:
-					ChLogURL:str = chlog.select_one("a.widget__link")["href"]
+				async def processChangelog(chlog: Tag) -> NewsEntry:
+					ChLogURL: str = chlog.select_one("a.widget__link")["href"]
 					content = chlog.select_one("div.widget__content")
 					title = content.select_one("div.widget__title").get_text(strip = True)
 					anons = content.select_one("div.widget__comment").get_text(strip = True)
@@ -379,7 +379,7 @@ class NewsManager:
 			if not _changelog_maintenance:
 				self.__logger.exception("An error occurred while parsing changelogs")
 			return []
-	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> NewsEntry | None:
+	async def _get_major_changelog(self, changelogs: list[NewsEntry]) -> NewsEntry | None:
 		"""Returns `None` if no new major update changelog has been posted"""
 		# i[0] is the pinned major update changelog
 		if not changelogs:
@@ -396,7 +396,7 @@ class NewsManager:
 			return majorChLog
 
 		return None
-	async def _get_new_changelogs(self, changelogs:list[NewsEntry]) -> list[NewsEntry]:
+	async def _get_new_changelogs(self, changelogs: list[NewsEntry]) -> list[NewsEntry]:
 		# i[1:] is the latest actual changelogs
 		if not changelogs or len(changelogs) <= 1:
 			return []

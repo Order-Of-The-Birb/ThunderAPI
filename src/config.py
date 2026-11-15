@@ -1,7 +1,7 @@
 from os import getenv
 from pathlib import Path
 
-__DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
+__DEBUG_MODE: bool = int(getenv("DEBUG_MODE", "0")) == 1
 
 PROXIED = int(getenv("PROXIED", "0")) == 1
 

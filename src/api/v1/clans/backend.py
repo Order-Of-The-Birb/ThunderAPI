@@ -83,9 +83,9 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 
 	response = await response.send()
 
-	logs:list[dict[str, int|str]] = []
+	logs: list[dict[str, int|str]] = []
 	for item in response["log"]:
-		item:dict[str, int|str]
+		item: dict[str, int|str]
 		try:
 			action = Actions[item["ev"]]
 		except KeyError:
@@ -133,7 +133,7 @@ async def getLogs(user: LoginEntry, clanId: int, limit: int = 10, fromEntry: str
 		"logs": logs
 	}
 
-async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page:int = 0) -> list[ClanSearchResultModel]:
+async def searchClan(user: LoginEntry, clanName: str | None = None, clanTag: str | None = None, limit: int = 10, page: int = 0) -> list[ClanSearchResultModel]:
 	if clanName is None and clanTag is None:
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "You must provide either a clanName or clanTag")
 	response = await Request.from_template(
@@ -285,7 +285,7 @@ async def next_sqb_bracket() -> dict[str, datetime|float]:
 			return week
 	raise HTTPException(status.HTTP_404_NOT_FOUND, "Could not find next bracket data")
 
-async def sanitizeMembers(members:dict|list):
+async def sanitizeMembers(members: dict|list):
 	if members is None:
 		return []
 
@@ -313,7 +313,7 @@ async def sanitizeMembers(members:dict|list):
 
 	return members
 
-async def sanitizeApplicants(applicants:dict|list|None):
+async def sanitizeApplicants(applicants: dict|list|None):
 	if applicants is None:
 		return []
 
