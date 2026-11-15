@@ -469,6 +469,8 @@ class NewsManager:
 		new = []
 		for i in ids:
 			if i == self._sentIDs.PLANNED_BR_CHANGES:
+				if len(new) != 0:
+					self.__logger.debug("New planned battle rating changes posted")
 				break
 			new.append(i)
 		else:
@@ -477,7 +479,6 @@ class NewsManager:
 			return []
 		entries = await asyncio.gather(*(NewsEntry.from_forum(i) for i in new))
 
-		self.__logger.debug("New planned battle rating changes posted")
 		self._sentIDs.PLANNED_BR_CHANGES = ids[0]
 		return entries
 	#endregion

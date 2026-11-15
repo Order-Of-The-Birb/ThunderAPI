@@ -20,13 +20,14 @@ router = APIRouter(
 
 @router.post(
 	"/orders/{orderId}/cancel",
-	summary = "Cancels an order"
+	summary = "Cancels an order",
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def cancel_order(
 	request: faRequest, user: TokenBearer,
 	orderId: Annotated[int, Path(description = "The order ID")]
-) -> GenericEmptyResponse:
+):
 	orders = await User(user).orders()
 	if orderId not in orders:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
@@ -53,23 +54,25 @@ async def get_order(
 	summary = "Gets the currently active orders",
 	responses = {
 		status.HTTP_200_OK: {"model": list[Models.OrderModel]}
-	}
+	},
+	response_model=list[Models.OrderModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_orders(
 	request: faRequest, user: TokenBearer,
 	orderType: Annotated[User.Order.Type | None, Query()] = None
-) -> list[Models.OrderModel]:
+):
 	return [await order.to_json() for order in (await User(user).orders(orderType)).values()]
 
 @router.get(
 	"/inventory",
-	summary = "Gets the account's inventory contents"
+	summary = "Gets the account's inventory contents",
+	response_model=list[Models.InventoryItemModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def getInventory(
 	request: faRequest, user: TokenBearer
-) -> list[Models.InventoryItemModel]:
+):
 	inv = await User(user).inventory()
 	return [
 		await i.to_json()
@@ -78,12 +81,13 @@ async def getInventory(
 
 @router.get(
 	"/balance",
-	summary = "Gets the account's balance"
+	summary = "Gets the account's balance",
+	response_model=float
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_balance(
 	request: faRequest, user: TokenBearer
-) -> float:
+):
 	return await User(user).balance()
 
 @router.get(
@@ -105,13 +109,14 @@ async def searchItem(
 
 @router.get(
 	"/{itemHash}/history",
-	summary = "Retrieves marketplace history data about the given item"
+	summary = "Retrieves marketplace history data about the given item",
+	response_model=Models.OrderHistoryModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_history(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title = "The item to look up")],
-) -> Models.OrderHistoryModel:
+):
 	pairData = await Request.send_template(
 		user,
 		"cln_get_pair_stat",
@@ -142,13 +147,14 @@ async def get_item_history(
 
 @router.get(
 	"/{itemHash}/orders",
-	summary = "Retrieves marketplace data about the given item"
+	summary = "Retrieves marketplace data about the given item",
+	response_model=Models.OrdersModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item_orders(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title = "The item to look up")],
-) -> Models.OrdersModel:
+):
 	books_brief = await Request.send_template(
 		user,
 		"cln_books_brief",
@@ -168,13 +174,14 @@ async def get_item_orders(
 
 @router.get(
 	"/{itemHash}/view",
-	summary = "Views the item ingame"
+	summary = "Views the item ingame",
+	response_model=bool
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def view_item(
 	request: faRequest, user: TokenBearer,
 	itemHash: Annotated[str, Path(title = "The item's hash to view")],
-) -> bool:
+):
 	hashData = await Request.send_template(
 		user,
 		"cln_market_get_asset_class",
@@ -234,7 +241,8 @@ async def sell_item(
 		status.HTTP_400_BAD_REQUEST: {"description": "Something prevented the buy order from being placed"},
 		status.HTTP_403_FORBIDDEN: {"description": "Not enough funds"},
 		status.HTTP_404_NOT_FOUND: {"description": "The given item doesn't exist"}
-	}
+	},
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def buy_item(
@@ -243,18 +251,19 @@ async def buy_item(
 	price: Annotated[float, Query(description = "The price in GJN to buy for", ge = 0.1, le = 2000)],
 	count: Annotated[int, Query(description = "The amount to buy", gt = 0)] = 1,
 	anonymous: Annotated[bool, Query(description = "Appear as an anonymous buyer")] = False
-) -> GenericEmptyResponse:
+):
 	return await User(user).buy(item_hash = itemHash, price = price, count = count, anonymous = anonymous)
 
 @router.get(
 	"/{itemHash}",
-	summary = "Gets metadata about the given item"
+	summary = "Gets metadata about the given item",
+	response_model=Models.ItemModel
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "trade")
 async def get_item(
 	request: faRequest, user: ServerBearer,
 	itemHash: Annotated[str, Path(title = "The item to look up")],
-) -> Models.ItemModel:
+):
 	item = await User.MarketItem.get(user, itemHash)
 	if item is not None:
 		return await item.to_json()
