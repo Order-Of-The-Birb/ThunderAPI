@@ -7,9 +7,6 @@ from fastapi import HTTPException, status
 
 __ROOT = Path(__file__).parent
 
-# Auto-discovered template names for autocomplete.
-# If your IDE doesn't resolve these, run `python -m templates` to print
-# a Literal[...] you can paste into the `action` parameter annotation.
 _tpls = sorted(p.stem for p in __ROOT.glob("**/*.json") if not p.stem.startswith("_"))
 TEMPLATES: list[str] = _tpls
 del _tpls
@@ -33,19 +30,19 @@ def load(file: _Group) -> dict[str, dict]:
 
 	target: Path = group_path / file.value[0]
 
-	if target.is_dir():
-		states = {}
-		for f in target.glob("*.*"):
-			text = f.read_text()
-			if text.strip():
-				states[f.stem] = _loads(text)
-		return states
+	if target.is_file():
+		with open(target) as f:
+			return {"init": _load(f)}
 
-	if not target.is_file():
-		raise FileNotFoundError(f"Unknown file '{file.value[0]}' in group '{file.__GROUP__}'")
+	if not target.is_dir():
+		raise FileNotFoundError(f"Unknown template '{file.value[0]}' in group '{file.__GROUP__}'")
 
-	with open(target) as f:
-		return {"init": _load(f)}
+	states: dict[str, dict] = {}
+	for path in target.rglob("*.json"):
+		text = path.read_text()
+		if text.strip():
+			states[path.relative_to(target).with_suffix("").as_posix()] = _loads(text)
+	return states
 
 if __name__ == "__main__":
 	print("Available files:", TEMPLATES)
