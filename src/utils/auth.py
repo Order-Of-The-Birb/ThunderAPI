@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from asyncio import Event, Lock, Task, get_running_loop, to_thread, wait_for
-from aiohttp import ClientResponseError
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -13,6 +12,7 @@ from re import sub as re_sub
 from secrets import token_urlsafe
 from typing import Any, ClassVar, Literal
 
+from aiohttp import ClientResponseError
 from aiosqlite import OperationalError, Row, connect
 from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
