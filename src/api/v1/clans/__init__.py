@@ -53,7 +53,7 @@ async def send_application(
 	request: faRequest,
 	user: TokenBearer,
 	clanId: squadronId,
-	comment: Annotated[str, Query(description = "The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")]
+	comment: Annotated[str, Query(description = "The message sent with the application. Doesn't appear ingame, only through this API, so if the squadron isn't using an API, they won't see it")] = ""
 ):
 	response = await Request.send_template(
 		user,
@@ -123,7 +123,7 @@ async def get_applicants(
 	"/accept/{userId}",
 	responses = {
 		status.HTTP_200_OK: {
-			"model": SuccessEmptyDict,
+			"model": GenericEmptyResponse,
 			"description": "Successfully accepted the applicant",
 		},
 		status.HTTP_403_FORBIDDEN: {
@@ -132,7 +132,8 @@ async def get_applicants(
 		status.HTTP_404_NOT_FOUND: {
 			"description": "The given user is not an applicant"
 		}
-	}
+	},
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def accept_applicant(
@@ -144,13 +145,14 @@ async def accept_applicant(
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
-	return await Request.send_template(
+	data = await Request.send_template(
 		user,
 		"clan_accept_membership_request",
 		userId = userId,
 		_id = squadronId,
 		role = Roles[role.name.upper()].value
 	)
+	return {"success": data.get("status") == "success"}
 
 @router.post(
 	"/reject/{userId}",
@@ -171,13 +173,14 @@ async def reject_applicant(
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
 		raise HTTPException(403, "User is not part of a squadron")
-	return await Request.send_template(
+	data = await Request.send_template(
 		user,
 		"clan_reject_membership_request",
 		userId = userId,
 		_id = squadronId,
 		comments = message
 	)
+	return {"success": data.get("status") == "success"}
 
 @router.post(
 	"/role/{userId}",
