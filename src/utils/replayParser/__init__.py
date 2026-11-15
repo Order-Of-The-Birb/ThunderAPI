@@ -148,6 +148,8 @@ class Replay(dict):
 					add_obj["lineup"]["maxBr"] = round(lineupData["mrank"] / 3 + 1, 1)
 				except KeyError:
 					add_obj["lineup"]["maxBr"] = max(i["battlerating"] for i in add_obj["lineup"]["vehicles"].values())
+			else:
+				add_obj["lineup"]["maxBr"] = None
 
 			if add_obj["squadId"] == int(user["userId"]):
 				add_obj.pop("squadId", None)

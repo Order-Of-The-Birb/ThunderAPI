@@ -90,7 +90,7 @@ async def setup():
 
 		await asyncio.to_thread(
 			run,
-			"git clone --filter = blob:none --sparse https://github.com/gszabi99/War-Thunder-Datamine.git ./ &&" +
+			"git clone --filter=blob:none --sparse https://github.com/gszabi99/War-Thunder-Datamine.git ./ &&" +
 			f"git sparse-checkout set --no-cone {" ".join(tracked_paths)}",
 			check = True,
 			shell = True,

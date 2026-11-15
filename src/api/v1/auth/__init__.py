@@ -11,6 +11,7 @@ from utils import users_auth
 from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 
+from api.v1.models import GenericEmptyResponse
 from .models import Login, LoginToken
 
 router = APIRouter(
@@ -83,3 +84,16 @@ async def answer_2fa(
 	else:
 		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 	# TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
+
+@router.delete(
+	"/remove",
+	summary = "Removes your login entry from our system"
+)
+@limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
+async def remove_login(
+	request: Request,
+	user: TokenBearer
+) -> GenericEmptyResponse:
+	if (await users_auth.remove_entry(user.entry)):
+		return JSONResponse({"success": True})
+	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")
