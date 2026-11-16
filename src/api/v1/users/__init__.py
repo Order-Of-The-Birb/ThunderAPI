@@ -5,12 +5,12 @@ from fastapi import Request as faRequest
 from typing_extensions import Annotated
 
 from api.shared import limiter
-from api.v1.shared import ServerBearer, TokenBearer
+from api.v1.shared import ServerBearer, TokenBearer, OptionalAuth
 from utils.connection import Request
 from utils.helper import dictUtil
 
 from .backend import get_self, get_terse, get_user
-from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
+from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect, UserWishlistModel
 
 router = APIRouter(
 	prefix = "/users",
@@ -94,6 +94,23 @@ async def get_user_direct_countries(
 	userid: Annotated[int, Path(title = "The ID of the user to get information about", description = "The ID of the user to get information about", gt = 0)],
 ):
 	return (await get_user(user, userid))["countries"]
+
+@router.get(
+	"/{userid}/wishlist",
+	summary = "Gets wishlist data about a user. Gets only premiums if looking up someone other than the logged in user",
+	response_model=list[UserWishlistModel]
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
+async def get_user_wishlist(
+	request: faRequest,
+	user: OptionalAuth,
+	userid: Annotated[int, Path(title = "The ID of the user to get the wishlist of", description = "The ID of the user to get the wishlist of", gt = 0)],
+):
+	data = await Request.send_template(
+		user, "get_wishlist_json",
+		userid = userid
+	)
+	return data.get("units", [])
 
 
 @router.get(

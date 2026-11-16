@@ -1,0 +1,7 @@
+{
+    "headers": {
+        "action": "ano_get_wishlist_json",
+        "token": "<replace>",
+        "userid": "<replace>"
+    }
+}

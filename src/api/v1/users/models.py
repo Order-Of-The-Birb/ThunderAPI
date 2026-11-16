@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from api.v1.shared import IntString
+
 COUNTRIES = Literal[
 	"country_usa",
 	"country_germany",
@@ -210,3 +212,8 @@ class PlayerRank(Enum):
 		if exp < 0:
 			exp = 0
 		return bisect_right(USER_RANK, exp) - 1
+
+class UserWishlistModel(BaseModel):
+	unit: str
+	comment: str
+	time: datetime
