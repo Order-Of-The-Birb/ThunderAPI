@@ -153,6 +153,7 @@ Not all endpoints shall be documented, as it would take forever to decode and do
 	- `appId` (Game ID, WT is 1067)  
 ### noa_bigquery_client_noauth  
 ### cln_get_binary_diff  
+### cln_get_binary  
 ### cln_get_news_ex  
 ### ano_get_external_ids  
 - `POST` request  
