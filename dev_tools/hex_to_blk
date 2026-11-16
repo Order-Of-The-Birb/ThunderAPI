@@ -71,9 +71,9 @@ if [[ "$to_stdout" == true ]]; then
     stdout_work_dir="$(mktemp -d /tmp/hex_to_blk_output.XXXXXX)"
     filename="$stdout_work_dir/output"
 elif [[ ${#positional[@]} -ge 2 ]]; then
-    filename="${positional[0]}_${positional[1]}"
+    filename="output/${positional[0]}_${positional[1]}"
 elif [[ ${#positional[@]} -eq 1 ]]; then
-    filename="${positional[0]}"
+    filename="output/${positional[0]}"
 fi
 
 if [[ -t 0 ]]; then
