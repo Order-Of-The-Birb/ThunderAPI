@@ -235,7 +235,7 @@ async def sell_item(
 	inventoryItems = await User(user).inventory()
 	if itemHash not in inventoryItems:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
-	return await inventoryItems[itemHash].sell(price = float(price), count = count, anonymous = anonymous)
+	return await inventoryItems[itemHash].sell(price = int(price*100)/100, count = count, anonymous = anonymous)
 
 @router.post(
 	"/{itemHash}/buy",

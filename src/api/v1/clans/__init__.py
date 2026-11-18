@@ -15,7 +15,7 @@ from api.v1.clans.backend import (
 	getLogs,
 	searchClan,
 )
-from api.v1.models import GenericEmptyResponse, SuccessEmptyDict
+from api.v1.models import GenericEmptyResponse
 from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
 from utils.connection import Request
 
@@ -212,7 +212,7 @@ async def change_role(
 	"/kick/{userId}",
 	summary = "Kicks the given user",
 	description = "Requires either `Officer`, `Deputy` or `Commander` rank to remove someone else",
-	response_model=SuccessEmptyDict
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def kick_member(

@@ -77,7 +77,7 @@ class Weapon:
 		if not weapon.exists():
 			raise LookupError(f"Weapon file not found at {weapon}")
 
-		weapon_blk: dict = await asyncio.to_thread(loads, await asyncio.to_thread(weapon.read_text()))
+		weapon_blk: dict = await asyncio.to_thread(loads, await asyncio.to_thread(weapon.read_text))
 
 		self.name = ".".join(weapon.name.split(".")[:-1])
 		if (self.name == "dummy_weapon"):
