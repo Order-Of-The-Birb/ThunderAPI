@@ -1,5 +1,4 @@
 import asyncio
-import numpy as np
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
@@ -7,6 +6,7 @@ from pathlib import Path
 from subprocess import PIPE, run
 from typing import TYPE_CHECKING, Any, Literal
 
+import numpy as np
 from orjson import loads
 from packaging.version import Version
 from pandas import read_csv

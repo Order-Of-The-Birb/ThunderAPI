@@ -1,8 +1,8 @@
 import asyncio
-from logging import getLogger as _getLogger
 from contextlib import AbstractAsyncContextManager
 from enum import IntEnum, auto
 from json import loads
+from logging import getLogger as _getLogger
 from typing import Any, Awaitable, Callable, Literal, overload
 
 from aiohttp import ClientResponse, ClientSession

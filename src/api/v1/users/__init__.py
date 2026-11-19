@@ -10,7 +10,7 @@ from utils.connection import Request
 from utils.helper import dictUtil
 
 from .backend import get_self, get_terse, get_user
-from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect, GamemodesEnum
+from .models import SIMPLE_COUNTRIES, GamemodesEnum, TerseReturnModel, getUserDirect
 
 router = APIRouter(
 	prefix = "/users",
