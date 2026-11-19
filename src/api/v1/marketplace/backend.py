@@ -155,7 +155,7 @@ class User:
 		async def to_json(self):
 			SANITIZE = (
 				dictUtil.KeyRem("class_name", "class_value", "contextid", "LOGIN"),
-
+				dictUtil.KeyMod("ids", new_name="count", convert=lambda x: len(x))
 			)
 			return await dictUtil.run_all(asdict(self), SANITIZE)
 
@@ -302,8 +302,8 @@ class User:
 			return data["balance"]/10000
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to get balance")
 
-	async def inventory(self) -> dict[str, InventoryItem]:
-		items:dict[str, User.InventoryItem] = {}
+	async def inventory(self) -> dict[tuple[str, Any, int], InventoryItem]:
+		items:dict[tuple[str, Any, int], User.InventoryItem] = {}
 		async with Network.operation() as session:
 			contexts = await Request.send_template(
 				self.login,
@@ -331,12 +331,11 @@ class User:
 					)
 					if "result" not in item_data:
 						continue
-					if item_data["result"]["asset"]["market_hash_name"] in items:
-						invitem = items[item_data["result"]["asset"]["market_hash_name"]]
-						if invitem.class_name == item["class"][0]["name"] and invitem.class_value == item["class"][0]["value"]:
-							invitem.ids.append(int(item["id"]))
+					key = (item["class"][0]["name"], item["class"][0]["value"], int(context["id"]))
+					if key in items:
+						items[key].ids.append(int(item["id"]))
 					else:
-						items[item_data["result"]["asset"]["market_hash_name"]] = self.InventoryItem.from_json(item_data, self.login, item, int(context["id"]))
+						items[key] = self.InventoryItem.from_json(item_data, self.login, item, int(context["id"]))
 		return items
 
 	async def buy(self, item_hash: str, price: float, count: int = 1, anonymous: bool = False):

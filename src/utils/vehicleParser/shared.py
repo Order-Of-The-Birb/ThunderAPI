@@ -1,4 +1,5 @@
 import asyncio
+import numpy as np
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from logging import getLogger
@@ -136,6 +137,7 @@ def referenceToPath(reference:str) -> Path:
 def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]]:
 	df = read_csv(DataLocations.VEHICLE_LOC, delimiter = ";", encoding = "utf-8")
 	df.set_index("<ID|readonly|noverify>", inplace = True)
+	df = df.replace({np.nan: None})
 	unit_loc: dict[str, dict[Literal["short", "shop"], dict[str, str]]] = {}
 	for idx, row in df.to_dict(orient = "index").items():
 		base, _, variant = str(idx).rpartition("_")
@@ -153,7 +155,7 @@ async def update_gamefiles():
 		return
 	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
 	await setup()
-	await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True, check = True)
+	await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True)
 
 	new_ver = Version(await asyncio.to_thread(DataLocations.VERSION.read_text))
 	if VERSION == new_ver:

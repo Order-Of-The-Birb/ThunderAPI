@@ -1,4 +1,5 @@
-from asyncio import Event, Lock
+import asyncio
+from logging import getLogger as _getLogger
 from contextlib import AbstractAsyncContextManager
 from enum import IntEnum, auto
 from json import loads
@@ -11,6 +12,7 @@ from fastapi.concurrency import asynccontextmanager
 
 from .const import GaijinErrorCodes
 
+_logger = _getLogger(__name__)
 
 class NetworkError(HTTPException):
 	pass
@@ -23,9 +25,9 @@ class ReturnType(IntEnum):
 __session: ClientSession | None = None
 __closing = False
 __active_ops = 0
-__active_ops_done = Event()
+__active_ops_done = asyncio.Event()
 __active_ops_done.set()
-__lock = Lock()
+__lock = asyncio.Lock()
 
 _RESP_PROVIDER: Callable[[Any], Awaitable[Any]] | None = None
 
@@ -75,14 +77,26 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 	if _RESP_PROVIDER is not None:
 		yield await _RESP_PROVIDER(resp_state)
 		return
-	if session is None:
-		async with operation() as session:
-			async with session.request(method, url, **kwargs) as resp:
-				yield await handle_response(resp = resp, convert = return_type)
-				return
-	async with session.request(method, url, **kwargs) as resp:
-		yield await handle_response(resp = resp, convert = return_type)
-		return
+	sleep_duration = 1
+	while True:
+		if session is None:
+			async with operation() as session:
+				async with session.request(method, url, **kwargs) as resp:
+					if resp.status == 429:
+						_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
+						await asyncio.sleep(sleep_duration)
+						sleep_duration *= 2
+						continue
+					yield await handle_response(resp = resp, convert = return_type)
+					return
+		async with session.request(method, url, **kwargs) as resp:
+			if resp.status == 429:
+				_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
+				await asyncio.sleep(sleep_duration)
+				sleep_duration *= 2
+				continue
+			yield await handle_response(resp = resp, convert = return_type)
+			return
 
 #endregion
 @asynccontextmanager

@@ -10,7 +10,7 @@ from utils.connection import Request
 from utils.helper import dictUtil
 
 from .backend import get_self, get_terse, get_user
-from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
+from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect, GamemodesEnum
 
 router = APIRouter(
 	prefix = "/users",
@@ -72,15 +72,16 @@ async def get_user_direct_meta(
 @router.get(
 	"/{userid}/stats",
 	summary = "Gets per-vehicle statistics about a user",
-	response_model=getUserDirect.statisticsModel
+	response_model=dict[str, getUserDirect.statisticsModel.unitStatModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct_stats(
 	request: faRequest,
 	user: ServerBearer,
 	userid: Annotated[int, Path(title = "The ID of the user to get information about", description = "The ID of the user to get information about", gt = 0)],
+	mode: Annotated[GamemodesEnum, Query(title="The gamemode to query the data for")]
 ):
-	return (await get_user(user, userid))["statistics"]
+	return (await get_user(user, userid))["statistics"].get(mode, {})
 
 @router.get(
 	"/{userid}/countries",
