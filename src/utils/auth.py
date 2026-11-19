@@ -671,7 +671,9 @@ async def login(email: str, password: str, /):
 			)
 
 			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
-			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
+			if "GaijinPass" in two_factor_types:
+				raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
+			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA")
 
 		if data["status"] == "LOGINERROR":
 			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {data["error"]}")
