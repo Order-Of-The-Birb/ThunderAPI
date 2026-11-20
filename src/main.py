@@ -6,7 +6,7 @@ from json import loads
 from logging.handlers import TimedRotatingFileHandler
 from os import getenv, path
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, status
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -156,12 +156,6 @@ app.add_exception_handler(
 
 app.include_router(router)
 app.add_middleware(SlowAPIMiddleware)
-
-@app.middleware("http")
-async def cf_connecting_ip(request: Request, call_next):
-	if PROXIED and (cf_ip := request.headers.get("CF-Connecting-IP")):
-		request.scope["client"] = (cf_ip, 0)
-	return await call_next(request)
 
 #region Modify OpenAPI schema
 @dataclass(slots = True)

@@ -399,11 +399,9 @@ class Vehicle:
 
 	@classmethod
 	async def from_id(cls, vehicle_id:str):
-		await shared.check_update()
 		paths = get_vehicle_paths(vehicle_id)
 		if paths is None:
 			return None
-			raise LookupError(f"Could not find vehicle '{vehicle_id}'")
 		data:dict[str, Any] = await asyncio.to_thread(loads, await asyncio.to_thread(paths.vehicleData.read_text))
 		return cls(paths, data)
 

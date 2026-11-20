@@ -77,22 +77,14 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 	if _RESP_PROVIDER is not None:
 		yield await _RESP_PROVIDER(resp_state)
 		return
-	sleep_duration = 1
+
 	if session is None:
 		async with operation() as session:
-			while True:
-				async with session.request(method, url, **kwargs) as resp:
-					if sleep_duration >= 32:
-						yield await handle_response(resp = resp, convert = return_type)
-						return
-					elif resp.status == 429:
-						_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
-						await asyncio.sleep(sleep_duration)
-						sleep_duration *= 2
-						continue
-					yield await handle_response(resp = resp, convert = return_type)
-					return
+			async with request(method, url, return_type, resp_state=resp_state, session=session, **kwargs) as resp:
+				yield resp
 		return
+
+	sleep_duration = 1
 	while True:
 		async with session.request(method, url, **kwargs) as resp:
 			if sleep_duration >= 32:

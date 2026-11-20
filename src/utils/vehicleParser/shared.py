@@ -112,8 +112,8 @@ async def check_git():
 
 LAST_CHECK: datetime = datetime.fromtimestamp(0, UTC)
 async def check_update():
-	global VERSION, LAST_CHECK
-	if (datetime.now(UTC)-LAST_CHECK) < timedelta(minutes = 10):
+	global VERSION, LAST_CHECK, CACHED_VALIDITY_UNTIL
+	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
 		return
 	LAST_CHECK = datetime.now(UTC)
 	await check_git()
@@ -127,9 +127,10 @@ async def check_update():
 		raise EnvironmentError("Fetching ran into an issue")
 	new_ver = Version(await asyncRead(DataLocations.VERSION))
 	if new_ver == VERSION:
-		return # Nothing changed
-	VERSION = new_ver
+		CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60
+		return False # Nothing changed
 	await Cache.get("units").clear()
+	return True
 
 def referenceToPath(reference:str) -> Path:
 	if not reference.endswith(".blk"):
@@ -153,15 +154,12 @@ def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]
 	return unit_loc
 async def update_gamefiles():
 	async with _UPDATE_LOCK:
-		global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
-		if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
-			return
+		global VERSION, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache, CACHED_VALIDITY_UNTIL
 		await setup()
-		await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True)
 
-		new_ver = Version(await asyncRead(DataLocations.VERSION))
-		if VERSION == new_ver:
-			return # Nothing changed
+		is_updated = await check_update()
+		if not is_updated:
+			return
 
 		WPCOST = await asyncReadJSON(DataLocations.WPCOST)
 		VEHICLE_DATA = await asyncReadJSON(DataLocations.VEHICLE_DATA)
@@ -180,7 +178,7 @@ async def update_gamefiles():
 		vehicle_cache = {}
 
 		CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
-		VERSION = new_ver
+		VERSION = Version(await asyncRead(DataLocations.VERSION))
 
 VERSION: Version | None = None
 CACHED_VALIDITY_UNTIL: int = 0

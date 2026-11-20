@@ -520,8 +520,8 @@ class ServerAuth:
 				if "GaijinPass" not in entry.types:
 					entry.code = await to_thread(input, "Please provide the 2FA code: ")
 					entry.provided.set()
-				await entry.provided.wait()
-				data = await login(self.__EMAIL, self.__PASS)
+				await entry.await_task
+				data = entry.login_data
 			else:
 				raise
 
@@ -635,6 +635,8 @@ async def _login_2fa(email: str):
 async def login(email: str, password: str, /):
 	if email in _PENDING_2FA:
 		e = _PENDING_2FA[email]
+		if not e.check_password(password):
+			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
 		try:
 			await wait_for(e.login.wait(), timeout = 60)
 		except TimeoutError as err:
@@ -646,12 +648,12 @@ async def login(email: str, password: str, /):
 		return e.login_data
 
 	async with Network.operation() as session:
-
-		if Network._RESP_PROVIDER is not None:
-			data = await Network._RESP_PROVIDER("init")
-		else:
-			async with session.post(
+		try:
+			async with Network.post(
 				"https://auth.gaijinent.com/login.php",
+				Network.ReturnType.JSON,
+				session = session,
+				resp_state="init",
 				data = {
 					"login": email,
 					"password": password,
@@ -663,7 +665,11 @@ async def login(email: str, password: str, /):
 					"User-Agent": "ThunderAPI/1.0"
 				}
 			) as r:
-				data = await Network.handle_response(r, Network.ReturnType.JSON)
+				data = r
+		except ClientResponseError as e:
+			if e.status == 429:
+				raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Gaijin is rate limiting login attempts. Please try again later.") from e
+			raise
 
 		if data["status"] == "2STEP":
 
@@ -676,10 +682,10 @@ async def login(email: str, password: str, /):
 				two_factor_types.add("WTR")
 
 			_PENDING_2FA[email] = _pending2FA(
-				password_hash =  md5(password.encode()).hexdigest(),
-				requestId =  data["requestId"],
-				userId =  data["userId"],
-				types =  two_factor_types,
+				password_hash = md5(password.encode()).hexdigest(),
+				requestId = data["requestId"],
+				userId = data["userId"],
+				types = two_factor_types,
 				password = password
 			)
 
