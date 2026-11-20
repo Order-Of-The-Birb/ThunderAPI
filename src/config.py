@@ -3,10 +3,9 @@ from pathlib import Path
 
 __DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
 
-PROXIED = int(getenv("PROXIED", "0")) == 1
-
 DATA_DIR = Path("/data/") if not __DEBUG_MODE else Path(__file__).parent.parent / "data"
 TOOL_DIR = Path("/opt/tools/") if not __DEBUG_MODE else Path(__file__).parent.parent / "tools"
+FORWARDED_ALLOW_IPS = getenv("FORWARDED_ALLOW_IPS") or None
 
 class _usersDB:
 	DB = DATA_DIR / "users.db"

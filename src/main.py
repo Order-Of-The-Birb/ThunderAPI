@@ -21,7 +21,7 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, PROXIED, SWAGGER_CSS, SWAGGER_JS
+from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, FORWARDED_ALLOW_IPS, SWAGGER_CSS, SWAGGER_JS
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
@@ -293,7 +293,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = getenv("FORWARDED_ALLOW_IPS", "*") if PROXIED else None)
+		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = FORWARDED_ALLOW_IPS)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:
