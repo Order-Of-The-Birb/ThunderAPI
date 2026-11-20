@@ -21,7 +21,7 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, FORWARDED_ALLOW_IPS, SWAGGER_CSS, SWAGGER_JS
+from config import DEFAULT_NETWORK_CFG, FORWARDED_ALLOW_IPS, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
