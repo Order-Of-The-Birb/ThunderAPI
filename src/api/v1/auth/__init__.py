@@ -80,7 +80,7 @@ async def answer_2fa(
 	request: Request,
 	email: Annotated[EmailStr, Form(title = "The email address for the account")],
 	password: Annotated[str, Form(title = "The password of the account, used as a sort of protection")],
-	code: Annotated[int, Form(title = "The 2FA code")]
+	code: Annotated[str, Form(title = "The 2FA code")]
 ):
 	if email not in _PENDING_2FA:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")

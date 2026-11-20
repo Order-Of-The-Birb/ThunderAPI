@@ -38,6 +38,28 @@ async def get_users_terse_info(
 	return await get_terse(user, *id)
 
 @router.get(
+	"/search/{nick}",
+	summary = "Get users by name",
+	responses = {},
+	response_model=dict[str, TerseReturnModel]
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
+async def get_users_search(
+	request: faRequest,
+	user: ServerBearer,
+	nick: Annotated[str, Path(title = "The nickname to search for")],
+	limit: Annotated[int, Query(title = "How many users to retrieve", ge = 2, le = 50)] = 10,
+):
+	response = await Request.send_template(
+		user,
+		"find_users_by_nick_prefix",
+		nick = nick,
+		maxCount = limit
+	)
+
+	return await get_terse(user, *list(response.keys()))
+
+@router.get(
 	"/self",
 	summary = "Get metadata about the logged in user",
 	responses = {
@@ -109,25 +131,3 @@ async def get_user_direct_summary(
 	userid: Annotated[int, Path(title = "The ID of the user to get information about", description = "The ID of the user to get information about", gt = 0)],
 ):
 	return (await get_user(user, userid))["summary"]
-
-@router.get(
-	"/search/{nick}",
-	summary = "Get users by name",
-	responses = {},
-	response_model=dict[str, TerseReturnModel]
-)
-@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
-async def get_users_search(
-	request: faRequest,
-	user: ServerBearer,
-	nick: Annotated[str, Path(title = "The nickname to search for")],
-	limit: Annotated[int, Query(title = "How many users to retrieve", ge = 2, le = 50)] = 10,
-):
-	response = await Request.send_template(
-		user,
-		"find_users_by_nick_prefix",
-		nick = nick,
-		maxCount = limit
-	)
-
-	return await get_terse(user, *list(response.keys()))

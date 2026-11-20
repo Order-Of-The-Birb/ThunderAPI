@@ -82,7 +82,10 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 		if session is None:
 			async with operation() as session:
 				async with session.request(method, url, **kwargs) as resp:
-					if resp.status == 429:
+					if sleep_duration >= 32:
+						yield await handle_response(resp = resp, convert = return_type)
+						return
+					elif resp.status == 429:
 						_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
 						await asyncio.sleep(sleep_duration)
 						sleep_duration *= 2
@@ -90,7 +93,10 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 					yield await handle_response(resp = resp, convert = return_type)
 					return
 		async with session.request(method, url, **kwargs) as resp:
-			if resp.status == 429:
+			if sleep_duration >= 32:
+				yield await handle_response(resp = resp, convert = return_type)
+				return
+			elif resp.status == 429:
 				_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
 				await asyncio.sleep(sleep_duration)
 				sleep_duration *= 2

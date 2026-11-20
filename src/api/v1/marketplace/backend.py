@@ -2,6 +2,7 @@ import asyncio
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
+from decimal import Decimal
 from random import randint
 from typing import Any, TypedDict
 
@@ -114,8 +115,10 @@ class User:
 				contextid = context
 			)
 
-		async def sell(self, price: float, count: int, anonymous: bool = False) -> tuple[SellData]:
+		async def sell(self, price: Decimal | float, count: int, anonymous: bool = False) -> tuple[SellData]:
 			agree_stamp = dtToTimestampMs(datetime.now(UTC))
+			if isinstance(price, Decimal):
+				price = int(price*100)/100
 
 			price = int(round(price*10000, -2))
 			seller_should_get = int(round(price*0.85, -2))
@@ -337,6 +340,26 @@ class User:
 					else:
 						items[key] = self.InventoryItem.from_json(item_data, self.login, item, int(context["id"]))
 		return items
+
+	async def sell(self, item_hash: str, price: Decimal | float, count: int = 1, anonymous: bool = False) -> tuple[InventoryItem.SellData, ...]:
+		matching = [item for item in (await self.inventory()).values() if item.hash == item_hash]
+		if not matching:
+			raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
+
+		total = sum(len(item.ids) for item in matching)
+		if total < count:
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Requested selling {count} items, but user only has {total} items in their inventory")
+
+		sold = []
+		remaining = count
+		for item in matching:
+			if remaining <= 0:
+				break
+			take = min(len(item.ids), remaining)
+			sold.extend(await item.sell(price = price, count = take, anonymous = anonymous))
+			remaining -= take
+
+		return tuple(sold)
 
 	async def buy(self, item_hash: str, price: float, count: int = 1, anonymous: bool = False):
 		agree_stamp = dtToTimestampMs(datetime.now(UTC))

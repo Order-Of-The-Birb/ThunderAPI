@@ -340,8 +340,9 @@ class UserAuth:
 			await entry._write_values()
 
 	async def _refresh(self):
-		global _PENDING_2FA
-		_PENDING_2FA = {k:v for k,v in _PENDING_2FA.items() if v.expires > datetime.now(UTC)}
+		now = datetime.now(UTC)
+		for email in [k for k, v in _PENDING_2FA.items() if v.expires <= now]:
+			_PENDING_2FA.pop(email, None)
 		await self._force_write_used_cache()
 		async with self._transaction() as cur:
 			rows = await (await cur.execute(f"SELECT * FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} > strftime('%s', 'now')")).fetchall()
@@ -599,6 +600,10 @@ async def _login_2fa(email: str):
 	if Network._RESP_PROVIDER is not None:
 		entry.login_data = await Network._RESP_PROVIDER("2fa_login")
 	else:
+		if "GaijinPass" in entry.types:
+			two_step = entry.auth_data["Message"]
+		else:
+			two_step = entry.code
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
 			Network.ReturnType.JSON,
@@ -606,7 +611,7 @@ async def _login_2fa(email: str):
 				"login": email,
 				"password": entry.password,
 				"game": "wt",
-				"2step": entry.auth_data["Message"],
+				"2step": two_step,
 				"requestId": entry.auth_data["Request"],
 				"client": _MACHINE_ID
 			},

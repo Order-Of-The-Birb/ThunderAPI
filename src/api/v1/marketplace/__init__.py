@@ -232,11 +232,7 @@ async def sell_item(
 	count: Annotated[int, Query(description = "The amount to sell at once", gt = 0)] = 1,
 	anonymous: Annotated[bool, Query(description = "Appear as an anonymous seller")] = False
 ):
-	inventoryItems = await User(user).inventory()
-	item = next((i for i in inventoryItems.values() if i.hash == itemHash), None)
-	if item is None:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
-	return await item.sell(price = int(price*100)/100, count = count, anonymous = anonymous)
+	return await User(user).sell(item_hash = itemHash, price = price, count = count, anonymous = anonymous)
 
 @router.post(
 	"/{itemHash}/buy",
