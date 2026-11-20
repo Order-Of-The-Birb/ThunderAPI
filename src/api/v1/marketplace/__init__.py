@@ -49,7 +49,7 @@ async def get_order(
 	orders = await User(user).orders()
 	if orderId not in orders:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Order ID not found")
-	return await orders[orderId].to_json()
+	return orders[orderId].to_json()
 
 @router.get(
 	"/orders",
@@ -64,7 +64,7 @@ async def get_orders(
 	request: faRequest, user: TokenBearer,
 	orderType: Annotated[User.Order.Type | None, Query()] = None
 ):
-	return [await order.to_json() for order in (await User(user).orders(orderType)).values()]
+	return [order.to_json() for order in (await User(user).orders(orderType)).values()]
 
 @router.get(
 	"/inventory",
@@ -77,7 +77,7 @@ async def getInventory(
 ):
 	inv = await User(user).inventory()
 	return [
-		await i.to_json()
+		i.to_json()
 		for i in inv.values()
 	]
 
@@ -253,7 +253,7 @@ async def buy_item(
 	count: Annotated[int, Query(description = "The amount to buy", gt = 0)] = 1,
 	anonymous: Annotated[bool, Query(description = "Appear as an anonymous buyer")] = False
 ):
-	return await User(user).buy(item_hash = itemHash, price = float(price), count = count, anonymous = anonymous)
+	return await User(user).buy(item_hash = itemHash, price = price, count = count, anonymous = anonymous)
 
 @router.get(
 	"/{itemHash}",

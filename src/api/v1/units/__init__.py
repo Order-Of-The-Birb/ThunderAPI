@@ -1,3 +1,4 @@
+import asyncio
 from enum import StrEnum
 from os import getenv
 
@@ -51,7 +52,8 @@ async def localize_unit(
 	language: Annotated[LanguagesCompat, Query(description = "The language to get the localization for (e.g. en, de, fr)")] = LanguagesCompat.en
 ):
 	if not shared.UNIT_LOC:
-		raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Vehicle localizations not loaded")
+		asyncio.create_task(shared.update_gamefiles())
+		raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Vehicle localizations not loaded. Please try again later")
 	if unit not in shared.UNIT_LOC:
 		raise HTTPException(status.HTTP_404_NOT_FOUND, "Vehicle not found")
 	lang = Languages[language.value]

@@ -299,7 +299,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = "*" if PROXIED else None)
+		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = getenv("FORWARDED_ALLOW_IPS", "*") if PROXIED else None)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:

@@ -60,12 +60,15 @@ class User:
 				return data["response"].get("success", False)
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred while trying to cancel this order.")
 
-		async def to_json(self):
-			SANITIZE = (
-				dictUtil.KeyRem("LOGIN", "pairId"),
-				dictUtil.KeyMod("id", convert = lambda x: str(x)),
-			)
-			return await dictUtil.run_all(asdict(self), SANITIZE)
+		def to_json(self):
+			return {
+				"market_hash": self.market_hash,
+				"id": self.id,
+				"type": self.type,
+				"price": self.price,
+				"timestamp": self.timestamp,
+				"amount": self.amount
+			}
 
 	@dataclass(slots = True)
 	class InventoryItem:
@@ -155,12 +158,21 @@ class User:
 
 			return tuple(soldItems)
 
-		async def to_json(self):
-			SANITIZE = (
-				dictUtil.KeyRem("class_name", "class_value", "contextid", "LOGIN"),
-				dictUtil.KeyMod("ids", new_name="count", convert=lambda x: len(x))
-			)
-			return await dictUtil.run_all(asdict(self), SANITIZE)
+		def to_json(self):
+			return {
+				"commodity": self.commodity,
+				"description": self.description,
+				"icon_url": self.icon_url,
+				"icon_url_large": self.icon_url_large,
+				"hash": self.hash,
+				"name": self.name,
+				"display_name": self.display_name,
+				"tags": self.tags,
+				"type": self.type,
+				"marketable": self.marketable,
+				"name_color": self.name_color,
+				"count": len(self.ids),
+			}
 
 	@dataclass(slots = True)
 	class MarketItem:

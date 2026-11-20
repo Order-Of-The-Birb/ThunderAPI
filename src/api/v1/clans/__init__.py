@@ -152,7 +152,7 @@ async def accept_applicant(
 		_id = squadronId,
 		role = Roles[role.name.upper()].value
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/reject/{userId}",
@@ -180,7 +180,7 @@ async def reject_applicant(
 		_id = squadronId,
 		comments = message
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/role/{userId}",
@@ -206,7 +206,7 @@ async def change_role(
 		userid = userId,
 		role = role.value
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/kick/{userId}",
@@ -227,7 +227,7 @@ async def kick_member(
 		userid = userId,
 		comments = reason
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.get(
 	"/logs/{clanId}",

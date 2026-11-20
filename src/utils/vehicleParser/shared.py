@@ -7,11 +7,11 @@ from subprocess import PIPE, run
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-from orjson import loads
 from packaging.version import Version
 from pandas import read_csv
 
 from config import VEHICLES
+from utils.helper import asyncRead, asyncReadJSON
 
 from .. import cache as Cache
 
@@ -24,6 +24,8 @@ _logger = getLogger(__name__)
 
 GAMEFILES = VEHICLES / "gamefiles"
 GAMEFILES.mkdir(exist_ok = True, parents = True)
+
+_UPDATE_LOCK: asyncio.Lock = asyncio.Lock()
 
 REMOTE_VERSION_URL = "https://raw.githubusercontent.com/gszabi99/War-Thunder-Datamine/refs/heads/master/version"
 
@@ -123,7 +125,7 @@ async def check_update():
 		_logger.warning(result.stderr)
 	else:
 		raise EnvironmentError("Fetching ran into an issue")
-	new_ver = Version(await asyncio.to_thread(DataLocations.VERSION.read_text))
+	new_ver = Version(await asyncRead(DataLocations.VERSION))
 	if new_ver == VERSION:
 		return # Nothing changed
 	VERSION = new_ver
@@ -150,35 +152,35 @@ def _load_unit_loc() -> dict[str, dict[Literal["short", "shop"], dict[str, str]]
 		unit_loc.setdefault(base, {})[key] = row
 	return unit_loc
 async def update_gamefiles():
-	global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
-	if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
-		return
-	CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
-	await setup()
-	await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True)
+	async with _UPDATE_LOCK:
+		global VERSION, CACHED_VALIDITY_UNTIL, UNIT_LOC, WEAPON_LOC, MOD_LOC, WPCOST, VEHICLE_DATA, LOC_META, weapon_cache, sensor_cache, vehicle_cache
+		if (CACHED_VALIDITY_UNTIL >= int(datetime.now(UTC).timestamp())):
+			return
+		await setup()
+		await asyncio.to_thread(run, "git pull", cwd = GAMEFILES, shell = True)
 
-	new_ver = Version(await asyncio.to_thread(DataLocations.VERSION.read_text))
-	if VERSION == new_ver:
-		return # Nothing changed
+		new_ver = Version(await asyncRead(DataLocations.VERSION))
+		if VERSION == new_ver:
+			return # Nothing changed
 
-	VERSION = new_ver
+		WPCOST = await asyncReadJSON(DataLocations.WPCOST)
+		VEHICLE_DATA = await asyncReadJSON(DataLocations.VEHICLE_DATA)
+		LOC_META = await asyncReadJSON(DataLocations.LOC_META)
 
-	WPCOST = await asyncio.to_thread(loads, await asyncio.to_thread(DataLocations.WPCOST.read_text))
-	VEHICLE_DATA = await asyncio.to_thread(loads, await asyncio.to_thread(DataLocations.VEHICLE_DATA.read_text))
-	LOC_META = await asyncio.to_thread(loads, await asyncio.to_thread(DataLocations.LOC_META.read_text))
+		UNIT_LOC = await asyncio.to_thread(_load_unit_loc)
 
-	UNIT_LOC = await asyncio.to_thread(_load_unit_loc)
+		WEAPON_LOC = await asyncio.to_thread(read_csv, DataLocations.WEAPON_LOC, delimiter = ";", encoding = "utf-8")
+		WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace = True)
 
-	WEAPON_LOC = await asyncio.to_thread(read_csv, DataLocations.WEAPON_LOC, delimiter = ";", encoding = "utf-8")
-	WEAPON_LOC.set_index("<ID|readonly|noverify>", inplace = True)
+		MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
+		MOD_LOC.set_index("<ID|readonly|noverify>", inplace = True)
 
-	MOD_LOC = await asyncio.to_thread(read_csv, DataLocations.MODIFICATION_LOC, delimiter = ";", encoding = "utf-8")
-	MOD_LOC.set_index("<ID|readonly|noverify>", inplace = True)
+		weapon_cache = {}
+		sensor_cache = {}
+		vehicle_cache = {}
 
-	weapon_cache = {}
-	sensor_cache = {}
-	vehicle_cache = {}
-
+		CACHED_VALIDITY_UNTIL = int(datetime.now(UTC).timestamp()) + 10*60 # 10 minutes of cached version data
+		VERSION = new_ver
 
 VERSION: Version | None = None
 CACHED_VALIDITY_UNTIL: int = 0

@@ -78,9 +78,9 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 		yield await _RESP_PROVIDER(resp_state)
 		return
 	sleep_duration = 1
-	while True:
-		if session is None:
-			async with operation() as session:
+	if session is None:
+		async with operation() as session:
+			while True:
 				async with session.request(method, url, **kwargs) as resp:
 					if sleep_duration >= 32:
 						yield await handle_response(resp = resp, convert = return_type)
@@ -92,6 +92,8 @@ async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON
 						continue
 					yield await handle_response(resp = resp, convert = return_type)
 					return
+		return
+	while True:
 		async with session.request(method, url, **kwargs) as resp:
 			if sleep_duration >= 32:
 				yield await handle_response(resp = resp, convert = return_type)

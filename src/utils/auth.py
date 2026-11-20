@@ -531,19 +531,29 @@ class ServerAuth:
 		self.__EXP = datetime.now(UTC) + timedelta(seconds = data["token_exp"])
 
 async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
-	tries = 0
-	success = False
 	entry = _PENDING_2FA.get(email)
 	if entry is None:
 		raise HTTPException(status.HTTP_400_BAD_REQUEST)
 
+	if "GaijinPass" not in entry.types:
+		# Email 2FA: wait for the code submitted via /v1/answer-2fa
+		try:
+			await wait_for(entry.provided.wait(), timeout=(entry.expires - datetime.now(UTC)).total_seconds())
+		except TimeoutError:
+			_logger.warning(f"2FA challenge for {email} timed out")
+			_PENDING_2FA.pop(email, None)
+			return None
+		return await _login_2fa(email)
+
+	# Gaijin Pass: poll requestTwoStep for device approval
+	tries = 0
 	data = {
 		"requestId": entry.requestId,
 		"userId": entry.userId
 	}
 
 	async with Network.operation() as session:
-		while not success and tries < 10:
+		while tries < 10:
 			if Network._RESP_PROVIDER is not None:
 				data = await Network._RESP_PROVIDER("await_2fa")
 			else:
@@ -577,20 +587,18 @@ async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
 					continue
 				except Exception:
 					_PENDING_2FA.pop(email, None)
+					_logger.exception("An exception occurred in 2FA Authentication flow")
 					raise
-			if "GaijinPass" in entry.types:
-				success = True
-				entry.provided.set()
-			else: # UNTESTED PATH
-				await entry.provided.wait()
+			if data.get("Message") == "cancel":
+				_PENDING_2FA.pop(email, None)
+				raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
 
-				success = True
-	if not success or data.get("Message") == "cancel":
-		_PENDING_2FA.pop(email, None)
-		raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
+			entry.auth_data = data
+			entry.provided.set()
+			return await _login_2fa(email)
 
-	entry.auth_data = data
-	return await _login_2fa(email)
+	_PENDING_2FA.pop(email, None)
+	raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
 
 async def _login_2fa(email: str):
 	if email not in _PENDING_2FA:
@@ -612,7 +620,7 @@ async def _login_2fa(email: str):
 				"password": entry.password,
 				"game": "wt",
 				"2step": two_step,
-				"requestId": entry.auth_data["Request"],
+				"requestId": entry.requestId,
 				"client": _MACHINE_ID
 			},
 			headers = {
