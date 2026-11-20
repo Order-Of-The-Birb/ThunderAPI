@@ -21,7 +21,7 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from config import DEFAULT_NETWORK_CFG, FORWARDED_ALLOW_IPS, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS
+from config import DEFAULT_NETWORK_CFG, FORWARDED_ALLOW_IPS, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS, CONTACT
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
@@ -137,9 +137,7 @@ app = FastAPI(
 	responses = {
 		status.HTTP_401_UNAUTHORIZED: {"description": "User token was not found, user is not authenticated or login expired"}
 	},
-	contact = {
-		"discord": "https://discord.gg/wsn9Wcqqym",
-	},
+	contact = CONTACT,
 	debug = debug
 )
 
@@ -183,6 +181,7 @@ def custom_openapi():
 		description = app.description,
 		routes = app.routes,
 		tags = app.openapi_tags,
+		contact = app.contact
 	)
 
 	for ep_path in openapi_schema["paths"].values():
