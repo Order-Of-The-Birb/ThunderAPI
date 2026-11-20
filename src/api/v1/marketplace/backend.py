@@ -1,8 +1,8 @@
 import asyncio
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from enum import StrEnum
 from decimal import Decimal
+from enum import StrEnum
 from random import randint
 from typing import Any, TypedDict
 
