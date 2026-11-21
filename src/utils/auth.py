@@ -1,7 +1,20 @@
 from __future__ import annotations
 
-from asyncio import Future, Lock, Task, gather, get_running_loop, shield, timeout, to_thread, wait_for
-from contextlib import asynccontextmanager
+import sys
+from asyncio import (
+	Future,
+	Lock,
+	Task,
+	create_subprocess_exec,
+	gather,
+	get_running_loop,
+	shield,
+	sleep,
+	timeout,
+	wait_for,
+)
+from asyncio.subprocess import PIPE
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -345,11 +358,11 @@ class UserAuth:
 
 		for row in rows:
 			entry = await self.Entry.from_row(self, row)
+			if not entry.usedWithin(24*60):
+				await self.remove_entry(entry)
+				continue
 			try:
-				if entry.usedWithin(24*60): # Used within the last day
-					await entry.refresh()
-				else:
-					await self.remove_entry(entry)
+				await entry.refresh()
 			except AuthenticationError:
 				_logger.error(f"Could not refresh entry {entry.email}")
 				await self.remove_entry(entry)
@@ -357,6 +370,8 @@ class UserAuth:
 				if e.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
 					raise
 				_logger.warning("Gaijin rate limited a token refresh. Deferring it until the next refresh cycle.")
+			except (ClientResponseError, ClientConnectionError, TimeoutError) as e:
+				_logger.warning("Gaijin token refresh failed (%s). Skipping this account for this run.", type(e).__name__)
 
 		async with self._transaction() as cur:
 			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} <= strftime('%s', 'now')")
@@ -529,7 +544,9 @@ class ServerAuth:
 async def _request_login(email: str, password: str, *, request_id: str | None = None, code: str | None = None):
 	form = {"login": email, "password": password, "game": "wt", "client": _MACHINE_ID}
 	if code is not None:
-		form.update({"2step": code, "requestId": request_id})
+		form["2step"] = code
+		if request_id is not None:
+			form["requestId"] = request_id
 
 	try:
 		async with Network.post(
@@ -565,6 +582,27 @@ def _checked_login(data: dict, *, allow_challenge: bool):
 				return data
 	raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Unexpected Gaijin login response")
 
+async def _read_server_code() -> str:
+	if sys.stdin is None or not sys.stdin.isatty():
+		raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account email 2FA requires an interactive terminal.")
+
+	print("Please provide the 2FA code: ", end = "", flush = True)
+	# A child can release the terminal when the login expires, even during a blocking read.
+	reader = await create_subprocess_exec(
+		sys.executable, "-I", "-S", "-c", "import sys; sys.stdout.buffer.write(sys.stdin.buffer.readline())",
+		stdin = sys.stdin, stdout = PIPE
+	)
+	try:
+		line, _ = await reader.communicate()
+	finally:
+		if reader.returncode is None:
+			with suppress(ProcessLookupError):
+				reader.kill()
+			await reader.communicate()
+	if reader.returncode or not line.strip():
+		raise HTTPException(status.HTTP_400_BAD_REQUEST, "No 2FA code was entered for the server account.")
+	return line.decode().strip()
+
 async def _complete_2fa(email: str, password: str, challenge: dict, manual_code: Future[str] | None = None):
 	try:
 		async with timeout(_CHALLENGE_LIFETIME.total_seconds()):
@@ -581,6 +619,7 @@ async def _complete_2fa(email: str, password: str, challenge: dict, manual_code:
 					except (ClientConnectionError, ClientResponseError, TimeoutError, HTTPException) as err:
 						if attempt == 9:
 							raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA approval timed out") from err
+						await sleep(min(2**attempt, 4))
 						challenge = await _request_login(email, password)
 						if challenge["status"] == "OK":
 							return challenge
@@ -595,7 +634,7 @@ async def _complete_2fa(email: str, password: str, challenge: dict, manual_code:
 			elif manual_code is not None:
 				code = await manual_code
 			else:
-				code = await to_thread(input, "Please provide the 2FA code: ")
+				code = await _read_server_code()
 
 			return await _request_login(email, password, request_id = challenge["requestId"], code = code)
 	except TimeoutError as err:

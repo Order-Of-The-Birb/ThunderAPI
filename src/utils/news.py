@@ -421,7 +421,7 @@ class NewsManager:
 	async def fetchForumIDs(self) -> tuple[int, ...]:
 		"""Gets the latest "planned battle rating changes" post's ID"""
 		async with Network.get(
-			"https://forum.warthunder.com/tag/br-changes?order=created",
+			"https://forum.warthunder.com/tag/br-changes?order=created&ascending=false",
 			Network.ReturnType.TEXT
 		) as resp:
 			document = BeautifulSoup(resp, "lxml")

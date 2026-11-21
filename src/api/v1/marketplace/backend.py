@@ -101,7 +101,7 @@ class User:
 
 			return cls(
 				LOGIN = user,
-				commodity = assetData.get("commodity", False),
+				commodity = assetData.get("commodity") or False,
 				description = assetData["descriptions"][0]["value"],
 				icon_url = assetData.get("icon_url"),
 				icon_url_large = assetData.get("icon_url_large"),
@@ -205,7 +205,7 @@ class User:
 			return cls(
 				hash_name = data["hash_name"],
 				name = data["name"],
-				commodity = data.get("commodity", False),
+				commodity = data.get("commodity") or False,
 				icon = data["icon"],
 				buy_price = data["buy_price"] / 100000000,
 				buy_orders = data["buy_depth"],
@@ -220,7 +220,7 @@ class User:
 			return cls(
 				hash_name = assetData["market_hash_name"],
 				name = assetData["market_name"],
-				commodity = assetData.get("commodity", False),
+				commodity = assetData.get("commodity") or False,
 				icon = assetData.get("icon_url_large", assetData.get("icon_url", None)),
 				buy_price = max((i[0] for i in ordersData.get("BUY", [])), default = 0) / 10000,
 				buy_orders = ordersData["depth"].get("BUY", 0),
