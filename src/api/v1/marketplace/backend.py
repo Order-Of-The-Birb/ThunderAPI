@@ -101,7 +101,7 @@ class User:
 
 			return cls(
 				LOGIN = user,
-				commodity = assetData.get("commodity"),
+				commodity = assetData.get("commodity", False),
 				description = assetData["descriptions"][0]["value"],
 				icon_url = assetData.get("icon_url"),
 				icon_url_large = assetData.get("icon_url_large"),

@@ -33,4 +33,5 @@ async def test_2fa_success():
 
 		entry = auth._PENDING_2FA[""]
 		await entry.await_task
-		assert entry.login_data == templ["success"]
+		assert await auth.login("", "") == templ["success"]
+		assert "" not in auth._PENDING_2FA

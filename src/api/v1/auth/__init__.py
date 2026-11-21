@@ -9,7 +9,6 @@ from api.shared import limiter
 from api.v1.models import GenericEmptyResponse
 from api.v1.shared import TokenBearer
 from utils import users_auth
-from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 
 from .models import Login, LoginToken
@@ -39,11 +38,7 @@ async def login_post(
 ):
 	token, uidHint = await users_auth.login(email, password)
 
-	return JSONResponse({
-		"status": "OK",
-		"token": token,
-		"user_id": uidHint
-	}, status_code = status.HTTP_200_OK)
+	return Login.LoginResponse(token = token, user_id = uidHint)
 
 @router.post(
 	"/refresh-token",
@@ -82,21 +77,8 @@ async def answer_2fa(
 	password: Annotated[str, Form(title = "The password of the account, used as a sort of protection")],
 	code: Annotated[str, Form(title = "The 2FA code")]
 ):
-	if email not in _PENDING_2FA:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	if _PENDING_2FA[email].check_password(password):
-		_PENDING_2FA[email].code = code
-		_PENDING_2FA[email].provided.set()
-	else:
-		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
-	# TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
-	token, uidHint = await users_auth.login(email, password)
-
-	return JSONResponse({
-		"status": "OK",
-		"token": token,
-		"user_id": uidHint
-	}, status_code = status.HTTP_200_OK)
+	token, uidHint = await users_auth.login(email, password, code = code)
+	return Login.LoginResponse(token = token, user_id = uidHint)
 
 @router.delete(
 	"/remove",
