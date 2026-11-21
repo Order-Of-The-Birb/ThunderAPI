@@ -1,7 +1,20 @@
 from __future__ import annotations
 
-from asyncio import Event, Lock, Task, get_running_loop, to_thread, wait_for
-from contextlib import asynccontextmanager
+import sys
+from asyncio import (
+	Future,
+	Lock,
+	Task,
+	create_subprocess_exec,
+	gather,
+	get_running_loop,
+	shield,
+	sleep,
+	timeout,
+	wait_for,
+)
+from asyncio.subprocess import PIPE
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
@@ -9,10 +22,11 @@ from hashlib import md5, sha256
 from logging import getLogger
 from os import getenv, urandom
 from re import sub as re_sub
-from secrets import token_urlsafe
-from typing import Any, ClassVar, Literal
+from secrets import compare_digest, token_urlsafe
+from typing import ClassVar
+from weakref import WeakValueDictionary
 
-from aiohttp import ClientResponseError
+from aiohttp import ClientConnectionError, ClientResponseError
 from aiosqlite import OperationalError, Row, connect
 from apscheduler.job import Job
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -61,24 +75,17 @@ if not USERS_DB.MACHINE_ID.exists():
 else:
 	_MACHINE_ID = USERS_DB.MACHINE_ID.read_text().strip()
 
-@dataclass(slots = True)
-class _pending2FA:
-	password_hash: str
-	requestId: str
-	userId: int
-	password: str
-	types: set[Literal["WTR", "GaijinPass", "Email"]]
-	expires: datetime = field(default_factory = lambda: datetime.now(UTC) + timedelta(minutes = 15))
-	code: str = None
-	await_task: Task = None
-	provided: Event = field(default_factory = lambda: Event())
-	login: Event = field(default_factory = lambda: Event())
-	auth_data: dict[str, Any] = None
-	login_data: dict[str, Any] = None
+_CHALLENGE_LIFETIME = timedelta(minutes = 15)
 
-	def check_password(self, password: str):
-		return self.password_hash == md5(password.encode()).hexdigest()
-_PENDING_2FA: dict[str, _pending2FA] = {} # email -> {hashed_password, requestId, userId, types, code (after answering)}
+@dataclass(slots = True)
+class _Pending2FA:
+	password_hash: bytes
+	code: Future[str] | None
+	await_task: Task[dict]
+	expires: datetime
+
+_PENDING_2FA: dict[str, _Pending2FA] = {}
+_login_locks: WeakValueDictionary[str, Lock] = WeakValueDictionary()
 
 @dataclass(slots = True, frozen = True)
 class LoginEntry:
@@ -170,6 +177,8 @@ class UserAuth:
 						"Content-Type": "application/x-www-form-urlencoded"
 					}
 				) as r:
+					if r.status == status.HTTP_429_TOO_MANY_REQUESTS:
+						raise HTTPException(r.status, "Gaijin is rate limiting token refreshes. Please try again later.")
 					content = await Network.handle_response(r, Network.ReturnType.JSON)
 
 			if content.get("status") == "LOGINERROR":
@@ -283,9 +292,9 @@ class UserAuth:
 		hash = self._hash_token(token)
 		return await self.Entry.from_hash(self, hash)
 
-	async def login(self, email:str, password:str|None = None, /) -> tuple[str, int]:
+	async def login(self, email:str, password:str, /, *, code: str | None = None) -> tuple[str, int]:
 		"""Gaijin login flow, returns a new user token for the given account"""
-		data = await login(email, password)
+		data = await login(email, password, code = code)
 
 		async with self._transaction() as cur:
 			schema = dbSchema
@@ -312,7 +321,7 @@ class UserAuth:
 					VALUES ({', '.join(["?" for i in range(7)])})""",
 					(hash, self._enc(data["jwt"]), dtToTimestamp(datetime.now(UTC) + timedelta(seconds = int(data["token_exp"]))), self._enc(data["token"]), data["user_id"], email, dtToTimestamp(datetime.now(UTC)))
 				)
-		return raw, data["user_id"]
+		return raw, int(data["user_id"])
 
 	async def remove_entry(self, entry: Entry) -> bool:
 		async with self._transaction() as cur:
@@ -349,14 +358,20 @@ class UserAuth:
 
 		for row in rows:
 			entry = await self.Entry.from_row(self, row)
+			if not entry.usedWithin(24*60):
+				await self.remove_entry(entry)
+				continue
 			try:
-				if entry.usedWithin(24*60): # Used within the last day
-					await entry.refresh()
-				else:
-					await self.remove_entry(entry)
+				await entry.refresh()
 			except AuthenticationError:
 				_logger.error(f"Could not refresh entry {entry.email}")
 				await self.remove_entry(entry)
+			except HTTPException as e:
+				if e.status_code != status.HTTP_429_TOO_MANY_REQUESTS:
+					raise
+				_logger.warning("Gaijin rate limited a token refresh. Deferring it until the next refresh cycle.")
+			except (ClientResponseError, ClientConnectionError, TimeoutError) as e:
+				_logger.warning("Gaijin token refresh failed (%s). Skipping this account for this run.", type(e).__name__)
 
 		async with self._transaction() as cur:
 			operation = await cur.execute(f"DELETE FROM {dbSchema.tokens.t()} WHERE {dbSchema.tokens.EXPIRES} <= strftime('%s', 'now')")
@@ -404,6 +419,11 @@ class UserAuth:
 
 	async def close(self):
 		global scheduler
+		tasks = [entry.await_task for entry in _PENDING_2FA.values()]
+		_PENDING_2FA.clear()
+		for task in tasks:
+			task.cancel()
+		await gather(*tasks, return_exceptions = True)
 		if self.__autorefresh_job is not None:
 			self.__autorefresh_job.remove()
 			self.__autorefresh_job = None
@@ -512,189 +532,169 @@ class ServerAuth:
 		self.__EXP = datetime.now(UTC) + timedelta(seconds = content["token_exp"])
 
 	async def __login(self):
-		try:
-			data = await login(self.__EMAIL, self.__PASS)
-		except HTTPException as e:
-			if e.status_code == status.HTTP_206_PARTIAL_CONTENT:
-				entry = _PENDING_2FA[self.__EMAIL]
-				if "GaijinPass" not in entry.types:
-					entry.code = await to_thread(input, "Please provide the 2FA code: ")
-					entry.provided.set()
-				await entry.await_task
-				data = entry.login_data
-			else:
-				raise
+		data = await _request_login(self.__EMAIL, self.__PASS)
+		if data["status"] == "2STEP":
+			data = await _complete_2fa(self.__EMAIL, self.__PASS, data)
 
 		self._JWT = data["jwt"]
 		self._TOKEN = data["token"]
-		self._UID = data["user_id"]
-		self.__EXP = datetime.now(UTC) + timedelta(seconds = data["token_exp"])
+		self._UID = int(data["user_id"])
+		self.__EXP = datetime.now(UTC) + timedelta(seconds = int(data["token_exp"]))
 
-async def _await_2fa_code(email:str, /) -> dict[str, str|int] | None:
-	entry = _PENDING_2FA.get(email)
-	if entry is None:
-		raise HTTPException(status.HTTP_400_BAD_REQUEST)
+async def _request_login(email: str, password: str, *, request_id: str | None = None, code: str | None = None):
+	form = {"login": email, "password": password, "game": "wt", "client": _MACHINE_ID}
+	if code is not None:
+		form["2step"] = code
+		if request_id is not None:
+			form["requestId"] = request_id
 
-	if "GaijinPass" not in entry.types:
-		# Email 2FA: wait for the code submitted via /v1/answer-2fa
-		try:
-			await wait_for(entry.provided.wait(), timeout=(entry.expires - datetime.now(UTC)).total_seconds())
-		except TimeoutError:
-			_logger.warning(f"2FA challenge for {email} timed out")
-			_PENDING_2FA.pop(email, None)
-			return None
-		return await _login_2fa(email)
-
-	# Gaijin Pass: poll requestTwoStep for device approval
-	tries = 0
-	data = {
-		"requestId": entry.requestId,
-		"userId": entry.userId
-	}
-
-	async with Network.operation() as session:
-		while tries < 10:
-			if Network._RESP_PROVIDER is not None:
-				data = await Network._RESP_PROVIDER("await_2fa")
-			else:
-				try:
-					async with Network.get(f"https://auth.gaijinent.com/api/auth/requestTwoStep?requestId={data['requestId']}&userId={data['userId']}", timeout = 60, session = session) as r:
-						data = r
-				except (HTTPException, ClientResponseError) as e:
-					if isinstance(e, ClientResponseError):
-						_logger.exception(f"2FA Flow failed with HTTP {e.status}")
-
-					if Network._RESP_PROVIDER is not None:
-						data = await Network._RESP_PROVIDER("init")
-					else:
-						async with Network.post(
-							"https://auth.gaijinent.com/login.php",
-							data = {
-								"login": email,
-								"password": entry.password,
-								"game": "wt",
-								"client": _MACHINE_ID
-							},
-							headers = {
-								"Content-Type": "application/x-www-form-urlencoded",
-								"User-Agent": "ThunderAPI/1.0"
-							},
-							session = session
-						) as r:
-							data = r
-					entry.requestId = data["requestId"]
-					tries += 1
-					continue
-				except Exception:
-					_PENDING_2FA.pop(email, None)
-					_logger.exception("An exception occurred in 2FA Authentication flow")
-					raise
-			if data.get("Message") == "cancel":
-				_PENDING_2FA.pop(email, None)
-				raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
-
-			entry.auth_data = data
-			entry.provided.set()
-			return await _login_2fa(email)
-
-	_PENDING_2FA.pop(email, None)
-	raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA Request cancelled")
-
-async def _login_2fa(email: str):
-	if email not in _PENDING_2FA:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "2FA Entry not found")
-	entry = _PENDING_2FA[email]
-	await entry.provided.wait()
-	if Network._RESP_PROVIDER is not None:
-		entry.login_data = await Network._RESP_PROVIDER("2fa_login")
-	else:
-		if "GaijinPass" in entry.types:
-			two_step = entry.auth_data["Message"]
-		else:
-			two_step = entry.code
+	try:
 		async with Network.post(
 			"https://auth.gaijinent.com/login.php",
-			Network.ReturnType.JSON,
-			data = {
-				"login": email,
-				"password": entry.password,
-				"game": "wt",
-				"2step": two_step,
-				"requestId": entry.requestId,
-				"client": _MACHINE_ID
-			},
-			headers = {
-				"Content-Type": "application/x-www-form-urlencoded",
-				"User-Agent": "ThunderAPI/1.0"
-			}
-		) as r:
-			entry.login_data = r
-	_PENDING_2FA.pop(email, None)
-	entry.login.set()
+			resp_state = "init" if code is None else "2fa_login",
+			data = form,
+			headers = {"Content-Type": "application/x-www-form-urlencoded", "User-Agent": "ThunderAPI/1.0"}
+		) as data:
+			return _checked_login(data, allow_challenge = code is None)
+	except ClientResponseError as err:
+		if err.status == 429:
+			raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Gaijin is rate limiting login attempts. Please try again later.") from err
+		raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Gaijin login failed") from err
+	except (ClientConnectionError, TimeoutError) as err:
+		raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Could not reach Gaijin login") from err
 
-async def login(email: str, password: str, /):
-	if email in _PENDING_2FA:
-		e = _PENDING_2FA[email]
-		if not e.check_password(password):
-			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
-		try:
-			await wait_for(e.login.wait(), timeout = 60)
-		except TimeoutError as err:
-			raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA timed out") from err
-		if e.login_data["status"] == "2STEPERROR":
-			raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Invalid 2FA code provided.")
-		if e.login_data["status"] == "LOGINERROR":
-			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {e.login_data["error"]}")
-		return e.login_data
+def _checked_login(data: dict, *, allow_challenge: bool):
+	if isinstance(data, dict):
+		match data.get("status"):
+			case "2STEP" if allow_challenge and data.get("requestId") and data.get("userId") is not None:
+				return data
+			case "2STEPERROR":
+				raise AuthenticationError(status.HTTP_403_FORBIDDEN, "Invalid 2FA code provided.")
+			case "LOGINERROR":
+				reason = data.get("error", "Unknown login error")
+				raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {reason}")
+			case "OK" if isinstance(data.get("jwt"), str) and isinstance(data.get("token"), str) and data["jwt"] and data["token"]:
+				try:
+					int(data["user_id"])
+					int(data["token_exp"])
+				except (KeyError, TypeError, ValueError) as err:
+					raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Incomplete Gaijin login response") from err
+				return data
+	raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Unexpected Gaijin login response")
 
-	async with Network.operation() as session:
-		try:
-			async with Network.post(
-				"https://auth.gaijinent.com/login.php",
-				Network.ReturnType.JSON,
-				session = session,
-				resp_state="init",
-				data = {
-					"login": email,
-					"password": password,
-					"game": "wt",
-					"client": _MACHINE_ID
-				},
-				headers = {
-					"Content-Type": "application/x-www-form-urlencoded",
-					"User-Agent": "ThunderAPI/1.0"
-				}
-			) as r:
-				data = r
-		except ClientResponseError as e:
-			if e.status == 429:
-				raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Gaijin is rate limiting login attempts. Please try again later.") from e
-			raise
+async def _read_server_code() -> str:
+	if sys.stdin is None or not sys.stdin.isatty():
+		raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Server account email 2FA requires an interactive terminal.")
 
-		if data["status"] == "2STEP":
+	print("Please provide the 2FA code: ", end = "", flush = True)
+	# A child can release the terminal when the login expires, even during a blocking read.
+	reader = await create_subprocess_exec(
+		sys.executable, "-I", "-S", "-c", "import sys; sys.stdout.buffer.write(sys.stdin.buffer.readline())",
+		stdin = sys.stdin, stdout = PIPE
+	)
+	try:
+		line, _ = await reader.communicate()
+	finally:
+		if reader.returncode is None:
+			with suppress(ProcessLookupError):
+				reader.kill()
+			await reader.communicate()
+	if reader.returncode or not line.strip():
+		raise HTTPException(status.HTTP_400_BAD_REQUEST, "No 2FA code was entered for the server account.")
+	return line.decode().strip()
 
-			two_factor_types = set()
-			if data.get("hasGjPass"):
-				two_factor_types.add("GaijinPass")
-			if data.get("hasTwoStepEmail"):
-				two_factor_types.add("Email")
-			if data.get("hasWTR"):
-				two_factor_types.add("WTR")
+async def _complete_2fa(email: str, password: str, challenge: dict, manual_code: Future[str] | None = None):
+	try:
+		async with timeout(_CHALLENGE_LIFETIME.total_seconds()):
+			if challenge.get("hasGjPass"):
+				for attempt in range(10):
+					try:
+						async with Network.get(
+							"https://auth.gaijinent.com/api/auth/requestTwoStep",
+							params = {"requestId": challenge["requestId"], "userId": challenge["userId"]},
+							timeout = 60,
+							resp_state = "await_2fa"
+						) as approval:
+							code = approval.get("Message") if isinstance(approval, dict) else None
+					except (ClientConnectionError, ClientResponseError, TimeoutError, HTTPException) as err:
+						if attempt == 9:
+							raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA approval timed out") from err
+						await sleep(min(2**attempt, 4))
+						challenge = await _request_login(email, password)
+						if challenge["status"] == "OK":
+							return challenge
+						if not challenge.get("hasGjPass"):
+							raise HTTPException(status.HTTP_409_CONFLICT, "The 2FA method changed. Please log in again.") from err
+						continue
+					if code == "cancel":
+						raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA request cancelled")
+					if not code:
+						raise HTTPException(status.HTTP_502_BAD_GATEWAY, "Missing Gaijin Pass approval")
+					break
+			elif manual_code is not None:
+				code = await manual_code
+			else:
+				code = await _read_server_code()
 
-			_PENDING_2FA[email] = _pending2FA(
-				password_hash = md5(password.encode()).hexdigest(),
-				requestId = data["requestId"],
-				userId = data["userId"],
-				types = two_factor_types,
-				password = password
-			)
+			return await _request_login(email, password, request_id = challenge["requestId"], code = code)
+	except TimeoutError as err:
+		raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA challenge expired") from err
 
-			_PENDING_2FA[email].await_task = get_running_loop().create_task(_await_2fa_code(email))
-			if "GaijinPass" in two_factor_types:
+def _observe_challenge(task: Task):
+	# A client can abandon a challenge before its background request fails.
+	if not task.cancelled():
+		task.exception()
+
+async def login(email: str, password: str, /, *, code: str | None = None):
+	password_hash = sha256(password.encode()).digest()
+	# Concurrent initial logins must not issue competing requests for the same account.
+	lock = _login_locks.setdefault(email, Lock())
+	async with lock:
+		entry = _PENDING_2FA.get(email)
+		if entry is not None and entry.expires <= datetime.now(UTC):
+			del _PENDING_2FA[email]
+			entry = None
+		if entry is None:
+			if code is not None:
+				raise HTTPException(status.HTTP_404_NOT_FOUND, "No active 2FA verification. Please log in first.")
+			data = await _request_login(email, password)
+			if data["status"] == "OK":
+				return data
+
+			loop = get_running_loop()
+			manual_code = None if data.get("hasGjPass") else loop.create_future()
+			task = loop.create_task(_complete_2fa(email, password, data, manual_code))
+			task.add_done_callback(_observe_challenge)
+			_PENDING_2FA[email] = _Pending2FA(password_hash, manual_code, task, datetime.now(UTC) + _CHALLENGE_LIFETIME)
+			if manual_code is None:
 				raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA and call this endpoint again")
-			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please complete 2FA")
+			raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please submit your code to /v1/answer-2fa")
 
-		if data["status"] == "LOGINERROR":
-			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Login failed: {data["error"]}")
+		if not compare_digest(entry.password_hash, password_hash):
+			raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
+		if entry.await_task.done() and entry.await_task.exception() is not None:
+			del _PENDING_2FA[email]
+			entry.await_task.result()
+		if entry.code is not None:
+			if code is None:
+				raise HTTPException(status.HTTP_206_PARTIAL_CONTENT, "Please submit your code to /v1/answer-2fa")
+			if not entry.code.done():
+				entry.code.set_result(code)
+			elif entry.code.cancelled() or entry.code.result() != code:
+				raise HTTPException(status.HTTP_409_CONFLICT, "A code has already been submitted for this challenge")
+		elif code is not None:
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, "Approve this login using Gaijin Pass")
 
+	try:
+		data = await wait_for(shield(entry.await_task), timeout = 60)
+	except TimeoutError as err:
+		raise HTTPException(status.HTTP_408_REQUEST_TIMEOUT, "2FA is still pending. Please try again.") from err
+	except Exception:
+		if _PENDING_2FA.get(email) is entry:
+			del _PENDING_2FA[email]
+		raise
+
+	if _PENDING_2FA.get(email) is not entry:
+		raise HTTPException(status.HTTP_409_CONFLICT, "The 2FA challenge is no longer active")
+	del _PENDING_2FA[email]
 	return data

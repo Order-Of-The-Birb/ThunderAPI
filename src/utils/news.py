@@ -60,7 +60,7 @@ class NewsEntry:
 	def from_json(cls, data:dict[str, Any]):
 		tags = set(data.get("tags", []))
 		title:str = data["title"]
-		for tag in re.finditer(r"\[([A-z ]+)\]", title, re.IGNORECASE):
+		for tag in re.finditer(r"\[([A-Za-z ]+)\]", title):
 			tags.add(tag.group(1))
 			title = title.replace(f"[{tag.group(1)}]", "", 1)
 		title = title.strip()
@@ -421,12 +421,11 @@ class NewsManager:
 	async def fetchForumIDs(self) -> tuple[int, ...]:
 		"""Gets the latest "planned battle rating changes" post's ID"""
 		async with Network.get(
-			"https://forum.warthunder.com/tag/br-changes",
+			"https://forum.warthunder.com/tag/br-changes?order=created&ascending=false",
 			Network.ReturnType.TEXT
 		) as resp:
 			document = BeautifulSoup(resp, "lxml")
 		rows = document.select("tr.topic-list-item")
-		# Ordered by date by default
 
 		ids = []
 		for row in rows:
