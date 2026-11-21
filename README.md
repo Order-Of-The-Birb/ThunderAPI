@@ -101,6 +101,8 @@ docker compose build
 docker compose up -d  
 ```  
 
+If you set `SERVER_EMAIL` and `SERVER_PASS`, you can approve Gaijin Pass requests on your device while the server runs in the background. If the server account uses an email code, start the service with an interactive terminal and enter the code within 15 minutes.
+
 ## Contributions  
 Contributions are welcome.  
 Pull requests that improve ThunderAPI without breaking existing functionality are encouraged  
