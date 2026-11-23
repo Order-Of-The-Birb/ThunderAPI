@@ -1,12 +1,22 @@
 from os import getenv
 from pathlib import Path
 
-__DEBUG_MODE: bool = int(getenv("DEBUG_MODE", "0")) == 1
-
-PROXIED = int(getenv("PROXIED", "0")) == 1
+__DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
 
 DATA_DIR = Path("/data/") if not __DEBUG_MODE else Path(__file__).parent.parent / "data"
 TOOL_DIR = Path("/opt/tools/") if not __DEBUG_MODE else Path(__file__).parent.parent / "tools"
+FORWARDED_ALLOW_IPS = getenv("FORWARDED_ALLOW_IPS") or None
+CONTACT_NAME = getenv("CONTACT_NAME")
+CONTACT_URL = getenv("CONTACT_URL") or None
+CONTACT_EMAIL = getenv("CONTACT_EMAIL") or None
+
+CONTACT = {
+	"name": CONTACT_NAME
+}
+if CONTACT_URL:
+	CONTACT["url"] = CONTACT_URL
+if CONTACT_EMAIL:
+	CONTACT["email"] = CONTACT_EMAIL
 
 class _usersDB:
 	DB = DATA_DIR / "users.db"
@@ -15,7 +25,7 @@ class _usersDB:
 	INIT_SQL = Path(__file__).parent / "utils" / "users_create.sql"
 
 USERS_DB = _usersDB()
-GAMEFILES = DATA_DIR / "gamefiles"
+VEHICLES = DATA_DIR / "vehicles"
 
 class _geoLitePaths:
 	DB = DATA_DIR / "GeoLite2-City.mmdb"

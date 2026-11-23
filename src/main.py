@@ -21,13 +21,13 @@ import utils.cache as Cache
 import utils.connection.network as Network
 from api import router
 from api.shared import limiter
-from api.v1.units.parser import shared as vpShared
-from config import DEFAULT_NETWORK_CFG, HOST, LOGS_DIR, PORT, PROXIED, SWAGGER_CSS, SWAGGER_JS
+from config import CONTACT, DEFAULT_NETWORK_CFG, FORWARDED_ALLOW_IPS, HOST, LOGS_DIR, PORT, SWAGGER_CSS, SWAGGER_JS
 from utils import newsManager, users_auth
 from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
 from utils.connection.blk_utils import Decompress
 from utils.geo import update_db
+from utils.vehicleParser import shared as vpShared
 
 logger = logging.getLogger()
 
@@ -137,9 +137,7 @@ app = FastAPI(
 	responses = {
 		status.HTTP_401_UNAUTHORIZED: {"description": "User token was not found, user is not authenticated or login expired"}
 	},
-	contact = {
-		"discord": "https://discord.gg/wsn9Wcqqym",
-	},
+	contact = CONTACT,
 	debug = debug
 )
 
@@ -153,7 +151,6 @@ app.add_exception_handler(
 	)[1]
 )
 #endregion
-
 
 app.include_router(router)
 app.add_middleware(SlowAPIMiddleware)
@@ -184,6 +181,7 @@ def custom_openapi():
 		description = app.description,
 		routes = app.routes,
 		tags = app.openapi_tags,
+		contact = app.contact
 	)
 
 	for ep_path in openapi_schema["paths"].values():
@@ -294,7 +292,7 @@ def main():
 	# endregion
 
 	try:
-		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = "*" if PROXIED else None)
+		uvicorn_run(app, host = HOST, port = PORT, forwarded_allow_ips = FORWARDED_ALLOW_IPS)
 	except Exception:
 		logger.exception("An uncaught error occurred during runtime")
 	finally:

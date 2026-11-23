@@ -60,6 +60,7 @@ class Models:
 		type: str | None
 		marketable: bool
 		name_color: str
+		count: int
 
 	class OrderModel(BaseModel):
 		market_hash: str
@@ -85,3 +86,6 @@ class Models:
 		sell_orders: int
 		buy_prices: list[PriceModel]
 		sell_prices: list[PriceModel]
+
+	class BalanceModel(BaseModel):
+		balance: float

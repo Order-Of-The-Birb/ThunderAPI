@@ -5,14 +5,14 @@ os.environ["DEBUG_MODE"] = "1"
 
 import pytest_asyncio
 
-from src.utils.connection import Network
+from utils.connection import network
 
 
 @pytest_asyncio.fixture(autouse = True)
 async def _autostart_network():
 	"""Start the Network session before each test and close it afterwards."""
-	await Network.start()
+	await network.start()
 	try:
 		yield
 	finally:
-		await Network.close()
+		await network.close()

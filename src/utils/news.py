@@ -4,7 +4,7 @@ from asyncio import sleep
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, time
 from enum import IntEnum
-from logging import Logger, getLogger
+from logging import getLogger
 from typing import Any, Literal
 
 from aiohttp.client_exceptions import ClientResponseError
@@ -21,6 +21,7 @@ fasterUpdate = (
 excludeFastWeekdays = (5,6) # Zero-indexed number of weekday
 fastCheck = 5*60 # Every 5 mins
 slowCheck = 30*60 # Every 30 mins
+_logger = getLogger(__name__)
 
 @dataclass(slots = True)
 class NewsEntry:
@@ -29,25 +30,25 @@ class NewsEntry:
 		MINOR = 1
 		EVENT = 2
 		MAJOR = 3
-	id: int
-	anons: str # Short description
-	title: str # Title
-	link: str # URL
-	pinned: bool
-	images: list["Image"] # Attached images
-	tags: set[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
-	platforms: set[Literal["pc", "ps4", "ps5"]] # Affected platforms
-	project: str # Game (100% of the time War Thunder with different version numbers)
-	type: Literal["news", "changelog", "forum"] # Article Type
-	created: datetime # Article Creation Time
-	importance: ImportanceLevel = ImportanceLevel.REGULAR
+	id:int
+	anons:str # Short description
+	title:str # Title
+	link:str # URL
+	pinned:bool
+	images:list["Image"] # Attached images
+	tags:set[Literal["Event", "Development", "Video", "Shop", "Fixed", "eSport", "Market", "Special", "Warbonds", "Fair Play", "Update"]] # Attached tags
+	platforms:set[Literal["pc", "ps4", "ps5"]] # Affected platforms
+	project:str # Game (100% of the time War Thunder with different version numbers)
+	type:Literal["news", "changelog", "forum"] # Article Type
+	created:datetime # Article Creation Time
+	importance:ImportanceLevel = ImportanceLevel.REGULAR
 	@dataclass(slots = True)
 	class Image:
 		src: str
 		width: int
 		height: int
 		@classmethod
-		def from_json(cls, data: dict[str, Any]):
+		def from_json(cls, data:dict[str, Any]):
 			return cls(
 				src = data["src"],
 				width = int(data["width"]),
@@ -56,15 +57,15 @@ class NewsEntry:
 		def to_json(self):
 			return asdict(self)
 	@classmethod
-	def from_json(cls, data: dict[str, Any]):
+	def from_json(cls, data:dict[str, Any]):
 		tags = set(data.get("tags", []))
-		title: str = data["title"]
-		for tag in re.finditer(r"\[([A-z ]+)\]", title, re.IGNORECASE):
+		title:str = data["title"]
+		for tag in re.finditer(r"\[([A-Za-z ]+)\]", title):
 			tags.add(tag.group(1))
 			title = title.replace(f"[{tag.group(1)}]", "", 1)
 		title = title.strip()
 		if len(title) > 0 and title[0] == "[":
-			raise RuntimeError(f"Somehow the first character is still '[' in \"{title}\", with no tags left")
+			_logger.info(f"Somehow the first character is still '[' in \"{title}\", with no tags left")
 
 		self = cls(
 			id = int(data["id"]),
@@ -182,17 +183,15 @@ class NewsManager:
 
 	_API_URL = "http://newslist.gaijin.net:8080/news/warthunder/en/js"
 	_CHANGELOG_URL = "https://warthunder.com/en/game/changelog/"
-	__logger: Logger
 	_sentIDs: LastSentIDs
-	task: asyncio.Task
+	task:asyncio.Task
 	websocket_mgr: WebsocketManager
 
 	def __init__(self):
-		self.__logger = getLogger(__name__)
 		self.websocket_mgr = WebsocketManager()
 		self._sentIDs = self.LastSentIDs()
 
-		self.__logger.debug("NewsAPI initialized")
+		_logger.debug("NewsAPI initialized")
 
 	async def mainloop(self):
 		while True:
@@ -214,7 +213,7 @@ class NewsManager:
 			except asyncio.CancelledError:
 				raise
 			except Exception:
-				self.__logger.exception("An exception occurred during data fetching")
+				_logger.exception("An exception occurred during data fetching")
 
 			for _name, _result in (
 				("news", latest_news),
@@ -223,7 +222,7 @@ class NewsManager:
 				("forum", latest_forum)
 			):
 				if isinstance(_result, BaseException):
-					self.__logger.exception(f"An exception occurred during {_name} fetching", exc_info = _result)
+					_logger.exception(f"An exception occurred during {_name} fetching", exc_info = _result)
 
 			latest_news = [] if isinstance(latest_news, BaseException) else latest_news
 			latest_changelogs = [] if isinstance(latest_changelogs, BaseException) else latest_changelogs
@@ -244,7 +243,7 @@ class NewsManager:
 			except asyncio.CancelledError:
 				raise
 			except Exception:
-				self.__logger.exception("An exception occurred during news processing")
+				_logger.exception("An exception occurred during news processing")
 
 			await sleep(self.__calcDelay())
 
@@ -286,20 +285,20 @@ class NewsManager:
 	async def fetchNews(self) -> list[NewsEntry]:
 		"""Gets all the latest news"""
 		global _news_endpoint_down
-		news: list[NewsEntry] = []
+		news:list[NewsEntry] = []
 		try:
 			async with Network.get(
 				self._API_URL,
 				Network.ReturnType.JSON
 			) as response:
 				if _news_endpoint_down:
-					self.__logger.info("Gaijin's news endpoint is back online")
+					_logger.info("Gaijin's news endpoint is back online")
 					_news_endpoint_down = False
 				for item in response["items"]:
 					news.append(NewsEntry.from_json(item))
 		except ClientResponseError:
 			if not _news_endpoint_down:
-				self.__logger.error("Gaijin's news endpoint is currently down. Returning empty until it is back")
+				_logger.error("Gaijin's news endpoint is currently down. Returning empty until it is back")
 				_news_endpoint_down = True
 		return news
 	async def _get_new_news(self):
@@ -316,7 +315,7 @@ class NewsManager:
 				if item.id != self._sentIDs.NEWS:
 					continue
 				if i != 0:
-					self.__logger.debug("News have been posted since last check")
+					_logger.debug("News have been posted since last check")
 				self._sentIDs.NEWS = news[0].id
 				return news[:i]
 
@@ -335,15 +334,15 @@ class NewsManager:
 				Network.ReturnType.TEXT
 			) as resp:
 				if _changelog_maintenance:
-					self.__logger.info("Changelog page is no longer under maintenance")
+					_logger.info("Changelog page is no longer under maintenance")
 					_changelog_maintenance = False
 
 				parsed = BeautifulSoup(resp, "lxml")
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
 					raise RuntimeError("Less, than 2 changelogs found (somehow)")
-				async def processChangelog(chlog: Tag) -> NewsEntry:
-					ChLogURL: str = chlog.select_one("a.widget__link")["href"]
+				async def processChangelog(chlog:Tag) -> NewsEntry:
+					ChLogURL:str = chlog.select_one("a.widget__link")["href"]
 					content = chlog.select_one("div.widget__content")
 					title = content.select_one("div.widget__title").get_text(strip = True)
 					anons = content.select_one("div.widget__comment").get_text(strip = True)
@@ -372,14 +371,14 @@ class NewsManager:
 			return final_changelogs
 		except ClientResponseError:
 			if not _changelog_maintenance:
-				self.__logger.error("Changelogs page is under maintenance, returning empty until maintenance is over")
+				_logger.error("Changelogs page is under maintenance, returning empty until maintenance is over")
 				_changelog_maintenance = True
 			return []
 		except RuntimeError:
 			if not _changelog_maintenance:
-				self.__logger.exception("An error occurred while parsing changelogs")
+				_logger.exception("An error occurred while parsing changelogs")
 			return []
-	async def _get_major_changelog(self, changelogs: list[NewsEntry]) -> NewsEntry | None:
+	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> NewsEntry | None:
 		"""Returns `None` if no new major update changelog has been posted"""
 		# i[0] is the pinned major update changelog
 		if not changelogs:
@@ -391,12 +390,12 @@ class NewsManager:
 			return None
 
 		if majorChLog.id != self._sentIDs.MAJOR_CHANGELOG:
-			self.__logger.debug("New major update changelog posted")
+			_logger.debug("New major update changelog posted")
 			self._sentIDs.MAJOR_CHANGELOG = majorChLog.id
 			return majorChLog
 
 		return None
-	async def _get_new_changelogs(self, changelogs: list[NewsEntry]) -> list[NewsEntry]:
+	async def _get_new_changelogs(self, changelogs:list[NewsEntry]) -> list[NewsEntry]:
 		# i[1:] is the latest actual changelogs
 		if not changelogs or len(changelogs) <= 1:
 			return []
@@ -410,7 +409,7 @@ class NewsManager:
 			if item.id != self._sentIDs.CHANGELOG:
 				continue
 			if i != 0:
-				self.__logger.debug("Changelogs have been posted since last check")
+				_logger.debug("Changelogs have been posted since last check")
 			self._sentIDs.CHANGELOG = changelogs[0].id
 			return changelogs[:i]
 
@@ -422,12 +421,11 @@ class NewsManager:
 	async def fetchForumIDs(self) -> tuple[int, ...]:
 		"""Gets the latest "planned battle rating changes" post's ID"""
 		async with Network.get(
-			"https://forum.warthunder.com/tag/br-changes",
+			"https://forum.warthunder.com/tag/br-changes?order=created&ascending=false",
 			Network.ReturnType.TEXT
 		) as resp:
 			document = BeautifulSoup(resp, "lxml")
 		rows = document.select("tr.topic-list-item")
-		# Ordered by date by default
 
 		ids = []
 		for row in rows:
@@ -457,7 +455,7 @@ class NewsManager:
 			ids = await self.fetchForumIDs()
 			return await NewsEntry.from_forum(ids[0]) if ids else None
 		except Exception:
-			self.__logger.exception("An exception occurred during forum fetching")
+			_logger.exception("An exception occurred during forum fetching")
 			return None
 	async def _get_new_forum(self) -> list[NewsEntry]: # WS: only the new ones
 		ids = await self.fetchForumIDs()
@@ -469,6 +467,8 @@ class NewsManager:
 		new = []
 		for i in ids:
 			if i == self._sentIDs.PLANNED_BR_CHANGES:
+				if len(new) != 0:
+					_logger.debug("New planned battle rating changes posted")
 				break
 			new.append(i)
 		else:
@@ -477,7 +477,6 @@ class NewsManager:
 			return []
 		entries = await asyncio.gather(*(NewsEntry.from_forum(i) for i in new))
 
-		self.__logger.debug("New planned battle rating changes posted")
 		self._sentIDs.PLANNED_BR_CHANGES = ids[0]
 		return entries
 	#endregion

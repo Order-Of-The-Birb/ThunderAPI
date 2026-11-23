@@ -52,6 +52,8 @@ class Replay(dict):
 							wrpl_num -= 1
 							overshot = True
 							continue
+						if e.status >= 400:
+							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error") from e
 
 						if r.status >= 400:
 							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error")
@@ -60,21 +62,13 @@ class Replay(dict):
 							break
 						wrpl_num += 5 # Step by 5 to speed up lookup on larger replays (eg. 3 hour long simulator -> 240 parts)
 
-				while True:
-					try:
-						async with Network.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl", Network.ReturnType.BIN, session = session) as r:
-							return await ReplayParser.from_replay(r)
-					except ClientResponseError as e:
-						if e.status == 429:
-							if wait_time == 60:
-								raise HTTPException(429, detail = "Replay server rate limit exceeded. Please try again later.") from e
-
-							await sleep(wait_time)
-							wait_time = min(wait_time * 2, 60) # Exponential backoff, max 60 seconds
-							continue
-						if e.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error") from e
-
+				try:
+					async with Network.get(f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl", Network.ReturnType.BIN, session = session) as r:
+						return await ReplayParser.from_replay(r)
+				except ClientResponseError as e:
+					if e.status == 429:
+						raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail = "Replay server rate limit exceeded. Please try again later.") from e
+					raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error") from e
 
 		#endregion
 		#region Parse gaijin JSON to proper JSON

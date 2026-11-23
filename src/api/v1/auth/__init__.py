@@ -9,7 +9,6 @@ from api.shared import limiter
 from api.v1.models import GenericEmptyResponse
 from api.v1.shared import TokenBearer
 from utils import users_auth
-from utils.auth import _PENDING_2FA
 from utils.helper import dtToTimestamp
 
 from .models import Login, LoginToken
@@ -25,10 +24,11 @@ router = APIRouter(
 	description = "You can use this token for the endpoints. If given user has 2FA enabled, they must provide the 2FA code along with their credentials through either `Gaijin pass` or the `/v1/answer-2fa` endpoint. If you generated a token that hasn't expired yet, the endpoint will just overwrite the previous token.",
 	responses = {
 		status.HTTP_200_OK: {"model": Login.LoginResponse},
-		status.HTTP_206_PARTIAL_CONTENT: {"model":Login.Fail2FAResponse, "description": "The account has 2FA enabled. Go through the 2FA process and call this endpoint again."},
+		status.HTTP_206_PARTIAL_CONTENT: {"description": "The account has 2FA enabled. Go through the 2FA process to log in."},
 		status.HTTP_408_REQUEST_TIMEOUT: {"description": "Account has Two Factor Authentication, and authentication timed out"},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."},
-	}
+	},
+	response_model=Login.LoginResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_post(
@@ -38,11 +38,7 @@ async def login_post(
 ):
 	token, uidHint = await users_auth.login(email, password)
 
-	return JSONResponse({
-		"status": "OK",
-		"token": token,
-		"user_id": uidHint
-	}, status_code = status.HTTP_200_OK)
+	return Login.LoginResponse(token = token, user_id = uidHint)
 
 @router.post(
 	"/refresh-token",
@@ -52,7 +48,8 @@ async def login_post(
 		status.HTTP_200_OK: {"model": LoginToken.LoginTokenResponse, "description": "Token refreshed successfully"},
 		status.HTTP_401_UNAUTHORIZED: {"model": LoginToken.LoginFailResponse, "description": "Invalid token provided. The token is either expired or invalid."},
 		status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Rate limit exceeded. Please wait a bit before trying again."}
-	}
+	},
+	response_model=LoginToken.LoginTokenResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def login_token(
@@ -67,33 +64,32 @@ async def login_token(
 
 @router.post(
 	"/answer-2fa",
-	summary = "Provide 2FA code to finish login in case of a 2FA account without gaijin pass"
+	summary = "Provide 2FA code to finish login in case of a 2FA account without Gaijin Pass",
+	responses={
+		status.HTTP_200_OK: {"model": Login.LoginResponse, "description": "Successful 2FA Authentication"}
+	},
+	response_model=Login.LoginResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def answer_2fa(
 	request: Request,
 	email: Annotated[EmailStr, Form(title = "The email address for the account")],
 	password: Annotated[str, Form(title = "The password of the account, used as a sort of protection")],
-	code: Annotated[int, Form(title = "The 2FA code")]
-) -> None:
-	if email not in _PENDING_2FA:
-		raise HTTPException(status.HTTP_404_NOT_FOUND, "You are not pending 2FA verification. Please try to log in first.")
-	if _PENDING_2FA[email].check_password(password):
-		_PENDING_2FA[email].code = code
-		_PENDING_2FA[email].provided.set()
-	else:
-		raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
-	# TODO: Implement. Due to the nature of the 2FA system, it is hard to implement
+	code: Annotated[str, Form(title = "The 2FA code")]
+):
+	token, uidHint = await users_auth.login(email, password, code = code)
+	return Login.LoginResponse(token = token, user_id = uidHint)
 
 @router.delete(
 	"/remove",
-	summary = "Removes your login entry from our system"
+	summary = "Removes your login entry from our system",
+	response_model=GenericEmptyResponse
 )
 @limiter.limit(getenv("LOGIN_RATE_LIMIT", "5/minute"))
 async def remove_login(
 	request: Request,
 	user: TokenBearer
-) -> GenericEmptyResponse:
+):
 	if (await users_auth.remove_entry(user.entry)):
 		return JSONResponse({"success": True})
 	raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred during login deletion")

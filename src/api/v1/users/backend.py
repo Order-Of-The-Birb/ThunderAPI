@@ -7,7 +7,7 @@ from utils.helper import dictUtil
 from .models import PlayerRank, TerseReturnModel
 
 
-async def get_terse(user: LoginEntry, *userIds: int|str) -> dict[str, TerseReturnModel]:
+async def get_terse(user:LoginEntry, *userIds:int|str) -> dict[str, TerseReturnModel]:
 	data = await Request.send_template(
 		user,
 		"get_users_terse_info",
@@ -30,12 +30,12 @@ async def get_terse(user: LoginEntry, *userIds: int|str) -> dict[str, TerseRetur
 
 	return data
 
-async def get_self(user: LoginEntry):
+async def get_self(user:LoginEntry):
 	userData = await get_user(user, user.uidHint)
 
 	return await dictUtil.KeyRem("summary", "statistics", "countries").run(userData)
 
-async def get_user(user: LoginEntry, userid: int):
+async def get_user(user:LoginEntry, userid: int):
 	data = await Request.send_template(
 		user,
 		"get_public_userstat",

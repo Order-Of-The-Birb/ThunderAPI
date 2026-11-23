@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from bisect import bisect_right
 from datetime import date, datetime
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -36,6 +36,11 @@ GAMEMODES = Literal[
 	"realistic",
 	"simulator"
 ]
+class GamemodesEnum(StrEnum):
+	arcade = "arcade"
+	realistic = "historical"
+	simulator = "simulator"
+
 SPECIFIC_GAMEMODES = Literal[
 	"air_arcade",
 	"air_realistic",
@@ -78,7 +83,7 @@ class getUserDirect:
 				respawns: int
 			missionsComplete: int
 			victories: int
-			fighter: vehicleModel
+			fighter:vehicleModel
 			bomber: vehicleModel
 			assault: vehicleModel
 			tank: vehicleModel

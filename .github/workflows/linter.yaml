@@ -10,7 +10,7 @@ jobs:
         steps:
             - uses: actions/checkout@v7
               with:
-                  ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
+                  ref: refs/pull/${{ github.event.pull_request.number }}/head
             - name: Set up Python ${{ matrix.python-version }}
               uses: actions/setup-python@v7
               with:
@@ -18,8 +18,13 @@ jobs:
             - name: Install dependencies
               run: pip install ruff
             - name: Auto-fix with Ruff
+              if: github.event.pull_request.head.repo.full_name == github.repository
               run: ruff check src/ --fix
+            - name: Check with Ruff (forks)
+              if: github.event.pull_request.head.repo.full_name != github.repository
+              run: ruff check src/
             - name: Commit and push fixes
+              if: github.event.pull_request.head.repo.full_name == github.repository
               uses: stefanzweifel/git-auto-commit-action@v7
               with:
                   commit_message: "style: apply ruff fixes"

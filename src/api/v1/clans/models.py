@@ -36,7 +36,7 @@ class Platforms(Enum):
 	XBOX = 12
 
 class ApplicantModel(BaseModel):
-	uid: int
+	uid: IntString
 	nickname: str
 	timestamp: int
 	comment: str
@@ -44,7 +44,7 @@ class ApplicantModel(BaseModel):
 		offset: float
 		country: str
 		city: str
-	geo: GeolocationDataModel = Field(default = None)
+	geo:GeolocationDataModel = Field(default = None)
 
 class MemberModel(BaseModel):
 	class enumModel(BaseModel):
