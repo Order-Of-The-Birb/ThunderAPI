@@ -103,7 +103,7 @@ class Request:
 	@classmethod
 	async def from_template(
 		cls,
-		user:LoginEntry,
+		user: LoginEntry,
 		template: str,
 		/, *,
 		session:ClientSession|None = None,

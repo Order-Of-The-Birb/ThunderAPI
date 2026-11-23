@@ -1,8 +1,0 @@
-{
-	"error": "Wrong verification code",
-	"hasGjPass": true,
-	"hasTwoStepEmail": false,
-	"hasWTR": false,
-	"status": "2STEPERROR",
-	"userId": 1000000000
-}

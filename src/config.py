@@ -1,7 +1,9 @@
 from os import getenv
 from pathlib import Path
 
-__DEBUG_MODE:bool = int(getenv("DEBUG_MODE", "0")) == 1
+__DEBUG_MODE: bool = int(getenv("DEBUG_MODE", "0")) == 1
+
+PROXIED = int(getenv("PROXIED", "0")) == 1
 
 DATA_DIR = Path("/data/") if not __DEBUG_MODE else Path(__file__).parent.parent / "data"
 TOOL_DIR = Path("/opt/tools/") if not __DEBUG_MODE else Path(__file__).parent.parent / "tools"
@@ -25,7 +27,7 @@ class _usersDB:
 	INIT_SQL = Path(__file__).parent / "utils" / "users_create.sql"
 
 USERS_DB = _usersDB()
-VEHICLES = DATA_DIR / "vehicles"
+GAMEFILES = DATA_DIR / "gamefiles"
 
 class _geoLitePaths:
 	DB = DATA_DIR / "GeoLite2-City.mmdb"

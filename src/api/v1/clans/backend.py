@@ -313,7 +313,7 @@ async def sanitizeMembers(members:dict|list):
 
 	return members
 
-async def sanitizeApplicants(applicants:dict|list|None):
+async def sanitizeApplicants(applicants: dict|list|None):
 	if applicants is None:
 		return []
 

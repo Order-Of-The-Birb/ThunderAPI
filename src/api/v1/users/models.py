@@ -83,7 +83,7 @@ class getUserDirect:
 				respawns: int
 			missionsComplete: int
 			victories: int
-			fighter:vehicleModel
+			fighter: vehicleModel
 			bomber: vehicleModel
 			assault: vehicleModel
 			tank: vehicleModel

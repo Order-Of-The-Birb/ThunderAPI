@@ -48,7 +48,7 @@ class NewsEntry:
 		width: int
 		height: int
 		@classmethod
-		def from_json(cls, data:dict[str, Any]):
+		def from_json(cls, data: dict[str, Any]):
 			return cls(
 				src = data["src"],
 				width = int(data["width"]),
@@ -184,7 +184,7 @@ class NewsManager:
 	_API_URL = "http://newslist.gaijin.net:8080/news/warthunder/en/js"
 	_CHANGELOG_URL = "https://warthunder.com/en/game/changelog/"
 	_sentIDs: LastSentIDs
-	task:asyncio.Task
+	task: asyncio.Task
 	websocket_mgr: WebsocketManager
 
 	def __init__(self):
@@ -285,7 +285,7 @@ class NewsManager:
 	async def fetchNews(self) -> list[NewsEntry]:
 		"""Gets all the latest news"""
 		global _news_endpoint_down
-		news:list[NewsEntry] = []
+		news: list[NewsEntry] = []
 		try:
 			async with Network.get(
 				self._API_URL,
@@ -341,8 +341,8 @@ class NewsManager:
 				changelogs = parsed.select("div.showcase__content-wrapper>div.showcase__item.widget")
 				if len(changelogs) < 2:
 					raise RuntimeError("Less, than 2 changelogs found (somehow)")
-				async def processChangelog(chlog:Tag) -> NewsEntry:
-					ChLogURL:str = chlog.select_one("a.widget__link")["href"]
+				async def processChangelog(chlog: Tag) -> NewsEntry:
+					ChLogURL: str = chlog.select_one("a.widget__link")["href"]
 					content = chlog.select_one("div.widget__content")
 					title = content.select_one("div.widget__title").get_text(strip = True)
 					anons = content.select_one("div.widget__comment").get_text(strip = True)
@@ -378,7 +378,7 @@ class NewsManager:
 			if not _changelog_maintenance:
 				_logger.exception("An error occurred while parsing changelogs")
 			return []
-	async def _get_major_changelog(self, changelogs:list[NewsEntry]) -> NewsEntry | None:
+	async def _get_major_changelog(self, changelogs: list[NewsEntry]) -> NewsEntry | None:
 		"""Returns `None` if no new major update changelog has been posted"""
 		# i[0] is the pinned major update changelog
 		if not changelogs:
@@ -395,7 +395,7 @@ class NewsManager:
 			return majorChLog
 
 		return None
-	async def _get_new_changelogs(self, changelogs:list[NewsEntry]) -> list[NewsEntry]:
+	async def _get_new_changelogs(self, changelogs: list[NewsEntry]) -> list[NewsEntry]:
 		# i[1:] is the latest actual changelogs
 		if not changelogs or len(changelogs) <= 1:
 			return []
