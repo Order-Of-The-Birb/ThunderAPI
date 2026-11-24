@@ -61,8 +61,24 @@ async def head(url:str, /, *, resp_state: str | None = None, session: ClientSess
 	if _RESP_PROVIDER is not None:
 		yield await _RESP_PROVIDER(resp_state)
 		return
-	async with session.head(url, **kwargs) as resp:
-		yield resp
+	if session is None:
+		async with operation() as session:
+			yield await head(url, resp_state=resp_state, session=session, **kwargs)
+		return
+
+	sleep_duration = 1
+	while True:
+		async with session.head(url, **kwargs) as resp:
+			if sleep_duration >= 32:
+				yield resp
+				return
+			elif resp.status == 429:
+				_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
+				await asyncio.sleep(sleep_duration)
+				sleep_duration *= 2
+				continue
+			yield resp
+			return
 #endregion
 
 #region Request
