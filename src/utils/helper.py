@@ -1,6 +1,9 @@
+import asyncio
 from collections.abc import Iterable
 from datetime import datetime
 from inspect import isawaitable
+from json import loads
+from pathlib import Path
 from typing import Any, Callable
 
 from fastapi import HTTPException
@@ -96,10 +99,16 @@ class dictUtil:
 			return await value
 		return value
 
-def getMultipleKeys(obj: dict, *keys: str, default: Any = None, raise_on_missing: bool = False):
+def getMultipleKeys(obj:dict, *keys:str, default:Any = None, raise_on_missing:bool = False):
 	for key in keys:
 		if key in obj:
 			return obj[key]
 	if raise_on_missing:
 		raise KeyError("Could not find any of the keys provided within the object")
 	return default
+
+async def asyncRead(file: Path):
+	return await asyncio.to_thread(file.read_text)
+
+async def asyncReadJSON(file: Path):
+	return await asyncio.to_thread(loads, await asyncRead(file))

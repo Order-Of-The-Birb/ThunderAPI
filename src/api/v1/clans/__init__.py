@@ -15,7 +15,7 @@ from api.v1.clans.backend import (
 	getLogs,
 	searchClan,
 )
-from api.v1.models import GenericEmptyResponse, SuccessEmptyDict
+from api.v1.models import GenericEmptyResponse
 from api.v1.shared import OptionalAuth, ServerBearer, TokenBearer
 from utils.connection import Request
 
@@ -140,7 +140,7 @@ async def accept_applicant(
 	request: faRequest,
 	user: TokenBearer,
 	userId: gaijinUserId,
-	role: RolesDisplay = RolesDisplay.PRIVATE
+	role:RolesDisplay = RolesDisplay.PRIVATE
 ):
 	squadronId = await user.entry.getSquadronId()
 	if squadronId is None:
@@ -152,7 +152,7 @@ async def accept_applicant(
 		_id = squadronId,
 		role = Roles[role.name.upper()].value
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/reject/{userId}",
@@ -180,7 +180,7 @@ async def reject_applicant(
 		_id = squadronId,
 		comments = message
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/role/{userId}",
@@ -206,13 +206,13 @@ async def change_role(
 		userid = userId,
 		role = role.value
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.post(
 	"/kick/{userId}",
 	summary = "Kicks the given user",
 	description = "Requires either `Officer`, `Deputy` or `Commander` rank to remove someone else",
-	response_model=SuccessEmptyDict
+	response_model=GenericEmptyResponse
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "clans")
 async def kick_member(
@@ -227,7 +227,7 @@ async def kick_member(
 		userid = userId,
 		comments = reason
 	)
-	return {"success": data.get("status") == "success"}
+	return data
 
 @router.get(
 	"/logs/{clanId}",

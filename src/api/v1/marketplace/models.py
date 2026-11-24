@@ -60,6 +60,7 @@ class Models:
 		type: str | None
 		marketable: bool
 		name_color: str
+		count: int
 
 	class OrderModel(BaseModel):
 		market_hash: str

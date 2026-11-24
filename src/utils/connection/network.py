@@ -1,7 +1,8 @@
-from asyncio import Event, Lock
+import asyncio
 from contextlib import AbstractAsyncContextManager
 from enum import IntEnum, auto
 from json import loads
+from logging import getLogger as _getLogger
 from typing import Any, Awaitable, Callable, Literal, overload
 
 from aiohttp import ClientResponse, ClientSession
@@ -11,6 +12,7 @@ from fastapi.concurrency import asynccontextmanager
 
 from .const import GaijinErrorCodes
 
+_logger = _getLogger(__name__)
 
 class NetworkError(HTTPException):
 	pass
@@ -23,39 +25,39 @@ class ReturnType(IntEnum):
 __session: ClientSession | None = None
 __closing = False
 __active_ops = 0
-__active_ops_done = Event()
+__active_ops_done = asyncio.Event()
 __active_ops_done.set()
-__lock = Lock()
+__lock = asyncio.Lock()
 
 _RESP_PROVIDER: Callable[[Any], Awaitable[Any]] | None = None
 
 #region POST
 @overload
-def post(url: str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def post(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def post(url: str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def post(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def post(url: str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def post(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def post(url: str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+async def post(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
 	async with request("POST", url, return_type, resp_state = resp_state, session = session, **kwargs) as resp:
 		yield resp
 #endregion
 #region GET
 @overload
-def get(url: str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def get(url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def get(url: str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def get(url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def get(url: str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def get(url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def get(url: str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+async def get(url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
 	async with request("GET", url, return_type, resp_state = resp_state, session = session, **kwargs) as resp:
 		yield resp
 #endregion
 #region HEAD
 @asynccontextmanager
-async def head(url: str, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+async def head(url:str, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
 	if _RESP_PROVIDER is not None:
 		yield await _RESP_PROVIDER(resp_state)
 		return
@@ -65,24 +67,36 @@ async def head(url: str, /, *, resp_state: str | None = None, session: ClientSes
 
 #region Request
 @overload
-def request(method: str, url: str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.JSON] = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[dict[str, Any]]: ...
 @overload
-def request(method: str, url: str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.TEXT], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[str]: ...
 @overload
-def request(method: str, url: str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
+def request(method: str, url:str, return_type: Literal[ReturnType.BIN], /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs: Any) -> AbstractAsyncContextManager[bytes]: ...
 @asynccontextmanager
-async def request(method: str, url: str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
+async def request(method:str, url:str, return_type: ReturnType = ReturnType.JSON, /, *, resp_state: str | None = None, session: ClientSession | None = None, **kwargs):
 	if _RESP_PROVIDER is not None:
 		yield await _RESP_PROVIDER(resp_state)
 		return
+
 	if session is None:
 		async with operation() as session:
-			async with session.request(method, url, **kwargs) as resp:
+			async with request(method, url, return_type, resp_state=resp_state, session=session, **kwargs) as resp:
+				yield resp
+		return
+
+	sleep_duration = 1
+	while True:
+		async with session.request(method, url, **kwargs) as resp:
+			if sleep_duration >= 32:
 				yield await handle_response(resp = resp, convert = return_type)
 				return
-	async with session.request(method, url, **kwargs) as resp:
-		yield await handle_response(resp = resp, convert = return_type)
-		return
+			elif resp.status == 429:
+				_logger.warning(f"We are being rate limited (on '{resp.host}'). Retrying in {sleep_duration}")
+				await asyncio.sleep(sleep_duration)
+				sleep_duration *= 2
+				continue
+			yield await handle_response(resp = resp, convert = return_type)
+			return
 
 #endregion
 @asynccontextmanager
@@ -120,7 +134,7 @@ async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.JSON
 async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.BIN]) -> bytes: ...
 @overload
 async def handle_response(resp: ClientResponse, convert: Literal[ReturnType.TEXT]) -> str: ...
-async def handle_response(resp: ClientResponse, convert: ReturnType) -> dict[str, Any]|bytes|str:
+async def handle_response(resp:ClientResponse, convert:ReturnType) -> dict[str, Any]|bytes|str:
 	resp.raise_for_status()
 	content = await resp.read()
 

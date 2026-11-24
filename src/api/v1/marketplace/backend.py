@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from enum import StrEnum
 from random import randint
 from typing import Any, TypedDict
@@ -59,12 +60,15 @@ class User:
 				return data["response"].get("success", False)
 			raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "An error occurred while trying to cancel this order.")
 
-		async def to_json(self):
-			SANITIZE = (
-				dictUtil.KeyRem("LOGIN", "pairId"),
-				dictUtil.KeyMod("id", convert = lambda x: str(x)),
-			)
-			return await dictUtil.run_all(asdict(self), SANITIZE)
+		def to_json(self):
+			return {
+				"market_hash": self.market_hash,
+				"id": self.id,
+				"type": self.type,
+				"price": self.price,
+				"timestamp": self.timestamp,
+				"amount": self.amount
+			}
 
 	@dataclass(slots = True)
 	class InventoryItem:
@@ -75,29 +79,29 @@ class User:
 			seller_gets: float
 
 		LOGIN: LoginEntry
-		commodity: bool
+		commodity:bool
 		description: str
 		icon_url: str
 		icon_url_large: str
 		hash: str
 		name: str
-		display_name: str
+		display_name:str
 		tags: list[dict[str, str|int]]
 		type: str
 		marketable: bool
 		name_color: str
 		class_name: str
 		class_value: int
-		ids: list[int]
+		ids:list[int]
 		contextid: int
 		@classmethod
-		def from_json(cls, data: dict[str, Any], user: LoginEntry, itemData: dict[str, Any], context: int):
+		def from_json(cls, data:dict[str, Any], user: LoginEntry, itemData: dict[str, Any], context: int):
 			assetData: dict[str, Any] = data["result"]["asset"]
 			classData: dict[str, Any] = itemData["class"][0]
 
 			return cls(
 				LOGIN = user,
-				commodity = assetData.get("commodity"),
+				commodity = assetData.get("commodity") or False,
 				description = assetData["descriptions"][0]["value"],
 				icon_url = assetData.get("icon_url"),
 				icon_url_large = assetData.get("icon_url_large"),
@@ -114,8 +118,10 @@ class User:
 				contextid = context
 			)
 
-		async def sell(self, price: float, count: int, anonymous: bool = False) -> tuple[SellData]:
+		async def sell(self, price: Decimal | float, count: int, anonymous: bool = False) -> tuple[SellData]:
 			agree_stamp = dtToTimestampMs(datetime.now(UTC))
+			if isinstance(price, Decimal):
+				price = int(price*100)/100
 
 			price = int(round(price*10000, -2))
 			seller_should_get = int(round(price*0.85, -2))
@@ -152,12 +158,21 @@ class User:
 
 			return tuple(soldItems)
 
-		async def to_json(self):
-			SANITIZE = (
-				dictUtil.KeyRem("class_name", "class_value", "contextid", "LOGIN"),
-
-			)
-			return await dictUtil.run_all(asdict(self), SANITIZE)
+		def to_json(self):
+			return {
+				"commodity": self.commodity,
+				"description": self.description,
+				"icon_url": self.icon_url,
+				"icon_url_large": self.icon_url_large,
+				"hash": self.hash,
+				"name": self.name,
+				"display_name": self.display_name,
+				"tags": self.tags,
+				"type": self.type,
+				"marketable": self.marketable,
+				"name_color": self.name_color,
+				"count": len(self.ids),
+			}
 
 	@dataclass(slots = True)
 	class MarketItem:
@@ -173,10 +188,10 @@ class User:
 		className: str
 		classValue: str
 		@classmethod
-		def from_dict(cls, data: dict[str, Any]):
+		def from_dict(cls, data:dict[str, Any]):
 			tags = {}
 			for tag in data["tags"]:
-				tag: str
+				tag:str
 				if tag.count(":") != 1:
 					raise RuntimeError(f"Somehow item {data["hash_name"]}'s tag '{tag}' has more than 1 separator")
 				key, value = tag.split(":")
@@ -190,7 +205,7 @@ class User:
 			return cls(
 				hash_name = data["hash_name"],
 				name = data["name"],
-				commodity = data.get("commodity", False),
+				commodity = data.get("commodity") or False,
 				icon = data["icon"],
 				buy_price = data["buy_price"] / 100000000,
 				buy_orders = data["buy_depth"],
@@ -201,11 +216,11 @@ class User:
 				classValue = data["asset_class"][0]["value"]
 			)
 		@classmethod
-		def from_assetdata(cls, assetData: dict[str, Any], ordersData: dict[str, Any], classValues: dict[str, str]):
+		def from_assetdata(cls, assetData:dict[str, Any], ordersData: dict[str, Any], classValues: dict[str, str]):
 			return cls(
 				hash_name = assetData["market_hash_name"],
 				name = assetData["market_name"],
-				commodity = assetData.get("commodity", False),
+				commodity = assetData.get("commodity") or False,
 				icon = assetData.get("icon_url_large", assetData.get("icon_url", None)),
 				buy_price = max((i[0] for i in ordersData.get("BUY", [])), default = 0) / 10000,
 				buy_orders = ordersData["depth"].get("BUY", 0),
@@ -235,7 +250,7 @@ class User:
 				text = name
 			)
 			if "response" in data:
-				data: list[dict[str, Any]] = data["response"]["assets"]
+				data:list[dict[str, Any]] = data["response"]["assets"]
 			else:
 				raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Could not get item data")
 
@@ -302,8 +317,8 @@ class User:
 			return data["balance"]/10000
 		raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "Failed to get balance")
 
-	async def inventory(self) -> dict[str, InventoryItem]:
-		items: dict[str, User.InventoryItem] = {}
+	async def inventory(self) -> dict[tuple[str, Any, int], InventoryItem]:
+		items:dict[tuple[str, Any, int], User.InventoryItem] = {}
 		async with Network.operation() as session:
 			contexts = await Request.send_template(
 				self.login,
@@ -331,13 +346,32 @@ class User:
 					)
 					if "result" not in item_data:
 						continue
-					if item_data["result"]["asset"]["market_hash_name"] in items:
-						invitem = items[item_data["result"]["asset"]["market_hash_name"]]
-						if invitem.class_name == item["class"][0]["name"] and invitem.class_value == item["class"][0]["value"]:
-							invitem.ids.append(int(item["id"]))
+					key = (item["class"][0]["name"], item["class"][0]["value"], int(context["id"]))
+					if key in items:
+						items[key].ids.append(int(item["id"]))
 					else:
-						items[item_data["result"]["asset"]["market_hash_name"]] = self.InventoryItem.from_json(item_data, self.login, item, int(context["id"]))
+						items[key] = self.InventoryItem.from_json(item_data, self.login, item, int(context["id"]))
 		return items
+
+	async def sell(self, item_hash: str, price: Decimal | float, count: int = 1, anonymous: bool = False) -> tuple[InventoryItem.SellData, ...]:
+		matching = [item for item in (await self.inventory()).values() if item.hash == item_hash]
+		if not matching:
+			raise HTTPException(status.HTTP_404_NOT_FOUND, "Item not found in inventory")
+
+		total = sum(len(item.ids) for item in matching)
+		if total < count:
+			raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Requested selling {count} items, but user only has {total} items in their inventory")
+
+		sold = []
+		remaining = count
+		for item in matching:
+			if remaining <= 0:
+				break
+			take = min(len(item.ids), remaining)
+			sold.extend(await item.sell(price = price, count = take, anonymous = anonymous))
+			remaining -= take
+
+		return tuple(sold)
 
 	async def buy(self, item_hash: str, price: float, count: int = 1, anonymous: bool = False):
 		agree_stamp = dtToTimestampMs(datetime.now(UTC))
@@ -367,7 +401,7 @@ class User:
 			}
 		raise HTTPException(status.HTTP_400_BAD_REQUEST, "Failed to put up buy order")
 
-	async def get_asset_class(self, hash: str) -> list[dict[str, str|IntString]]:
+	async def get_asset_class(self, hash:str) -> list[dict[str, str|IntString]]:
 		return await Request.send_template(
 			self.login,
 			"cln_market_get_asset_class",

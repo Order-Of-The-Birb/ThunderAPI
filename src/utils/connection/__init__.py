@@ -1,4 +1,3 @@
-from collections.abc import Awaitable, Callable
 from datetime import timedelta
 from json import JSONDecodeError, dumps, loads
 from random import choice, randint
@@ -68,10 +67,9 @@ class Request:
 		body: dict[str, Any] | None = None,
 		headers: dict[str, Any] | None = None,
 		user: LoginEntry | None = None,
-		host: str|None = None,
-		method: str = "POST",
-		session: ClientSession|None = None,
-		response_provider: ResponseProvider | None = None
+		host:str|None = None,
+		method:str = "POST",
+		session:ClientSession|None = None
 	):
 		self.__response_provider = response_provider
 		self.__template = template_name
@@ -108,10 +106,9 @@ class Request:
 		user: LoginEntry,
 		template: str,
 		/, *,
-		session: ClientSession|None = None,
+		session:ClientSession|None = None,
 		remove_keys: set[str] | None = None,
-		response_provider: ResponseProvider | None = None,
-		**data: str|dict[str, Any]
+		**data:str|dict[str, Any]
 	) -> "Request":
 		if remove_keys is None:
 			remove_keys = set()
@@ -140,8 +137,7 @@ class Request:
 			method = tpl.get("method", "POST"),
 			action = action,
 			session = session,
-			template_name = template,
-			response_provider = response_provider
+			template_name = template
 		)
 		await self.add_auth_headers()
 		for key, value in data.items():
@@ -158,8 +154,8 @@ class Request:
 		return self
 
 	@staticmethod
-	async def send_template(user: LoginEntry, template: str, /, *, session: ClientSession|None = None, remove_keys: set[str] | None = None, response_provider: ResponseProvider | None = None, **data: str|dict[str, Any]) -> dict:
-		cls = await Request.from_template(user, template, session = session, remove_keys = remove_keys, response_provider = response_provider, **data)
+	async def send_template(user:LoginEntry, template: str, /, *, session:ClientSession|None = None, remove_keys: set[str] | None = None, **data:str|dict[str, Any]) -> dict:
+		cls = await Request.from_template(user, template, session = session, remove_keys = remove_keys, **data)
 		return await cls.send()
 
 	def replace(self, key: str, value: Any):
@@ -252,15 +248,8 @@ class Request:
 			case _:
 				raise NotImplementedError(f"Content-Type value '{self.headers["Content-Type"]}' not implemented")
 
-		if self.__response_provider is not None:
-			return await self.__response_provider(self.url)
-
-		if self.session is None:
-			async with Network.request(self.method.upper(), self.url, Network.ReturnType.BIN, **kwargs) as resp:
-				response = await self._decode(resp)
-		else:
-			async with self.session.request(self.method.upper(), self.url, **kwargs) as resp:
-				response = await self._decode(await resp.read())
+		async with Network.request(self.method.upper(), self.url, Network.ReturnType.BIN, session=self.session, **kwargs) as resp:
+			response = await self._decode(resp)
 
 		return response
 
@@ -272,7 +261,7 @@ class Request:
 			GaijinErrorCodes.parse(response) # Throws an HTTPException
 		if response.startswith(b"!OK"):
 			return {
-				"status": "success"
+				"success": True
 			}
 		try:
 			return loads(response)

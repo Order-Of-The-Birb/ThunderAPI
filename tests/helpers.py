@@ -31,8 +31,8 @@ async def run_tests(
 	if isinstance(tests, templates._Group):
 		tests = (tests,)
 	for test in tests:
-		async def provider(state: str = "init", *, test=test):
-			templ = templates.load(test)
+		templ = templates.load(test)
+		async def provider(state: str = "init", *, templ=templ):
 			if state in templ:
 				return templ[state]
 			if state in extra_templates:
@@ -48,4 +48,5 @@ async def run_tests(
 				if type(expected) is HTTPException:
 					assert exc_info.value.status_code == expected.status_code
 			else:
-				await func(*args, **kwargs)
+				result = await func(*args, **kwargs)
+				assert result == templ["init"]

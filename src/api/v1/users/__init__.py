@@ -10,7 +10,7 @@ from utils.connection import Request
 from utils.helper import dictUtil
 
 from .backend import get_self, get_terse, get_user
-from .models import SIMPLE_COUNTRIES, TerseReturnModel, getUserDirect
+from .models import SIMPLE_COUNTRIES, GamemodesEnum, TerseReturnModel, getUserDirect
 
 router = APIRouter(
 	prefix = "/users",
@@ -36,6 +36,28 @@ async def get_users_terse_info(
 ):
 	"""Get terse information about users by their IDs."""
 	return await get_terse(user, *id)
+
+@router.get(
+	"/search/{nick}",
+	summary = "Get users by name",
+	responses = {},
+	response_model=dict[str, TerseReturnModel]
+)
+@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
+async def get_users_search(
+	request: faRequest,
+	user: ServerBearer,
+	nick: Annotated[str, Path(title = "The nickname to search for")],
+	limit: Annotated[int, Query(title = "How many users to retrieve", ge = 2, le = 50)] = 10,
+):
+	response = await Request.send_template(
+		user,
+		"find_users_by_nick_prefix",
+		nick = nick,
+		maxCount = limit
+	)
+
+	return await get_terse(user, *list(response.keys()))
 
 @router.get(
 	"/self",
@@ -72,15 +94,16 @@ async def get_user_direct_meta(
 @router.get(
 	"/{userid}/stats",
 	summary = "Gets per-vehicle statistics about a user",
-	response_model=getUserDirect.statisticsModel
+	response_model=dict[str, getUserDirect.statisticsModel.unitStatModel]
 )
 @limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
 async def get_user_direct_stats(
 	request: faRequest,
 	user: ServerBearer,
 	userid: Annotated[int, Path(title = "The ID of the user to get information about", description = "The ID of the user to get information about", gt = 0)],
+	mode: Annotated[GamemodesEnum, Query(title="The gamemode to query the data for")]
 ):
-	return (await get_user(user, userid))["statistics"]
+	return (await get_user(user, userid))["statistics"].get(mode, {})
 
 @router.get(
 	"/{userid}/countries",
@@ -108,25 +131,3 @@ async def get_user_direct_summary(
 	userid: Annotated[int, Path(title = "The ID of the user to get information about", description = "The ID of the user to get information about", gt = 0)],
 ):
 	return (await get_user(user, userid))["summary"]
-
-@router.get(
-	"/search/{nick}",
-	summary = "Get users by name",
-	responses = {},
-	response_model=dict[str, TerseReturnModel]
-)
-@limiter.shared_limit(getenv("REGULAR_RATE_LIMIT", "30/minute"), "users")
-async def get_users_search(
-	request: faRequest,
-	user: ServerBearer,
-	nick: Annotated[str, Path(title = "The nickname to search for")],
-	limit: Annotated[int, Query(title = "How many users to retrieve", ge = 2, le = 50)] = 10,
-):
-	response = await Request.send_template(
-		user,
-		"find_users_by_nick_prefix",
-		nick = nick,
-		maxCount = limit
-	)
-
-	return await get_terse(user, *list(response.keys()))
