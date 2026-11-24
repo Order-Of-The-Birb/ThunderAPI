@@ -46,8 +46,6 @@ def get_server(action: Actions) -> str:
 		return choice(pool)
 	return pool
 
-type ResponseProvider = Callable[["Request"], Awaitable[dict[str, Any]]]
-
 class Request:
 	"""Request framework for sending messages to Gaijin's servers"""
 	user: LoginEntry = None
@@ -59,7 +57,6 @@ class Request:
 	method: str
 	action: Actions
 	__template: str
-	__response_provider: ResponseProvider | None
 	def __init__(
 		self,
 		action: Actions,
@@ -71,7 +68,6 @@ class Request:
 		method:str = "POST",
 		session:ClientSession|None = None
 	):
-		self.__response_provider = response_provider
 		self.__template = template_name
 		self.body = body
 		self.headers = {

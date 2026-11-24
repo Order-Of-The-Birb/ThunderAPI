@@ -14,6 +14,7 @@ from fastapi.routing import APIRoute, APIWebSocketRoute, _IncludedRouter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
+from utils.vehicleParser import shared as vpShared
 from uvicorn import run as uvicorn_run
 
 import utils
@@ -27,7 +28,6 @@ from utils.auth import ServerAuth, scheduler
 from utils.connection import _populate_serverlist
 from utils.connection.blk_utils import Decompress
 from utils.geo import update_db
-from utils.vehicleParser import shared as vpShared
 
 logger = logging.getLogger()
 

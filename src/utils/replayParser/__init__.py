@@ -38,7 +38,7 @@ class Replay(dict):
 				overshot = False
 				while True:
 					url = f"https://wt-replays-cdnnow.cdn.gaijin.net/{replay_id}/{wrpl_num:04d}.wrpl"
-					async with Network.head(url, session = session) as r:
+					async with Network.head(url, resp_state=f"replay_{wrpl_num:04d}", session = session) as r:
 						if r.status == 429:
 							if wait_time == 60:
 								raise HTTPException(429, detail = "Replay server rate limit exceeded. Please try again later.")
@@ -52,9 +52,6 @@ class Replay(dict):
 							wrpl_num -= 1
 							overshot = True
 							continue
-						if e.status >= 400:
-							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error") from e
-
 						if r.status >= 400:
 							raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail = "Replay server gave an error")
 
