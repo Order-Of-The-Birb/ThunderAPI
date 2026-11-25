@@ -1,4 +1,2 @@
-*.json
-*.blk
-*.blkx
-*.pcapng
+*
+!.gitignore

@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+cd "$(dirname "$0")"
+
+echo "[Setup] Beginning setup"
+if [ ! -d ".venv" ]; then
+    echo "[Setup] Creating virtual environment"
+    python3 -m venv .venv
+fi
+
+echo "[Setup] Upgrading pip"
+.venv/bin/python -m pip install --upgrade pip -q
+
+echo "[Setup] Installing LZ4"
+.venv/bin/python -m pip install lz4
+
+echo "[Setup] Setup complete"
